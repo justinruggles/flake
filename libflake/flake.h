@@ -23,8 +23,6 @@
 #define FLAKE_VERSION SVN
 #define FLAKE_IDENT   "Flake SVN"
 
-#include <inttypes.h>
-
 typedef struct FlakeContext {
 
     // number of audio channels
@@ -44,7 +42,7 @@ typedef struct FlakeContext {
     // total stream samples
     // set by user prior to calling flake_encode_init
     // if 0, stream length is unknown
-    uint32_t samples;
+    unsigned int samples;
 
     // compression quality
     // set by user prior to calling flake_encode_init
@@ -99,11 +97,11 @@ typedef struct FlakeContext {
 
     // MD5 digest
     // set by flake_encode_close;
-    uint8_t md5digest[16];
+    unsigned char md5digest[16];
 
     // header bytes
     // allocated by flake_encode_init and freed by flake_encode_close
-    uint8_t *header;
+    unsigned char *header;
 
     // encoding context, which is hidden from the user
     // allocated by flake_encode_init and freed by flake_encode_close
@@ -113,8 +111,8 @@ typedef struct FlakeContext {
 
 extern int flake_encode_init(FlakeContext *s);
 
-extern int flake_encode_frame(FlakeContext *s, uint8_t *frame_buffer,
-                              int16_t *samples);
+extern int flake_encode_frame(FlakeContext *s, unsigned char *frame_buffer,
+                              short *samples);
 
 extern void flake_encode_close(FlakeContext *s);
 
