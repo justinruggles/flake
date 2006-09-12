@@ -1,0 +1,970 @@
+#!/bin/sh
+#
+# Flake configure script
+#
+# based on ffmpeg configure script (c) 2000, 2001, 2002 Fabrice Bellard
+#
+
+# make sure we are running under a compatible shell
+(: ${foo%%bar}) 2>/dev/null
+if test "$?" != 0; then
+    if test "x$FLAKE_CONFIGURE_EXEC" = x; then
+        FLAKE_CONFIGURE_EXEC=1
+        export FLAKE_CONFIGURE_EXEC
+        exec bash "$0" "$@"
+        exec ksh "$0" "$@"
+        exec /usr/xpg4/bin/sh "$0" "$@"
+    fi
+    echo "No compatible shell script interpreter found."
+    exit 1
+fi
+
+show_help(){
+  echo "Usage: configure [options]"
+  echo "Options: [defaults in brackets after descriptions]"
+  echo
+  echo "Standard options:"
+  echo "  --help                   print this message"
+  echo "  --log[=FILE|yes|no]      log tests and output to FILE [config.err]"
+  echo "  --enable-mingw32         enable MinGW native/cross Windows compile"
+  echo "  --enable-mingwce         enable MinGW native/cross WinCE compile"
+  echo ""
+  echo "Advanced options (experts only):"
+  echo "  --source-path=PATH       path to source code [$source_path]"
+  echo "  --cross-prefix=PREFIX    use PREFIX for compilation tools [$cross_prefix]"
+  echo "  --cross-compile          assume a cross-compiler is used"
+  echo "  --cc=CC                  use C compiler CC [$cc]"
+  echo "  --make=MAKE              use specified make [$make]"
+  echo "  --extra-cflags=ECFLAGS   add ECFLAGS to CFLAGS [$CFLAGS]"
+  echo "  --extra-ldflags=ELDFLAGS add ELDFLAGS to LDFLAGS [$LDFLAGS]"
+  echo "  --extra-libs=ELIBS       add ELIBS [$ELIBS]"
+  echo "  --build-suffix=SUFFIX    suffix for application specific build []"
+  echo "  --cpu=CPU                force cpu to CPU  [$cpu]"
+  echo "  --tune=CPU               tune code for a particular CPU"
+  echo "                           (may fail or perform badly on other CPUs)"
+  echo "  --disable-debug          disable debugging symbols"
+  echo "  --disable-opts           disable compiler optimizations"
+  echo "  --disable-strip          disable stripping of executables and shared libraries"
+  echo ""
+  echo "NOTE: Object files are built at the place where configure is launched."
+  exit 1
+}
+
+log(){
+    echo "$@" >>$logfile
+}
+
+log_file(){
+    log BEGIN $1
+    cat -n $1 >>$logfile
+    log END $1
+}
+
+echolog(){
+    log "$@"
+    echo "$@"
+}
+
+die(){
+    echolog "$@"
+    cat <<EOF
+If you think configure made a mistake, make sure you are using the latest
+devopment version.  If the latest version fails, report the problem to
+jruggle@earthlink.net
+EOF
+    if enabled logging; then
+        cat <<EOF
+Include the log file "$logfile" produced by configure as this will help
+solving the problem.
+EOF
+    else
+cat <<EOF
+Rerun configure with logging enabled (do not use --log=no), and include the
+log this produces with your report.
+EOF
+    fi
+    rm -f $TMPC $TMPO $TMPE $TMPS $TMPH
+    exit 1
+}
+
+enabled(){
+    eval test "\$$1" = "yes"
+}
+
+flags_saved(){
+    (: ${SAVE_CFLAGS?}) 2>/dev/null
+}
+
+save_flags(){
+    flags_saved && return
+    SAVE_CFLAGS="$CFLAGS"
+    SAVE_LDFLAGS="$LDFLAGS"
+    SAVE_extralibs="$extralibs"
+}
+
+restore_flags(){
+    CFLAGS="$SAVE_CFLAGS"
+    LDFLAGS="$SAVE_LDFLAGS"
+    extralibs="$SAVE_extralibs"
+    unset SAVE_CFLAGS
+    unset SAVE_LDFLAGS
+    unset SAVE_extralibs
+}
+
+temp_cflags(){
+    save_flags
+    CFLAGS="$CFLAGS $*"
+}
+
+temp_ldflags(){
+    save_flags
+    LDFLAGS="$LDFLAGS $*"
+}
+
+temp_extralibs(){
+    save_flags
+    extralibs="$extralibs $*"
+}
+
+append(){
+    var=$1
+    shift
+    flags_saved && eval "SAVE_$var=\"\$SAVE_$var $*\""
+    eval "$var=\"\$$var $*\""
+}
+
+add_cflags(){
+    append CFLAGS "$@"
+}
+
+add_ldflags(){
+    append LDFLAGS "$@"
+}
+
+add_extralibs(){
+    append extralibs "$@"
+}
+
+check_cmd(){
+    "$@" >>$logfile 2>&1
+}
+
+check_cc(){
+    log check_cc "$@"
+    cat >$TMPC
+    log_file $TMPC
+    log $cc $CFLAGS "$@" -c -o $TMPO $TMPC
+    check_cmd $cc $CFLAGS "$@" -c -o $TMPO $TMPC
+}
+
+check_cpp(){
+    log check_cpp "$@"
+    cat >$TMPC
+    log_file $TMPC
+    log $cc $CFLAGS "$@" -E -o $TMPO $TMPC
+    check_cmd $cc $CFLAGS "$@" -E -o $TMPO $TMPC
+}
+
+check_ld(){
+    log check_ld "$@"
+    check_cc || return
+    log $cc $LDFLAGS "$@" -o $TMPE $TMPO $extralibs
+    check_cmd $cc $LDFLAGS "$@" -o $TMPE $TMPO $extralibs
+}
+
+check_cflags(){
+    log check_cflags "$@"
+    check_cc "$@" <<EOF && add_cflags "$@"
+int x;
+EOF
+}
+
+check_ldflags(){
+    log check_ldflags "$@"
+    check_ld "$@" <<EOF && add_ldflags "$@"
+int main(){
+    return 0;
+}
+EOF
+}
+
+check_header(){
+    log check_header "$@"
+    header=$1
+    shift
+    check_cpp "$@" <<EOF
+#include <$header>
+int x;
+EOF
+}
+
+check_func(){
+    log check_func "$@"
+    func=$1
+    shift
+    check_ld "$@" <<EOF
+extern int $func();
+int main(){
+    $func();
+}
+EOF
+}
+
+check_lib(){
+    log check_lib "$@"
+    header="$1"
+    func="$2"
+    shift 2
+    temp_extralibs "$@"
+    check_header $header && check_func $func && add_extralibs "$@"
+    err=$?
+    restore_flags
+    return $err
+}
+
+check_exec(){
+    check_ld "$@" && { test "$cross_compile" = yes || $TMPE >>$logfile 2>&1; }
+}
+
+require(){
+    name="$1"
+    header="$2"
+    func="$3"
+    shift 3
+    check_lib $header $func "$@" || die "ERROR: $name not found"
+}
+
+filter_out(){
+    pattern="$1"
+    shift
+    echo "$@" | sed "s%\\<$pattern\\>%%g"
+}
+
+# set temporary file name
+if test ! -z "$TMPDIR" ; then
+    TMPDIR1="${TMPDIR}"
+elif test ! -z "$TEMPDIR" ; then
+    TMPDIR1="${TEMPDIR}"
+else
+    TMPDIR1="/tmp"
+fi
+
+TMPC="${TMPDIR1}/flake-conf-${RANDOM}-$$-${RANDOM}.c"
+TMPO="${TMPDIR1}/flake-conf-${RANDOM}-$$-${RANDOM}.o"
+TMPE="${TMPDIR1}/flake-conf-${RANDOM}-$$-${RANDOM}"
+TMPS="${TMPDIR1}/flake-conf-${RANDOM}-$$-${RANDOM}.S"
+TMPH="${TMPDIR1}/flake-conf-${RANDOM}-$$-${RANDOM}.h"
+
+# default parameters
+logging="yes"
+logfile="config.err"
+PREFIX="/usr/local"
+libdir='${PREFIX}/lib'
+shlibdir="$libdir"
+incdir='${PREFIX}/include'
+mandir='${PREFIX}/man'
+bindir='${PREFIX}/bin'
+cross_prefix=""
+cross_compile="no"
+cc="gcc"
+ar="ar"
+ranlib="ranlib"
+make="make"
+strip="strip"
+cpu=`uname -m`
+tune="generic"
+powerpc_perf="no"
+mmx="default"
+iwmmxt="default"
+altivec="default"
+mmi="default"
+case "$cpu" in
+  i386|i486|i586|i686|i86pc|BePC)
+    cpu="x86"
+  ;;
+  x86_64|amd64)
+    cpu="x86"
+    canon_arch="`cc -dumpmachine | sed -e 's,\([^-]*\)-.*,\1,'`"
+    if [ x"$canon_arch" = x"x86_64" -o x"$canon_arch" = x"amd64" ]; then
+      if [ -z "`echo $CFLAGS | grep -- -m32`"  ]; then
+        cpu="x86_64"
+      fi
+    fi
+  ;;
+  # armv4l is a subset of armv5tel
+  armv4l|armv5tel)
+    cpu="armv4l"
+  ;;
+  alpha)
+    cpu="alpha"
+  ;;
+  "Power Macintosh"|ppc|ppc64|powerpc)
+    cpu="powerpc"
+  ;;
+  mips|mipsel|IP*)
+    cpu="mips"
+  ;;
+  sun4u|sparc64)
+    cpu="sparc64"
+  ;;
+  sparc)
+    cpu="sparc"
+  ;;
+  sh4)
+    cpu="sh4"
+  ;;
+  parisc|parisc64)
+    cpu="parisc"
+  ;;
+  s390|s390x)
+    cpu="s390"
+  ;;
+  m68k)
+    cpu="m68k"
+  ;;
+  ia64)
+    cpu="ia64"
+  ;;
+  *)
+    cpu="unknown"
+  ;;
+esac
+mingw32="no"
+mingwce="no"
+os2="no"
+lstatic="yes"
+optimize="yes"
+debug="yes"
+dostrip="yes"
+installstrip="-s"
+extralibs="-lm"
+bigendian="no"
+inttypes="yes"
+LIBOBJFLAGS=""
+FLAKELDFLAGS=-Wl,--warn-common
+LDCONFIG="ldconfig"
+LIBPREF="lib"
+LIBSUF=".a"
+LIB='$(LIBPREF)$(NAME)$(LIBSUF)'
+EXESUF=""
+BUILDSUF=""
+
+# OS specific
+targetos=`uname -s`
+case $targetos in
+BeOS)
+PREFIX="/boot/home/config"
+CFLAGS="$CFLAGS -DPIC -fomit-frame-pointer"
+# 3 gcc releases known for BeOS, each with ugly bugs
+gcc_version="`$cc -v 2>&1 | grep version | cut -d ' ' -f3-`"
+case "$gcc_version" in
+2.9-beos-991026*|2.9-beos-000224*) echo "R5/GG gcc"
+mmx="no"
+;;
+*20010315*) echo "BeBits gcc"
+CFLAGS="$CFLAGS -fno-expensive-optimizations"
+;;
+esac
+;;
+SunOS)
+make="gmake"
+FLAKELDFLAGS=""
+;;
+NetBSD)
+make="gmake"
+;;
+OpenBSD)
+make="gmake"
+LIBOBJFLAGS="\$(PIC)"
+LDCONFIG="ldconfig -m \$(libdir)"
+;;
+FreeBSD)
+make="gmake"
+CFLAGS="$CFLAGS -pthread"
+;;
+GNU/kFreeBSD)
+CFLAGS="$CFLAGS -pthread"
+;;
+BSD/OS)
+extralibs="-lm"
+make="gmake"
+strip="strip -d"
+installstrip=""
+;;
+Darwin)
+cc="cc"
+extralibs=""
+strip="strip -x"
+installstrip=""
+FLAKELDFLAGS="-Wl,-dynamic,-search_paths_first"
+;;
+MINGW32*)
+# Note: the rest of the mingw32 config is done afterwards as mingw32
+# can be forced on the command line for Linux cross compilation.
+mingw32="yes"
+;;
+CYGWIN*)
+targetos=CYGWIN
+extralibs=""
+EXESUF=".exe"
+;;
+Linux)
+;;
+IRIX*)
+targetos=IRIX
+ranlib="echo ignoring ranlib"
+make="gmake"
+;;
+OS/2)
+TMPE=$TMPE".exe"
+ar="emxomfar -p128"
+ranlib="echo ignoring ranlib"
+strip="echo ignoring strip"
+CFLAGS="$CFLAGS -Zomf"
+FLAKELDFLAGS="-Zomf -Zstack 16384 -s"
+LIBPREF=""
+LIBSUF=".lib"
+EXESUF=".exe"
+extralibs=""
+pkg_requires=""
+os2="yes"
+
+;;
+*)
+targetos="${targetos}-UNKNOWN"
+;;
+esac
+
+# find source path
+source_path="`dirname $0`"
+source_path_used="yes"
+if test -z "$source_path" -o "$source_path" = "." ; then
+    source_path=`pwd`
+    source_path_used="no"
+else
+    source_path="`cd \"$source_path\"; pwd`"
+fi
+
+if test x"$1" = x"-h" -o x"$1" = x"--help" ; then
+    show_help
+fi
+
+FLAKE_CONFIGURATION=" "
+for opt do
+  FLAKE_CONFIGURATION="$FLAKE_CONFIGURATION""$opt "
+done
+
+for opt do
+  optval="${opt#*=}"
+  case "$opt" in
+  --log)
+  ;;
+  --log=*) logging="$optval"
+  ;;
+  --prefix=*) PREFIX="$optval"; force_prefix=yes
+  ;;
+  --libdir=*) libdir="$optval"; force_libdir=yes
+  ;;
+  --incdir=*) incdir="$optval"
+  ;;
+  --source-path=*) source_path="$optval"
+  ;;
+  --cross-prefix=*) cross_prefix="$optval"
+  ;;
+  --cross-compile) cross_compile=yes
+  ;;
+  --cc=*) cc="$optval"
+  ;;
+  --make=*) make="$optval"
+  ;;
+  --extra-cflags=*) CFLAGS="$CFLAGS $optval"
+  ;;
+  --extra-ldflags=*) EXTRALDFLAGS="$optval"
+  ;;
+  --extra-libs=*) extralibs="$optval"
+  ;;
+  --build-suffix=*) BUILDSUF="$optval"
+  ;;
+  --cpu=*) cpu="$optval"
+  ;;
+  --tune=*) tune="$optval"
+  ;;
+  --enable-mingw32) mingw32="yes"
+  ;;
+  --enable-mingwce) mingwce="yes"
+  ;;
+  --disable-debug) debug="no"
+  ;;
+  --disable-opts) optimize="no"
+  ;;
+  --disable-strip) dostrip="no"
+  ;;
+  --help) show_help
+  ;;
+  *)
+  echo "Unknown option \"$opt\"."
+  echo "See $0 --help for available options."
+  exit 1
+  ;;
+  esac
+done
+
+if test "$logging" != no; then
+    test "$logging" = yes || logfile="$logging"
+    echo "# $0 $@" >$logfile
+    set >>$logfile
+else
+    logfile=/dev/null
+fi
+
+if test "$mingw32" = "yes" -o "$mingwce" = "yes"; then
+    FLAKELDFLAGS='-Wl'
+    EXESUF=".exe"
+fi
+
+# Combine FLAKELDFLAGS, EXTRALDFLAGS and the LDFLAGS environment variable.
+LDFLAGS="$FLAKELDFLAGS $EXTRALDFLAGS $LDFLAGS"
+
+test -n "$cross_prefix" && cross_compile=yes
+cc="${cross_prefix}${cc}"
+ar="${cross_prefix}${ar}"
+ranlib="${cross_prefix}${ranlib}"
+strip="${cross_prefix}${strip}"
+
+# compute MMX state
+if test $cpu = "x86" -o $cpu = "x86_64"; then
+    mmx="yes"
+else
+    mmx="no"
+fi
+
+# check iwmmxt support
+if test $cpu = "armv4l"; then
+    iwmmxt=no
+    check_cc <<EOF && iwmmxt=yes
+        int main(void) {
+        __asm__ __volatile__ ("wunpckelub wr6, wr4");
+        }
+EOF
+fi
+
+#Darwin CC versions
+needmdynamicnopic="no"
+if test $targetos = Darwin; then
+    if test -n "`$cc -v 2>&1 | grep xlc`"; then
+        CFLAGS="$CFLAGS -qpdf2 -qlanglvl=extc99 -qmaxmem=-1 -qarch=auto -qtune=auto"
+    else
+        gcc_version="`$cc -v 2>&1 | grep version | cut -d ' ' -f3-`"
+        case "$gcc_version" in
+            *2.95*)
+                CFLAGS="$CFLAGS -no-cpp-precomp -pipe"
+                ;;
+            *[34].*)
+                CFLAGS="$CFLAGS -no-cpp-precomp -pipe -force_cpusubtype_ALL -Wno-sign-compare"
+                needmdynamicnopic="yes"
+                ;;
+            *)
+                CFLAGS="$CFLAGS -no-cpp-precomp -pipe"
+                needmdynamicnopic="yes"
+                ;;
+        esac
+    fi
+    if test $optimize != "no"; then
+        CFLAGS="$CFLAGS -fomit-frame-pointer"
+    fi
+fi
+
+# Can only do AltiVec on PowerPC
+if test $altivec = "default"; then
+    if test $cpu = "powerpc"; then
+        altivec="yes"
+    else
+        altivec="no"
+    fi
+fi
+
+# Add processor-specific flags
+TUNECPU="generic"
+POWERPCMODE="32bits"
+if test $tune != "generic"; then
+    case $tune in
+        601|ppc601|PowerPC601)
+            CFLAGS="$CFLAGS -mcpu=601"
+            if test $altivec = "yes"; then
+                echo "WARNING: Tuning for PPC601 but AltiVec enabled!";
+            fi
+            TUNECPU=ppc601
+        ;;
+        603*|ppc603*|PowerPC603*)
+            CFLAGS="$CFLAGS -mcpu=603"
+            if test $altivec = "yes"; then
+                echo "WARNING: Tuning for PPC603 but AltiVec enabled!";
+            fi
+            TUNECPU=ppc603
+        ;;
+        604*|ppc604*|PowerPC604*)
+            CFLAGS="$CFLAGS -mcpu=604"
+            if test $altivec = "yes"; then
+                echo "WARNING: Tuning for PPC604 but AltiVec enabled!";
+            fi
+            TUNECPU=ppc604
+        ;;
+        G3|g3|75*|ppc75*|PowerPC75*)
+            CFLAGS="$CFLAGS -mcpu=750 -mtune=750 -mpowerpc-gfxopt"
+            if test $altivec = "yes"; then
+                echo "WARNING: Tuning for PPC75x but AltiVec enabled!";
+            fi
+            TUNECPU=ppc750
+        ;;
+        G4|g4|745*|ppc745*|PowerPC745*)
+            CFLAGS="$CFLAGS -mcpu=7450 -mtune=7450 -mpowerpc-gfxopt"
+            if test $altivec = "no"; then
+                echo "WARNING: Tuning for PPC745x but AltiVec disabled!";
+            fi
+            TUNECPU=ppc7450
+        ;;
+        74*|ppc74*|PowerPC74*)
+            CFLAGS="$CFLAGS -mcpu=7400 -mtune=7400 -mpowerpc-gfxopt"
+            if test $altivec = "no"; then
+                echo "WARNING: Tuning for PPC74xx but AltiVec disabled!";
+            fi
+            TUNECPU=ppc7400
+        ;;
+        G5|g5|970|ppc970|PowerPC970|power4*|Power4*)
+            CFLAGS="$CFLAGS -mcpu=970 -mtune=970 -mpowerpc-gfxopt -mpowerpc64"
+            if test $altivec = "no"; then
+                echo "WARNING: Tuning for PPC970 but AltiVec disabled!";
+            fi
+            TUNECPU=ppc970
+            POWERPCMODE="64bits"
+        ;;
+        i[3456]86|pentium|pentiumpro|pentium-mmx|pentium[234]|prescott|k6|k6-[23]|athlon|athlon-tbird|athlon-4|athlon-[mx]p|winchip-c6|winchip2|c3|nocona|athlon64|k8|opteron|athlon-fx)
+            CFLAGS="$CFLAGS -march=$tune"
+        ;;
+        sparc64)
+            CFLAGS="$CFLAGS -mcpu=v9 -mtune=v9"
+        ;;
+        *)
+        echo "WARNING: Unknown CPU \"$tune\", ignored."
+        ;;
+    esac
+fi
+
+# compiler sanity check
+check_exec <<EOF
+int main(){
+    return 0;
+}
+EOF
+if test "$?" != 0; then
+    echo "$cc is unable to create an executable file."
+    if test -z "$cross_prefix" -a "$cross_compile" = no; then
+        echo "If $cc is a cross-compiler, use the --cross-compile option."
+    fi
+    die "C compiler test failed."
+fi
+
+# check for SIMD availability
+
+# AltiVec flags: The FSF version of GCC differs from the Apple version
+if test $cpu = "powerpc"; then
+    if test $altivec = "yes"; then
+        if test -n "`$cc -v 2>&1 | grep version | grep Apple`"; then
+            CFLAGS="$CFLAGS -faltivec"
+        else
+            CFLAGS="$CFLAGS -maltivec -mabi=altivec"
+        fi
+    fi
+fi
+
+# mmi only available on mips
+if test $mmi = "default"; then
+    if test $cpu = "mips"; then
+        mmi="yes"
+    else
+        mmi="no"
+    fi
+fi
+
+# check if our compiler supports mmi
+enabled mmi && check_cc <<EOF || mmi="no"
+int main(void) {
+    __asm__ ("lq \$2, 0(\$2)");
+    return 0;
+}
+EOF
+
+# ---
+# big/little-endian test
+if test "$cross_compile" = "no"; then
+    check_ld <<EOF || die "endian test failed" && $TMPE && bigendian="yes"
+#include <inttypes.h>
+int main(int argc, char ** argv){
+        volatile uint32_t i=0x01234567;
+        return (*((uint8_t*)(&i))) == 0x67;
+}
+EOF
+else
+    # programs cannot be launched if cross compiling, so make a static guess
+    if test "$cpu" = "powerpc" -o "$cpu" = "mips" ; then
+        bigendian="yes"
+    fi
+fi
+
+# ---
+# *inttypes.h* test
+check_header inttypes.h || inttypes=no
+
+# ---
+# check availability of some header files
+
+# test for lrintf in math.h
+check_exec <<EOF && have_lrintf=yes || have_lrintf=no
+#define _ISOC9X_SOURCE  1
+#include <math.h>
+int main( void ) { return (lrintf(3.999f) > 0)?0:1; }
+EOF
+
+_restrict=
+for restrict_keyword in restrict __restrict__ __restrict; do
+    check_cc <<EOF && _restrict=$restrict_keyword && break
+void foo(char * $restrict_keyword p);
+EOF
+done
+
+enabled debug && add_cflags -g
+
+# add some useful compiler flags if supported
+check_cflags -Wdeclaration-after-statement
+check_cflags -Wall
+check_cflags -Wno-switch
+
+# add some linker flags
+check_ldflags '-Wl,--as-needed' '-Wl,-rpath-link'
+
+if enabled optimize; then
+    if test -n "`$cc -v 2>&1 | grep xlc`"; then
+        CFLAGS="$CFLAGS -O5"
+        LDFLAGS="$LDFLAGS -O5"
+    else
+        CFLAGS="-O3 $CFLAGS"
+    fi
+fi
+
+echo "source path      $source_path"
+echo "C compiler       $cc"
+echo "make             $make"
+echo "CPU              $cpu ($tune)"
+if test "$BUILDSUF" != ""; then
+    echo "build suffix     $BUILDSUF"
+fi
+echo "big-endian       $bigendian"
+echo "inttypes.h       $inttypes"
+if test $cpu = "x86" -o $cpu = "x86_64"; then
+    echo "MMX enabled      $mmx"
+fi
+if test $cpu = "armv4l"; then
+    echo "IWMMXT enabled   $iwmmxt"
+fi
+if test $cpu = "mips"; then
+    echo "MMI enabled      $mmi"
+fi
+if test $cpu = "powerpc"; then
+    echo "AltiVec enabled  $altivec"
+fi
+echo "debug symbols    $debug"
+echo "strip symbols    $dostrip"
+echo "optimize         $optimize"
+
+echo "Creating config.mak and config.h..."
+
+date >> config.log
+echo "   $0 $FLAKE_CONFIGURATION" >> config.log
+echo "# Automatically generated by configure - do not modify!" > config.mak
+echo "/* Automatically generated by configure - do not modify! */" > $TMPH
+echo "#define FLAKE_CONFIGURATION "'"'"$FLAKE_CONFIGURATION"'"' >> $TMPH
+
+echo "PREFIX=$PREFIX" >> config.mak
+echo "prefix=\$(DESTDIR)\${PREFIX}" >> config.mak
+echo "libdir=\$(DESTDIR)$libdir" >> config.mak
+echo "incdir=\$(DESTDIR)$incdir" >> config.mak
+echo "bindir=\$(DESTDIR)$bindir" >> config.mak
+echo "mandir=\$(DESTDIR)$mandir" >> config.mak
+echo "MAKE=$make" >> config.mak
+echo "CC=$cc" >> config.mak
+echo "AR=$ar" >> config.mak
+echo "RANLIB=$ranlib" >> config.mak
+if test "$dostrip" = "yes" ; then
+    echo "STRIP=$strip" >> config.mak
+    echo "INSTALLSTRIP=$installstrip" >> config.mak
+else
+    echo "STRIP=echo ignoring strip" >> config.mak
+    echo "INSTALLSTRIP=" >> config.mak
+fi
+
+test "$needmdynamicnopic" = yes && add_cflags -mdynamic-no-pic
+add_cflags -DHAVE_CONFIG_H
+
+echo "OPTFLAGS=$CFLAGS" >> config.mak
+echo "LDFLAGS=$LDFLAGS" >> config.mak
+echo "LDCONFIG=$LDCONFIG" >> config.mak
+echo "LIBOBJFLAGS=$LIBOBJFLAGS" >> config.mak
+echo "BUILDSUF=$BUILDSUF" >> config.mak
+echo "LIBPREF=$LIBPREF" >> config.mak
+echo "LIBSUF=\${BUILDSUF}$LIBSUF" >> config.mak
+echo "LIB=$LIB" >> config.mak
+echo "EXESUF=\${BUILDSUF}$EXESUF" >> config.mak
+echo "TARGET_OS=$targetos" >> config.mak
+if test "$cpu" = "x86" ; then
+  echo "TARGET_ARCH_X86=yes" >> config.mak
+  echo "#define ARCH_X86 1" >> $TMPH
+elif test "$cpu" = "x86_64" ; then
+  echo "TARGET_ARCH_X86_64=yes" >> config.mak
+  echo "#define ARCH_X86_64 1" >> $TMPH
+elif test "$cpu" = "armv4l" ; then
+  echo "TARGET_ARCH_ARMV4L=yes" >> config.mak
+  echo "#define ARCH_ARMV4L 1" >> $TMPH
+elif test "$cpu" = "alpha" ; then
+  echo "TARGET_ARCH_ALPHA=yes" >> config.mak
+  echo "#define ARCH_ALPHA 1" >> $TMPH
+elif test "$cpu" = "sparc64" ; then
+  echo "TARGET_ARCH_SPARC64=yes" >> config.mak
+  echo "#define ARCH_SPARC64 1" >> $TMPH
+  echo "TARGET_ARCH_SPARC=yes" >> config.mak
+  echo "#define ARCH_SPARC 1" >> $TMPH
+elif test "$cpu" = "sparc" ; then
+  echo "TARGET_ARCH_SPARC=yes" >> config.mak
+  echo "#define ARCH_SPARC 1" >> $TMPH
+elif test "$cpu" = "powerpc" ; then
+  echo "TARGET_ARCH_POWERPC=yes" >> config.mak
+  echo "#define ARCH_POWERPC 1" >> $TMPH
+  if test $POWERPCMODE = "32bits"; then
+    echo "#define POWERPC_MODE_32BITS 1" >> $TMPH
+  else
+    echo "#define POWERPC_MODE_64BITS 1" >> $TMPH
+  fi
+  if test "$powerpc_perf" = "yes"; then
+    echo "#define POWERPC_PERFORMANCE_REPORT 1" >> $TMPH
+  fi
+elif test "$cpu" = "mips" ; then
+  echo "TARGET_ARCH_MIPS=yes" >> config.mak
+  echo "#define ARCH_MIPS 1" >> $TMPH
+elif test "$cpu" = "sh4" ; then
+  echo "TARGET_ARCH_SH4=yes" >> config.mak
+  echo "#define ARCH_SH4 1" >> $TMPH
+elif test "$cpu" = "parisc" ; then
+  echo "TARGET_ARCH_PARISC=yes" >> config.mak
+  echo "#define ARCH_PARISC 1" >> $TMPH
+elif test "$cpu" = "s390" ; then
+  echo "TARGET_ARCH_S390=yes" >> config.mak
+  echo "#define ARCH_S390 1" >> $TMPH
+elif test "$cpu" = "m68k" ; then
+  echo "TARGET_ARCH_M68K=yes" >> config.mak
+  echo "#define ARCH_M68K 1" >> $TMPH
+elif test "$cpu" = "ia64" ; then
+  echo "TARGET_ARCH_IA64=yes" >> config.mak
+  echo "#define ARCH_IA64 1" >> $TMPH
+fi
+echo "#define TUNECPU $TUNECPU" >> $TMPH
+if test "$bigendian" = "yes" ; then
+  echo "WORDS_BIGENDIAN=yes" >> config.mak
+  echo "#define WORDS_BIGENDIAN 1" >> $TMPH
+fi
+if test "$inttypes" != "yes" ; then
+  echo "#define EMULATE_INTTYPES 1" >> $TMPH
+fi
+if test "$mmx" = "yes" ; then
+  echo "TARGET_MMX=yes" >> config.mak
+  echo "#define HAVE_MMX 1" >> $TMPH
+  echo "#define __CPU__ 586" >> $TMPH
+fi
+if test "$iwmmxt" = "yes" ; then
+  echo "TARGET_IWMMXT=yes" >> config.mak
+  echo "#define HAVE_IWMMXT 1" >> $TMPH
+fi
+if test "$mmi" = "yes" ; then
+  echo "TARGET_MMI=yes" >> config.mak
+  echo "#define HAVE_MMI 1" >> $TMPH
+fi
+if test "$altivec" = "yes" ; then
+  echo "TARGET_ALTIVEC=yes" >> config.mak
+  echo "#define HAVE_ALTIVEC 1" >> $TMPH
+fi
+if test "$localtime_r" = "yes" ; then
+  echo "#define HAVE_LOCALTIME_R 1" >> $TMPH
+fi
+if test "$have_lrintf" = "yes" ; then
+  echo "#define HAVE_LRINTF 1" >> $TMPH
+fi
+
+flake_version=`grep '#define FLAKE_VERSION ' "$source_path/libflake/flake.h" | sed 's/[^0-9\.]//g'`
+
+echo "EXTRALIBS=$extralibs" >> config.mak
+
+if test "$mingw32" = "yes" ; then
+  echo "CONFIG_MINGW=yes" >> config.mak
+  echo "#ifndef __MINGW32__" >> $TMPH
+  echo "#define __MINGW32__ 1" >> $TMPH
+  echo "#endif" >> $TMPH
+fi
+
+if test "$mingwce" = "yes" ; then
+  echo "CONFIG_MINGW=yes" >> config.mak
+  echo "#define CONFIG_WINCE 1" >> $TMPH
+  echo "CONFIG_WINCE=yes" >> config.mak
+  echo "#ifndef __MINGW32__" >> $TMPH
+  echo "#define __MINGW32__ 1" >> $TMPH
+  echo "#endif" >> $TMPH
+fi
+
+if test "$os2" = "yes" ; then
+  echo "#define CONFIG_OS2 1" >> $TMPH
+  echo "CONFIG_OS2=yes" >> config.mak
+  echo "HAVE_OS2THREADS=yes" >> config.mak
+  echo "#define HAVE_OS2THREADS 1" >> $TMPH
+  echo "#define HAVE_THREADS 1" >> $TMPH
+fi
+
+if test "$targetos" = "SunOS" ; then
+  echo "#define CONFIG_SUNOS 1" >> $TMPH
+fi
+
+if test "$targetos" = "BeOS" ; then
+  echo "HAVE_BEOSTHREADS=yes" >> config.mak
+  echo "#define HAVE_BEOSTHREADS 1" >> $TMPH
+  echo "#define HAVE_THREADS 1" >> $TMPH
+fi
+
+if test "$targetos" = "Darwin"; then
+  echo "#define CONFIG_DARWIN 1"  >> $TMPH
+  echo "CONFIG_DARWIN=yes" >> config.mak
+fi
+
+echo "#define restrict $_restrict" >> $TMPH
+
+# build tree in object directory if source path is different from current one
+if test "$source_path_used" = "yes" ; then
+    DIRS="tests"
+    FILES="\
+          Makefile \
+          tests/Makefile \
+          "
+    for dir in $DIRS ; do
+            mkdir -p $dir
+    done
+    for f in $FILES ; do
+        ln -sf "$source_path/$f" $f
+    done
+fi
+echo "SRC_PATH=$source_path" >> config.mak
+echo "BUILD_ROOT=$PWD" >> config.mak
+
+# Do not overwrite config.h if unchanged to avoid superfluous rebuilds.
+diff $TMPH config.h >/dev/null 2>&1
+if test "$?" != "0" ; then
+        mv -f $TMPH config.h
+else
+        echo "config.h is unchanged"
+fi
+
+rm -f $TMPO $TMPC $TMPE $TMPS $TMPH

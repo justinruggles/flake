@@ -1,0 +1,16 @@
+Flake TODO list
+---------------
+- Variable block size
+- Adaptive windowing function
+- Apply feature updates from FFmpeg
+- Adjust default settings for compression levels
+- Shared lib/DLL support
+- 24-bit/32-bit lossless
+
+Flake Changelog
+---------------
+version SVN : current
+
+version 0.10 : 11 September 2006 (Initial SVN import)
+- New configure system
+- Separate library & console app

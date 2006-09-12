@@ -1,0 +1,14 @@
+-------------------------------------------------------------------------------
+Flake: FLAC audio encoder
+
+The purpose of Flake is to be an alternative to the FLAC reference encoder
+with the goal of increasing encoding speed and implementing experimental
+features.
+
+The FLAC format and reference encoder were created by Josh Coalson and are
+hosted by the Xiph.org Foundation.  Many thanks!
+
+-------------------------------------------------------------------------------
+Flake, Copyright (c) 2006 Justin Ruggles <jruggle@earthlink.net>
+http://flake-enc.sourceforge.net/
+-------------------------------------------------------------------------------
