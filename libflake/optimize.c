@@ -37,11 +37,11 @@ encode_residual_verbatim(int32_t res[], int32_t smp[], int n)
     memcpy(res, smp, n*sizeof(int32_t));
 }
 
-static int
+static void
 encode_residual_fixed(int32_t res[], int32_t smp[], int n, int order)
 {
     int i;
-    int64_t pred, r;
+    int32_t pred;
 
     for(i=0; i<order; i++) {
         res[i] = smp[i];
@@ -60,21 +60,16 @@ encode_residual_fixed(int32_t res[], int32_t smp[], int n, int order)
             case 4: pred = 4*smp[i-1] - 6*smp[i-2] + 4*smp[i-3] - smp[i-4];
                     break;
         }
-        r = smp[i] - pred;
-        if(r < INT32_MIN || r > INT32_MAX) {
-            return 1;
-        }
-        res[i] = r;
+        res[i] = smp[i] - pred;
     }
-    return 0;
 }
 
-static int
+static void
 encode_residual_lpc(int32_t res[], int32_t smp[], int n, int order,
                     int32_t coefs[], int shift)
 {
     int i, j;
-    int64_t pred, r;
+    int32_t pred;
 
     for(i=0; i<order; i++) {
         res[i] = smp[i];
@@ -84,13 +79,8 @@ encode_residual_lpc(int32_t res[], int32_t smp[], int n, int order,
         for(j=0; j<order; j++) {
             pred += coefs[j] * smp[i-j-1];
         }
-        r = smp[i] - (pred >> shift);
-        if(r < INT32_MIN || r > INT32_MAX) {
-            return 1;
-        }
-        res[i] = r;
+        res[i] = smp[i] - (pred >> shift);
     }
-    return 0;
 }
 
 static inline int
@@ -153,9 +143,7 @@ encode_residual(FlacEncodeContext *ctx, int ch)
         sub->order = 2;
         sub->type = FLAC_SUBFRAME_FIXED;
         sub->type_code = sub->type | sub->order;
-        if(encode_residual_fixed(res, smp, n, sub->order)) {
-            return -1;
-        }
+        encode_residual_fixed(res, smp, n, sub->order);
         return calc_rice_params_fixed(&sub->rc, min_porder, max_porder, res, n,
                                       sub->order, sub->obits);
     }
@@ -175,22 +163,15 @@ encode_residual(FlacEncodeContext *ctx, int ch)
         double bits_est, bits_max;
 
         i = max_order-1;
-        if(encode_residual_lpc(res, smp, n, i+1, coefs[i], shift[i])) {
-            bits_max = UINT32_MAX;
-        } else {
-            bits_max = calc_rice_params_lpc(&sub->rc, min_porder, max_porder,
-                                            res, n, i+1, sub->obits,
-                                            ctx->lpc_precision);
-        }
+        encode_residual_lpc(res, smp, n, i+1, coefs[i], shift[i]);
+        bits_max = calc_rice_params_lpc(&sub->rc, min_porder, max_porder,
+                                        res, n, i+1, sub->obits,
+                                        ctx->lpc_precision);
         i = est_order-1;
-        if(encode_residual_lpc(res, smp, n, i+1, coefs[i], shift[i])) {
-            if(bits_max == UINT32_MAX) return -1;
-            bits_est = UINT32_MAX;
-        } else {
-            bits_est = calc_rice_params_lpc(&sub->rc, min_porder, max_porder,
-                                            res, n, i+1, sub->obits,
-                                            ctx->lpc_precision);
-        }
+        encode_residual_lpc(res, smp, n, i+1, coefs[i], shift[i]);
+        bits_est = calc_rice_params_lpc(&sub->rc, min_porder, max_porder,
+                                        res, n, i+1, sub->obits,
+                                        ctx->lpc_precision);
 
         opt_order = max_order;
         if(bits_est < bits_max) {
@@ -205,14 +186,10 @@ encode_residual(FlacEncodeContext *ctx, int ch)
         for(i=3; i>=0; i--) {
             order = ((max_order * (i+1)) / 4)-1;
             if(order < 0) order = 0;
-            if(encode_residual_lpc(res, smp, n, order+1, coefs[order],
-                                   shift[order])) {
-                bits[i] = UINT32_MAX;
-            } else {
-                bits[i] = calc_rice_params_lpc(&sub->rc, min_porder, max_porder,
-                                               res, n, order+1, sub->obits,
-                                               ctx->lpc_precision);
-            }
+            encode_residual_lpc(res, smp, n, order+1, coefs[order], shift[order]);
+            bits[i] = calc_rice_params_lpc(&sub->rc, min_porder, max_porder,
+                                           res, n, order+1, sub->obits,
+                                           ctx->lpc_precision);
             if(bits[i] < bits[opt_index]) {
                 opt_index = i;
                 opt_order = order;
@@ -228,13 +205,10 @@ encode_residual(FlacEncodeContext *ctx, int ch)
         for(i=7; i>=0; i--) {
             order = ((max_order * (i+1)) / 8)-1;
             if(order < 0) order = 0;
-            if(encode_residual_lpc(res, smp, n, order+1, coefs[order], shift[order])) {
-                bits[i] = UINT32_MAX;
-            } else {
-                bits[i] = calc_rice_params_lpc(&sub->rc, min_porder, max_porder,
-                                               res, n, order+1, sub->obits,
-                                               ctx->lpc_precision);
-            }
+            encode_residual_lpc(res, smp, n, order+1, coefs[order], shift[order]);
+            bits[i] = calc_rice_params_lpc(&sub->rc, min_porder, max_porder,
+                                           res, n, order+1, sub->obits,
+                                           ctx->lpc_precision);
             if(bits[i] < bits[opt_index]) {
                 opt_index = i;
                 opt_order = order;
@@ -247,13 +221,10 @@ encode_residual(FlacEncodeContext *ctx, int ch)
         opt_order = 0;
         bits[0] = UINT32_MAX;
         for(i=0; i<max_order; i++) {
-            if(encode_residual_lpc(res, smp, n, i+1, coefs[i], shift[i])) {
-                bits[i] = UINT32_MAX;
-            } else {
-                bits[i] = calc_rice_params_lpc(&sub->rc, min_porder, max_porder,
-                                               res, n, i+1, sub->obits,
-                                               ctx->lpc_precision);
-            }
+            encode_residual_lpc(res, smp, n, i+1, coefs[i], shift[i]);
+            bits[i] = calc_rice_params_lpc(&sub->rc, min_porder, max_porder,
+                                           res, n, i+1, sub->obits,
+                                           ctx->lpc_precision);
             if(bits[i] < bits[opt_order]) {
                 opt_order = i;
             }
@@ -268,9 +239,7 @@ encode_residual(FlacEncodeContext *ctx, int ch)
     for(i=0; i<sub->order; i++) {
         sub->coefs[i] = coefs[sub->order-1][i];
     }
-    if(encode_residual_lpc(res, smp, n, sub->order, sub->coefs, sub->shift)) {
-        return -1;
-    }
+    encode_residual_lpc(res, smp, n, sub->order, sub->coefs, sub->shift);
     return calc_rice_params_lpc(&sub->rc, min_porder, max_porder, res, n,
                                 sub->order, sub->obits, ctx->lpc_precision);
 }
