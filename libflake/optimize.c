@@ -41,26 +41,28 @@ static void
 encode_residual_fixed(int32_t res[], int32_t smp[], int n, int order)
 {
     int i;
-    int32_t pred;
 
     for(i=0; i<order; i++) {
         res[i] = smp[i];
     }
-    for(i=order; i<n; i++) {
-        pred = 0;
-        switch(order) {
-            case 0: pred = 0;
-                    break;
-            case 1: pred = smp[i-1];
-                    break;
-            case 2: pred = 2*smp[i-1] - smp[i-2];
-                    break;
-            case 3: pred = 3*smp[i-1] - 3*smp[i-2] + smp[i-3];
-                    break;
-            case 4: pred = 4*smp[i-1] - 6*smp[i-2] + 4*smp[i-3] - smp[i-4];
-                    break;
+    if(order == 0) {
+        memcpy(res, smp, n*sizeof(int32_t));
+    } else if(order == 1) {
+        for(i=1; i<n; i++) {
+            res[i] = smp[i] - (smp[i-1]);
         }
-        res[i] = smp[i] - pred;
+    } else if(order == 2) {
+        for(i=2; i<n; i++) {
+            res[i] = smp[i] - 2*smp[i-1] + smp[i-2];
+        }
+    } else if(order == 3) {
+        for(i=3; i<n; i++) {
+            res[i] = smp[i] - 3*smp[i-1] + 3*smp[i-2] - smp[i-3];
+        }
+    } else if(order == 4) {
+        for(i=4; i<n; i++) {
+            res[i] = smp[i] - 4*smp[i-1] + 6*smp[i-2] - 4*smp[i-3] + smp[i-4];
+        }
     }
 }
 
