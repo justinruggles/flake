@@ -70,7 +70,7 @@ static void
 encode_residual_lpc(int32_t res[], int32_t smp[], int n, int order,
                     int32_t coefs[], int shift)
 {
-    int i, j;
+    int i;
     int32_t pred;
 
     for(i=0; i<order; i++) {
@@ -78,8 +78,43 @@ encode_residual_lpc(int32_t res[], int32_t smp[], int n, int order,
     }
     for(i=order; i<n; i++) {
         pred = 0;
-        for(j=0; j<order; j++) {
-            pred += coefs[j] * smp[i-j-1];
+        // note that all cases fall through.
+        // the result is in an unrolled loop for each order
+        switch(order) {
+            case 32: pred += coefs[31] * smp[i-32];
+            case 31: pred += coefs[30] * smp[i-31];
+            case 30: pred += coefs[29] * smp[i-30];
+            case 29: pred += coefs[28] * smp[i-29];
+            case 28: pred += coefs[27] * smp[i-28];
+            case 27: pred += coefs[26] * smp[i-27];
+            case 26: pred += coefs[25] * smp[i-26];
+            case 25: pred += coefs[24] * smp[i-25];
+            case 24: pred += coefs[23] * smp[i-24];
+            case 23: pred += coefs[22] * smp[i-23];
+            case 22: pred += coefs[21] * smp[i-22];
+            case 21: pred += coefs[20] * smp[i-21];
+            case 20: pred += coefs[19] * smp[i-20];
+            case 19: pred += coefs[18] * smp[i-19];
+            case 18: pred += coefs[17] * smp[i-18];
+            case 17: pred += coefs[16] * smp[i-17];
+            case 16: pred += coefs[15] * smp[i-16];
+            case 15: pred += coefs[14] * smp[i-15];
+            case 14: pred += coefs[13] * smp[i-14];
+            case 13: pred += coefs[12] * smp[i-13];
+            case 12: pred += coefs[11] * smp[i-12];
+            case 11: pred += coefs[10] * smp[i-11];
+            case 10: pred += coefs[ 9] * smp[i-10];
+            case  9: pred += coefs[ 8] * smp[i- 9];
+            case  8: pred += coefs[ 7] * smp[i- 8];
+            case  7: pred += coefs[ 6] * smp[i- 7];
+            case  6: pred += coefs[ 5] * smp[i- 6];
+            case  5: pred += coefs[ 4] * smp[i- 5];
+            case  4: pred += coefs[ 3] * smp[i- 4];
+            case  3: pred += coefs[ 2] * smp[i- 3];
+            case  2: pred += coefs[ 1] * smp[i- 2];
+            case  1: pred += coefs[ 0] * smp[i- 1];
+            case  0:
+            default: break;
         }
         res[i] = smp[i] - (pred >> shift);
     }
