@@ -133,7 +133,10 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
         if(argv[i][0] == '-' && argv[i][1] != '\0') {
             if(argv[i][1] >= '0' && argv[i][1] <= '9') {
                 if(argv[i][2] != '\0' && argv[i][3] != '\0') {
-                    if(parse_files(opts, argv[i])) return 1;
+                    if(parse_files(opts, argv[i])) {
+                        fprintf(stderr, "error parsing filenames.\n");
+                        return 1;
+                    }
                 } else {
                     opts->compr = atoi(&argv[i][1]);
                     if(opts->compr < 0 || opts->compr > 12) {
@@ -145,11 +148,16 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
                 // if argument starts with '-' and is more than 1 char, treat
                 // it as a filename
                 if(argv[i][2] != '\0') {
-                    if(parse_files(opts, argv[i])) return 1;
-                    else continue;
+                    if(parse_files(opts, argv[i])) {
+                        fprintf(stderr, "error parsing filenames.\n");
+                        return 1;
+                    } else {
+                        continue;
+                    }
                 }
                 // check to see if param is valid
                 if(strchr(param_str, argv[i][1]) == NULL) {
+                    fprintf(stderr, "invalid option: -%c\n", argv[i][1]);
                     return 1;
                 }
                 // print commandline help
@@ -157,7 +165,10 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
                     return 2;
                 }
                 i++;
-                if(i >= argc) return 1;
+                if(i >= argc) {
+                    fprintf(stderr, "incomplete option: -%c\n", argv[i-1][1]);
+                    return 1;
+                }
 
                 switch(argv[i-1][1]) {
                     case 'b':
@@ -198,10 +209,14 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
             }
         } else {
             // if the argument is a single '-' treat it as a filename
-            if(parse_files(opts, argv[i])) return 1;
+            if(parse_files(opts, argv[i])) {
+                fprintf(stderr, "error parsing filenames.\n");
+                return 1;
+            }
         }
     }
     if(!opts->found_input || !opts->found_output) {
+        fprintf(stderr, "error parsing filenames.\n");
         return 1;
     }
     return 0;
