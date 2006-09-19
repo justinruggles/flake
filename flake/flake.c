@@ -84,6 +84,8 @@ print_help(FILE *out)
 typedef struct CommandOptions {
     char *infile;
     char *outfile;
+    int found_input;
+    int found_output;
     int compr;
     int omethod;
     int omax;
@@ -93,11 +95,24 @@ typedef struct CommandOptions {
 } CommandOptions;
 
 static int
+parse_files(CommandOptions *opts, char *arg)
+{
+    if(!opts->found_input) {
+        opts->infile = arg;
+        opts->found_input = 1;
+    } else {
+        if(opts->found_output) return 1;
+        opts->outfile = arg;
+        opts->found_output = 1;
+    }
+    return 0;
+}
+
+static int
 parse_commandline(int argc, char **argv, CommandOptions *opts)
 {
     int i;
-    int found_input = 0;
-    int found_output = 0;
+    static const char *param_str = "hblops";
 
     if(argc < 2) {
         return 1;
@@ -105,6 +120,8 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
 
     opts->infile = argv[1];
     opts->outfile = argv[2];
+    opts->found_input = 0;
+    opts->found_output = 0;
     opts->compr = 5;
     opts->omethod = -1;
     opts->omax = -1;
@@ -115,71 +132,76 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
     for(i=1; i<argc; i++) {
         if(argv[i][0] == '-' && argv[i][1] != '\0') {
             if(argv[i][1] >= '0' && argv[i][1] <= '9') {
-                opts->compr = atoi(&argv[i][1]);
-                if(opts->compr < 0 || opts->compr > 12) {
-                    fprintf(stderr, "invalid compression: %d. must be 0 to 12.\n", opts->compr);
-                    return 1;
+                if(argv[i][2] != '\0' && argv[i][3] != '\0') {
+                    if(parse_files(opts, argv[i])) return 1;
+                } else {
+                    opts->compr = atoi(&argv[i][1]);
+                    if(opts->compr < 0 || opts->compr > 12) {
+                        fprintf(stderr, "invalid compression: %d. must be 0 to 12.\n", opts->compr);
+                        return 1;
+                    }
                 }
             } else {
+                // if argument starts with '-' and is more than 1 char, treat
+                // it as a filename
                 if(argv[i][2] != '\0') {
+                    if(parse_files(opts, argv[i])) return 1;
+                    else continue;
+                }
+                // check to see if param is valid
+                if(strchr(param_str, argv[i][1]) == NULL) {
                     return 1;
                 }
-                if(argv[i][1] == 'b') {
-                    i++;
-                    if(i >= argc) return 1;
-                    opts->bsize = atoi(argv[i]);
-                    if(opts->bsize < 16 || opts->bsize > 65535) {
-                        fprintf(stderr, "invalid blocksize: %d. must be 16 to 65535.\n", opts->bsize);
-                        return 1;
-                    }
-                } else if(argv[i][1] == 'h') {
+                // print commandline help
+                if(argv[i][1] == 'h') {
                     return 2;
-                } else if(argv[i][1] == 'l') {
-                    i++;
-                    if(i >= argc) return 1;
-                    opts->omax = atoi(argv[i]);
-                    if(opts->omax < 0 || opts->omax > 32) {
-                        fprintf(stderr, "invalid maximum order: %d. must be 0 to 32.\n", opts->omax);
-                        return 1;
-                    }
-                } else if(argv[i][1] == 'o') {
-                    i++;
-                    if(i >= argc) return 1;
-                    opts->omethod = atoi(argv[i]);
-                    if(opts->omethod < 0 || opts->omethod > 4) {
-                        fprintf(stderr, "invalid order selection method: %d. must be 0 to 4.\n", opts->omethod);
-                        return 1;
-                    }
-                } else if(argv[i][1] == 'p') {
-                    i++;
-                    if(i >= argc) return 1;
-                    opts->padding = atoi(argv[i]);
-                    if(opts->padding < 0 || opts->padding >= (1<<24)) {
-                        fprintf(stderr, "invalid order padding amount: %d. must be 0 to 16777215.\n", opts->omethod);
-                        return 1;
-                    }
-                } else if(argv[i][1] == 's') {
-                    i++;
-                    if(i >= argc) return 1;
-                    opts->stmethod = atoi(argv[i]);
-                    if(opts->stmethod < 0 || opts->stmethod > 1) {
-                        fprintf(stderr, "invalid stereo decorrelation method: %d. must be 0 or 1.\n", opts->stmethod);
-                        return 1;
-                    }
+                }
+                i++;
+                if(i >= argc) return 1;
+
+                switch(argv[i-1][1]) {
+                    case 'b':
+                        opts->bsize = atoi(argv[i]);
+                        if(opts->bsize < 16 || opts->bsize > 65535) {
+                            fprintf(stderr, "invalid blocksize: %d. must be 16 to 65535.\n", opts->bsize);
+                            return 1;
+                        }
+                        break;
+                    case 'l':
+                        opts->omax = atoi(argv[i]);
+                        if(opts->omax < 0 || opts->omax > 32) {
+                            fprintf(stderr, "invalid maximum order: %d. must be 0 to 32.\n", opts->omax);
+                            return 1;
+                        }
+                        break;
+                    case 'o':
+                        opts->omethod = atoi(argv[i]);
+                        if(opts->omethod < 0 || opts->omethod > 4) {
+                            fprintf(stderr, "invalid order selection method: %d. must be 0 to 4.\n", opts->omethod);
+                            return 1;
+                        }
+                        break;
+                    case 'p':
+                        opts->padding = atoi(argv[i]);
+                        if(opts->padding < 0 || opts->padding >= (1<<24)) {
+                            fprintf(stderr, "invalid order padding amount: %d. must be 0 to 16777215.\n", opts->omethod);
+                            return 1;
+                        }
+                    case 's':
+                        opts->stmethod = atoi(argv[i]);
+                        if(opts->stmethod < 0 || opts->stmethod > 1) {
+                            fprintf(stderr, "invalid stereo decorrelation method: %d. must be 0 or 1.\n", opts->stmethod);
+                            return 1;
+                        }
+                        break;
                 }
             }
         } else {
-            if(!found_input) {
-                opts->infile = argv[i];
-                found_input = 1;
-            } else {
-                if(found_output) return 1;
-                opts->outfile = argv[i];
-                found_output = 1;
-            }
+            // if the argument is a single '-' treat it as a filename
+            if(parse_files(opts, argv[i])) return 1;
         }
     }
-    if(!found_input || !found_output) {
+    if(!opts->found_input || !opts->found_output) {
         return 1;
     }
     return 0;
