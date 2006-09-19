@@ -218,6 +218,7 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
                             fprintf(stderr, "invalid order padding amount: %d. must be 0 to 16777215.\n", opts->omethod);
                             return 1;
                         }
+                        break;
                     case 's':
                         opts->stmethod = parse_number(argv[i], 1);
                         if(opts->stmethod < 0 || opts->stmethod > 1) {
