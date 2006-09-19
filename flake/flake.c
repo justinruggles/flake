@@ -201,7 +201,7 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
                         break;
                     case 'o':
                         opts->omethod = parse_number(argv[i], 1);
-                        if(opts->omethod < 0 || opts->omethod > 4) {
+                        if(opts->omethod < 0 || opts->omethod > 5) {
                             fprintf(stderr, "invalid order selection method: %d. must be 0 to 4.\n", opts->omethod);
                             return 1;
                         }
