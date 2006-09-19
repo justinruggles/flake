@@ -29,7 +29,6 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <string.h>
-#include <math.h>
 
 #if (defined __MINGW32__) || (defined _WIN32)
 #include <fcntl.h>
@@ -112,14 +111,15 @@ parse_files(CommandOptions *opts, char *arg)
 static int
 parse_number(char *arg, int max) {
     int i;
-    int m = 1;
+    int m = 0;
     int n = 0;
     int digits;
     for(i=0; i<max; i++) {
         if(arg[i] == '\0') break;
+        if(m == 0) m = 1;
+        else m *= 10;
     }
     digits = i;
-    m = pow(10, digits-1);
     for(i=0; i<digits; i++) {
         if(arg[i] < '0' || arg[i] > '9') return -1;
         n += (arg[i]-48) * m;
