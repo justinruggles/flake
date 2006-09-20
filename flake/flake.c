@@ -121,7 +121,10 @@ parse_number(char *arg, int max) {
     }
     digits = i;
     for(i=0; i<digits; i++) {
-        if(arg[i] < '0' || arg[i] > '9') return -1;
+        if(arg[i] < '0' || arg[i] > '9') {
+            fprintf(stderr, "invalid digit: %c (ASCII:0x%02X)\n", arg[i], arg[i]);
+            return -1;
+        }
         n += (arg[i]-48) * m;
         m /= 10;
     }
