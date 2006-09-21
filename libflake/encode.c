@@ -247,89 +247,77 @@ flake_encode_init(FlakeContext *s)
 
     ctx->sample_count = s->samples;
 
-    /* if not on commandline, select order method based on compression level */
-    if(s->order_method < 0) {
-        switch(s->compression) {
-            case  0:
-            case  1: s->order_method = ORDER_METHOD_MAX; break;
-            case  2:
-            case  3:
-            case  4:
-            case  5: s->order_method = ORDER_METHOD_EST; break;
-            case  6: s->order_method = ORDER_METHOD_2LEVEL; break;
-            case  7:
-            case  8: s->order_method = ORDER_METHOD_4LEVEL; break;
-            case  9: s->order_method = ORDER_METHOD_8LEVEL; break;
-            case 10: s->order_method = ORDER_METHOD_SEARCH; break;
-            case 11: s->order_method = ORDER_METHOD_8LEVEL; break;
-            case 12: s->order_method = ORDER_METHOD_SEARCH; break;
-        }
-    }
-    if(s->order_method < 0 || s->order_method > ORDER_METHOD_SEARCH) {
+    if(s->compression < 0 || s->compression > 12) {
         return -1;
     }
-    ctx->order_method = s->order_method;
 
-    /* if not on commandline, select stereo method based on compression level */
-    if(ctx->channels == 2) {
-        if(s->stereo_method < 0) {
-            s->stereo_method = STEREO_METHOD_ESTIMATE;
+    // select order method based on compression level
+    ctx->order_method = ((int[]){ FLAKE_ORDER_METHOD_MAX,
+                                  FLAKE_ORDER_METHOD_MAX,
+                                  FLAKE_ORDER_METHOD_EST,
+                                  FLAKE_ORDER_METHOD_EST,
+                                  FLAKE_ORDER_METHOD_EST,
+                                  FLAKE_ORDER_METHOD_EST,
+                                  FLAKE_ORDER_METHOD_2LEVEL,
+                                  FLAKE_ORDER_METHOD_4LEVEL,
+                                  FLAKE_ORDER_METHOD_4LEVEL,
+                                  FLAKE_ORDER_METHOD_8LEVEL,
+                                  FLAKE_ORDER_METHOD_SEARCH,
+                                  FLAKE_ORDER_METHOD_8LEVEL,
+                                  FLAKE_ORDER_METHOD_SEARCH})[s->compression];
+    // user override for order method
+    if(s->order_method >= 0) {
+        if(s->order_method > FLAKE_ORDER_METHOD_SEARCH) {
+            return -1;
         }
-        if(s->stereo_method < 0 || s->stereo_method > 1) {
+        ctx->order_method = s->order_method;
+    } else {
+        s->order_method = ctx->order_method;
+    }
+
+    // default stereo method
+    ctx->stereo_method = FLAKE_STEREO_METHOD_ESTIMATE;
+    // user override for stereo method
+    if(s->stereo_method >= 0) {
+        if(s->stereo_method > FLAKE_STEREO_METHOD_ESTIMATE) {
             return -1;
         }
         ctx->stereo_method = s->stereo_method;
+    } else {
+        s->stereo_method = ctx->stereo_method;
     }
 
-    /* select block size based on compression level */
-    switch(s->compression) {
-        case  0:
-        case  1:
-        case  2: ctx->block_time_ms =  24; break;
-        case  3: ctx->block_time_ms =  47; break;
-        case  4: ctx->block_time_ms =  93; break;
-        case  5:
-        case  6:
-        case  7:
-        case  8:
-        case  9:
-        case 10:
-        case 11:
-        case 12: ctx->block_time_ms = 105; break;
-    }
-    if(s->block_size == 0) {
-        s->block_size = select_blocksize(ctx->samplerate, ctx->block_time_ms);
-    }
-    ctx->blocksize = s->block_size;
-    if(ctx->blocksize < FLAC_MIN_BLOCKSIZE ||
-       ctx->blocksize > FLAC_MAX_BLOCKSIZE) {
-        return -1;
+    // select block time based on compression level
+    ctx->block_time_ms = ((int[]){  24,  24,  24,  47,
+                                    93, 105, 105, 105,
+                                   105, 105, 105, 105,
+                                   105 })[s->compression];
+    ctx->blocksize = select_blocksize(ctx->samplerate, ctx->block_time_ms);
+    // user override for block size
+    if(s->block_size > 0) {
+        if(s->block_size < FLAC_MIN_BLOCKSIZE || s->block_size > FLAC_MAX_BLOCKSIZE) {
+            return -1;
+        }
+        ctx->blocksize = s->block_size;
+    } else {
+        s->block_size = ctx->blocksize;
     }
 
     /* select maximum predictor order based on compression level */
-    if(s->max_order < 0) {
-        switch(s->compression) {
-            case  0: s->max_order =  0; break;
-            case  1: s->max_order =  4; break;
-            case  2: s->max_order =  4; break;
-            case  3: s->max_order =  5; break;
-            case  4: s->max_order =  6; break;
-            case  5:
-            case  6:
-            case  7: s->max_order =  8; break;
-            case  8:
-            case  9:
-            case 10: s->max_order = 12; break;
-            case 11:
-            case 12: s->max_order = 32; break;
+    ctx->max_predictor_order = ((int[]){  0,  4,  4,  5,  6,  8,
+                                          8,  8, 12, 12, 12, 32,
+                                         32 })[s->compression];
+    // user override for maximum predictor order
+    if(s->max_order >= 0) {
+        if(s->max_order > 32) {
+            return -1;
         }
+        ctx->max_predictor_order = s->max_order;
+    } else {
+        s->max_order = ctx->max_predictor_order;
     }
-    if(s->max_order < 0 || s->max_order > 32) {
-        return -1;
-    }
-    ctx->max_predictor_order = s->max_order;
 
-    /* select LPC precision based on compression level */
+    // select LPC precision based on block size
     if(     ctx->blocksize <=   192) ctx->lpc_precision =  7;
     else if(ctx->blocksize <=   384) ctx->lpc_precision =  8;
     else if(ctx->blocksize <=   576) ctx->lpc_precision =  9;
@@ -348,14 +336,17 @@ flake_encode_init(FlakeContext *s)
     }
     ctx->max_framesize = s->max_frame_size;
 
-    /* select amount of padding to use in header */
-    if(s->padding_size < 0) {
-        s->padding_size = 4096;
+    // default amount of padding to use in header
+    ctx->padding_size = 4096;
+    // user override for padding
+    if(s->padding_size >= 0) {
+        if(s->padding_size >= (1<<24)) {
+            return -1;
+        }
+        ctx->padding_size = s->padding_size;
+    } else {
+        s->padding_size = ctx->padding_size;
     }
-    if(s->padding_size >= (1<<24)) {
-        return -1;
-    }
-    ctx->padding_size = s->padding_size;
 
     /* output header bytes */
     s->header = malloc(ctx->padding_size + 1024);
@@ -513,7 +504,7 @@ channel_decorrelation(FlacEncodeContext *ctx)
         frame->ch_mode = FLAC_CHMODE_NOT_STEREO;
         return;
     }
-    if(ctx->blocksize <= 32 || ctx->stereo_method == STEREO_METHOD_INDEPENDENT) {
+    if(ctx->blocksize <= 32 || ctx->stereo_method == FLAKE_STEREO_METHOD_INDEPENDENT) {
         frame->ch_mode = FLAC_CHMODE_LEFT_RIGHT;
         return;
     }

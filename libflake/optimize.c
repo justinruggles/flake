@@ -26,6 +26,7 @@
 #include <assert.h>
 #include <math.h>
 
+#include "flake.h"
 #include "optimize.h"
 #include "encode.h"
 #include "lpc.h"
@@ -203,13 +204,13 @@ encode_residual(FlacEncodeContext *ctx, int ch)
     est_order = lpc_calc_coefs(smp, n, max_order, ctx->lpc_precision,
                                ctx->order_method, coefs, shift);
 
-    if(omethod == ORDER_METHOD_MAX) {
+    if(omethod == FLAKE_ORDER_METHOD_MAX) {
         // always use maximum order
         opt_order = max_order;
-    } else if(omethod == ORDER_METHOD_EST) {
+    } else if(omethod == FLAKE_ORDER_METHOD_EST) {
         // estimated order
         opt_order = est_order;
-    } else if(omethod == ORDER_METHOD_2LEVEL) {
+    } else if(omethod == FLAKE_ORDER_METHOD_2LEVEL) {
         // select the best of the estimated order or maximum order
         double bits_est, bits_max;
 
@@ -228,7 +229,7 @@ encode_residual(FlacEncodeContext *ctx, int ch)
         if(bits_est < bits_max) {
             opt_order = est_order;
         }
-    } else if(omethod == ORDER_METHOD_4LEVEL) {
+    } else if(omethod == FLAKE_ORDER_METHOD_4LEVEL) {
         uint32_t bits[4];
         int order;
         int opt_index = 3;
@@ -247,7 +248,7 @@ encode_residual(FlacEncodeContext *ctx, int ch)
             }
         }
         opt_order++;
-    } else if(omethod == ORDER_METHOD_8LEVEL) {
+    } else if(omethod == FLAKE_ORDER_METHOD_8LEVEL) {
         uint32_t bits[8];
         int order;
         int opt_index = 7;

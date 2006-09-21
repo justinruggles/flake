@@ -23,6 +23,16 @@
 #define FLAKE_VERSION SVN
 #define FLAKE_IDENT   "Flake SVN"
 
+#define FLAKE_ORDER_METHOD_MAX    0
+#define FLAKE_ORDER_METHOD_EST    1
+#define FLAKE_ORDER_METHOD_2LEVEL 2
+#define FLAKE_ORDER_METHOD_4LEVEL 3
+#define FLAKE_ORDER_METHOD_8LEVEL 4
+#define FLAKE_ORDER_METHOD_SEARCH 5
+
+#define FLAKE_STEREO_METHOD_INDEPENDENT  0
+#define FLAKE_STEREO_METHOD_ESTIMATE     1
+
 typedef struct FlakeContext {
 
     // number of audio channels

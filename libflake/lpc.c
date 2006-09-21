@@ -26,6 +26,7 @@
 #include <assert.h>
 #include <math.h>
 
+#include "flake.h"
 #include "lpc.h"
 
 /**
@@ -218,37 +219,37 @@ lpc_calc_coefs(const int32_t *samples, int blocksize, int max_order,
     compute_lpc_coefs(autoc, max_order, lpc, ref);
 
     opt_order = max_order;
-    if(omethod == ORDER_METHOD_EST || omethod == ORDER_METHOD_SEARCH) {
+    if(omethod == FLAKE_ORDER_METHOD_EST || omethod == FLAKE_ORDER_METHOD_SEARCH) {
         opt_order = estimate_best_order(ref, max_order);
     }
     switch(omethod) {
-        case ORDER_METHOD_MAX:
-        case ORDER_METHOD_EST:
+        case FLAKE_ORDER_METHOD_MAX:
+        case FLAKE_ORDER_METHOD_EST:
             i = opt_order-1;
             quantize_lpc_coefs(lpc[i], i+1, precision, coefs[i], &shift[i]);
             break;
-        case ORDER_METHOD_2LEVEL:
+        case FLAKE_ORDER_METHOD_2LEVEL:
             i = (max_order/2)-1;
             if(i < 0) i = 0;
             quantize_lpc_coefs(lpc[i], i+1, precision, coefs[i], &shift[i]);
             i = max_order-1;
             quantize_lpc_coefs(lpc[i], i+1, precision, coefs[i], &shift[i]);
             break;
-        case ORDER_METHOD_4LEVEL:
+        case FLAKE_ORDER_METHOD_4LEVEL:
             for(j=1; j<=4; j++) {
                 i = (max_order*j/4)-1;
                 if(i < 0) i = 0;
                 quantize_lpc_coefs(lpc[i], i+1, precision, coefs[i], &shift[i]);
             }
             break;
-        case ORDER_METHOD_8LEVEL:
+        case FLAKE_ORDER_METHOD_8LEVEL:
             for(j=1; j<=8; j++) {
                 i = (max_order*j/8)-1;
                 if(i < 0) i = 0;
                 quantize_lpc_coefs(lpc[i], i+1, precision, coefs[i], &shift[i]);
             }
             break;
-        case ORDER_METHOD_SEARCH:
+        case FLAKE_ORDER_METHOD_SEARCH:
             for(i=0; i<max_order; i++) {
                 quantize_lpc_coefs(lpc[i], i+1, precision, coefs[i], &shift[i]);
             }

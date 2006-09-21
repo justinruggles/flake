@@ -43,9 +43,6 @@
 #define FLAC_CHMODE_RIGHT_SIDE      9
 #define FLAC_CHMODE_MID_SIDE       10
 
-#define STEREO_METHOD_INDEPENDENT  0
-#define STEREO_METHOD_ESTIMATE     1
-
 #define FLAC_STREAM_MARKER  0x664C6143
 
 typedef struct FlacSubframe {
