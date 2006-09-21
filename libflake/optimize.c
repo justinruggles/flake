@@ -171,14 +171,14 @@ encode_residual(FlacEncodeContext *ctx, int ch)
         return sub->obits * n;
     }
 
-    omethod = ctx->order_method;
-    min_order = ctx->min_predictor_order;
-    max_order = ctx->max_predictor_order;
-    min_porder = ctx->min_partition_order;
-    max_porder = ctx->max_partition_order;
+    omethod = ctx->params.order_method;
+    min_order = ctx->params.min_prediction_order;
+    max_order = ctx->params.max_prediction_order;
+    min_porder = ctx->params.min_partition_order;
+    max_porder = ctx->params.max_partition_order;
 
     // FIXED
-    if(ctx->prediction_type == FLAKE_PREDICTION_FIXED || n <= max_order) {
+    if(ctx->params.prediction_type == FLAKE_PREDICTION_FIXED || n <= max_order) {
         uint32_t bits[5];
         if(max_order > 4) max_order = 4;
         opt_order = 0;
@@ -204,7 +204,7 @@ encode_residual(FlacEncodeContext *ctx, int ch)
 
     // LPC
     est_order = lpc_calc_coefs(smp, n, max_order, ctx->lpc_precision,
-                               ctx->order_method, coefs, shift);
+                               omethod, coefs, shift);
 
     if(omethod == FLAKE_ORDER_METHOD_MAX) {
         // always use maximum order

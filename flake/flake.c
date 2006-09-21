@@ -162,7 +162,7 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
     opts->omax = -1;
     opts->pomin = -1;
     opts->pomax = -1;
-    opts->bsize = 0;
+    opts->bsize = -1;
     opts->stmethod = -1;
     opts->padding = -1;
 
@@ -176,10 +176,6 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
                     }
                 } else {
                     opts->compr = parse_number(&argv[i][1], 2);
-                    if(opts->compr < 0 || opts->compr > 12) {
-                        fprintf(stderr, "invalid compression: %d. must be 0 to 12.\n", opts->compr);
-                        return 1;
-                    }
                 }
             } else {
                 // if argument starts with '-' and is more than 1 char, treat
@@ -210,10 +206,6 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
                 switch(argv[i-1][1]) {
                     case 'b':
                         opts->bsize = parse_number(argv[i], 5);
-                        if(opts->bsize < 16 || opts->bsize > 65535) {
-                            fprintf(stderr, "invalid blocksize: %d. must be 16 to 65535.\n", opts->bsize);
-                            return 1;
-                        }
                         break;
                     case 'l':
                         if(strchr(argv[i], ',') == NULL) {
@@ -225,18 +217,6 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
                             opts->omin = parse_number(argv[i], 2);
                             opts->omax = parse_number(&po[1], 2);
                         }
-                        if(opts->omin < 0 || opts->omin > 32) {
-                            fprintf(stderr, "invalid minimum order: %d. must be 0 to 32.\n", opts->omin);
-                            return 1;
-                        }
-                        if(opts->omax < 0 || opts->omax > 32) {
-                            fprintf(stderr, "invalid maximum order: %d. must be 0 to 32.\n", opts->omax);
-                            return 1;
-                        }
-                        if(opts->omin > opts->omax) {
-                            fprintf(stderr, "invalid minimum order: %d. must be <= maximum order.\n", opts->omin);
-                            return 1;
-                        }
                         // constrain bounds based on prediction type
                         if(opts->ptype == FLAKE_PREDICTION_FIXED) {
                             if(opts->omax > 4) opts->omax = 4;
@@ -246,17 +226,9 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
                         break;
                     case 'o':
                         opts->omethod = parse_number(argv[i], 1);
-                        if(opts->omethod < 0 || opts->omethod > 6) {
-                            fprintf(stderr, "invalid order selection method: %d. must be 0 to 4.\n", opts->omethod);
-                            return 1;
-                        }
                         break;
                     case 'p':
                         opts->padding = parse_number(argv[i], 8);
-                        if(opts->padding < 0 || opts->padding >= (1<<24)) {
-                            fprintf(stderr, "invalid order padding amount: %d. must be 0 to 16777215.\n", opts->omethod);
-                            return 1;
-                        }
                         break;
                     case 'r':
                         if(strchr(argv[i], ',') == NULL) {
@@ -268,32 +240,12 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
                             opts->pomin = parse_number(argv[i], 1);
                             opts->pomax = parse_number(&po[1], 1);
                         }
-                        if(opts->pomin < 0 || opts->pomin > 8) {
-                            fprintf(stderr, "invalid min partition order: %d. must be 0 to 8.\n", opts->pomin);
-                            return 1;
-                        }
-                        if(opts->pomax < 0 || opts->pomax > 8) {
-                            fprintf(stderr, "invalid max partition order: %d. must be 0 to 8.\n", opts->pomax);
-                            return 1;
-                        }
-                        if(opts->pomin > opts->pomax) {
-                            fprintf(stderr, "invalid min partition order: %d. must be <= max partition order.\n", opts->pomin);
-                            return 1;
-                        }
                         break;
                     case 's':
                         opts->stmethod = parse_number(argv[i], 1);
-                        if(opts->stmethod < 0 || opts->stmethod > 1) {
-                            fprintf(stderr, "invalid stereo decorrelation method: %d. must be 0 or 1.\n", opts->stmethod);
-                            return 1;
-                        }
                         break;
                     case 't':
                         opts->ptype = parse_number(argv[i], 1);
-                        if(opts->ptype < 0 || opts->ptype > 1) {
-                            fprintf(stderr, "invalid prediction type: %d. must be 0 or 1.\n", opts->ptype);
-                            return 1;
-                        }
                         break;
                 }
             }
@@ -318,8 +270,8 @@ main(int argc, char **argv)
     CommandOptions opts;
     FILE *ifp;
     FILE *ofp;
-    WavFile *wf;
-    FlakeContext *s;
+    WavFile wf;
+    FlakeContext s;
     int header_size;
     uint8_t *frame;
     int16_t *wav;
@@ -371,61 +323,65 @@ main(int argc, char **argv)
         }
     }
 
-    wf = malloc(sizeof(WavFile));
-    if(wavfile_init(wf, ifp)) {
+    if(wavfile_init(&wf, ifp)) {
         fprintf(stderr, "invalid wav file: %s\n", opts.infile);
-        free(wf);
         return 1;
     }
-    wf->read_format = WAV_SAMPLE_FMT_S16;
-    wavfile_print(stderr, wf);
-    if(wf->samples > 0) {
-        fprintf(stderr, "samples: %d\n", wf->samples);
+    wf.read_format = WAV_SAMPLE_FMT_S16;
+    wavfile_print(stderr, &wf);
+    if(wf.samples > 0) {
+        fprintf(stderr, "samples: %d\n", wf.samples);
     } else {
         fprintf(stderr, "samples: unknown\n");
     }
 
     // initialize encoder
-    s = malloc(sizeof(FlakeContext));
-    s->channels = wf->channels;
-    s->sample_rate = wf->sample_rate;
-    s->bits_per_sample = 16;
-    if(wf->bit_width != 16) {
+    s.channels = wf.channels;
+    s.sample_rate = wf.sample_rate;
+    s.bits_per_sample = 16;
+    if(wf.bit_width != 16) {
         fprintf(stderr, "warning! converting to 16-bit (not lossless)\n");
     }
-    s->samples = wf->samples;
-    s->block_size = opts.bsize;
-    s->compression = opts.compr;
-    s->order_method = opts.omethod;
-    s->stereo_method = opts.stmethod;
-    s->prediction_type = opts.ptype;
-    s->min_order = opts.omin;
-    s->max_order = opts.omax;
-    s->min_partition_order = opts.pomin;
-    s->max_partition_order = opts.pomax;
-    s->padding_size = opts.padding;
-    header_size = flake_encode_init(s);
+    s.samples = wf.samples;
+
+    s.params.compression = opts.compr;
+    if(flake_set_defaults(&s.params)) {
+        exit(1);
+    }
+
+    // commandline parameter overrides
+    if(opts.bsize    >= 0) s.params.block_size           = opts.bsize;
+    if(opts.omethod  >= 0) s.params.order_method         = opts.omethod;
+    if(opts.stmethod >= 0) s.params.stereo_method        = opts.stmethod;
+    if(opts.ptype    >= 0) s.params.prediction_type      = opts.ptype;
+    if(opts.omin     >= 0) s.params.min_prediction_order = opts.omin;
+    if(opts.omax     >= 0) s.params.max_prediction_order = opts.omax;
+    if(opts.pomin    >= 0) s.params.min_partition_order  = opts.pomin;
+    if(opts.pomax    >= 0) s.params.max_partition_order  = opts.pomax;
+    if(opts.padding  >= 0) s.params.padding_size         = opts.padding;
+
+    header_size = flake_encode_init(&s);
     if(header_size < 0) {
-        free(wf);
-        if(s->private_ctx) free(s->private_ctx);
-        free(s);
+        flake_encode_close(&s);
         fprintf(stderr, "Error initializing encoder.\n");
         exit(1);
     }
-    fwrite(s->header, 1, header_size, ofp);
+    fwrite(s.header, 1, header_size, ofp);
 
     // print encoding options info
-    fprintf(stderr, "\nblocksize: %d\n", s->block_size);
+    fprintf(stderr, "\nblock size: %d\n", s.params.block_size);
     ptype_s = "ERROR";
-    switch(s->prediction_type) {
+    switch(s.params.prediction_type) {
         case 0: ptype_s = "fixed";  break;
         case 1: ptype_s = "levinson-durbin"; break;
     }
     fprintf(stderr, "prediction type: %s\n", ptype_s);
-    fprintf(stderr, "prediction order: %d,%d\n", s->min_order, s->max_order);
-    fprintf(stderr, "partition order: %d,%d\n", s->min_partition_order, s->max_partition_order);
+    fprintf(stderr, "prediction order: %d,%d\n", s.params.min_prediction_order,
+                                                 s.params.max_prediction_order);
+    fprintf(stderr, "partition order: %d,%d\n", s.params.min_partition_order,
+                                                s.params.max_partition_order);
     omethod_s = "ERROR";
-    switch(s->order_method) {
+    switch(s.params.order_method) {
         case 0: omethod_s = "maximum";  break;
         case 1: omethod_s = "estimate"; break;
         case 2: omethod_s = "2-level"; break;
@@ -435,65 +391,64 @@ main(int argc, char **argv)
         case 6: omethod_s = "log search";  break;
     }
     fprintf(stderr, "order method: %s\n", omethod_s);
-    if(s->channels == 2) {
+    if(s.channels == 2) {
         stmethod_s = "ERROR";
-        switch(s->stereo_method) {
+        switch(s.params.stereo_method) {
             case 0: stmethod_s = "independent";  break;
             case 1: stmethod_s = "mid-side";     break;
         }
-        fprintf(stderr, "stereo method: %s\n\n", stmethod_s);
+        fprintf(stderr, "stereo method: %s\n", stmethod_s);
     }
+    fprintf(stderr, "header padding: %d\n\n", s.params.padding_size);
 
-    frame = malloc(s->max_frame_size);
-    wav = malloc(s->block_size * wf->channels * sizeof(int16_t));
+    frame = malloc(s.max_frame_size);
+    wav = malloc(s.params.block_size * wf.channels * sizeof(int16_t));
 
     samplecount = framecount = t0 = percent = 0;
     wav_bytes = 0;
     bytecount = header_size;
-    nr = wavfile_read_samples(wf, wav, s->block_size);
+    nr = wavfile_read_samples(&wf, wav, s.params.block_size);
     while(nr > 0) {
-        s->block_size = nr;
-        fs = flake_encode_frame(s, frame, wav);
+        s.params.block_size = nr;
+        fs = flake_encode_frame(&s, frame, wav);
         if(fs < 0) {
             fprintf(stderr, "Error encoding frame\n");
         } else if(fs > 0) {
             fwrite(frame, 1, fs, ofp);
-            samplecount += s->block_size;
+            samplecount += s.params.block_size;
             bytecount += fs;
             framecount++;
-            t1 = samplecount / s->sample_rate;
+            t1 = samplecount / s.sample_rate;
             if(t1 > t0) {
                 kb = ((bytecount * 8.0) / 1000.0);
-                sec = ((float)samplecount) / ((float)s->sample_rate);
+                sec = ((float)samplecount) / ((float)s.sample_rate);
                 if(samplecount > 0) kbps = kb / sec;
                 else kbps = kb;
-                if(s->samples > 0) {
-                    percent = ((samplecount * 100.5) / s->samples);
+                if(s.samples > 0) {
+                    percent = ((samplecount * 100.5) / s.samples);
                 }
-                wav_bytes = samplecount*wf->block_align;
+                wav_bytes = samplecount*wf.block_align;
                 fprintf(stderr, "\rprogress: %3d%% | ratio: %1.3f | "
                                 "bitrate: %4.1f kbps ",
                         percent, (bytecount / wav_bytes), kbps);
             }
             t0 = t1;
         }
-        nr = wavfile_read_samples(wf, wav, s->block_size);
+        nr = wavfile_read_samples(&wf, wav, s.params.block_size);
     }
     fprintf(stderr, "| bytes: %d \n\n", bytecount);
 
-    flake_encode_close(s);
+    flake_encode_close(&s);
 
     // if seeking is possible, rewrite sample count and MD5 checksum
     if(!fseek(ofp, 22, SEEK_SET)) {
         uint32_t sc = be2me_32(samplecount);
         fwrite(&sc, 4, 1, ofp);
-        fwrite(s->md5digest, 1, 16, ofp);
+        fwrite(s.md5digest, 1, 16, ofp);
     }
 
     free(wav);
     free(frame);
-    free(s);
-    free(wf);
 
     fclose(ifp);
     fclose(ofp);

@@ -34,6 +34,26 @@
 #include "optimize.h"
 #include "rice.h"
 
+
+static const int flac_samplerates[16] = {
+    0, 0, 0, 0,
+    8000, 16000, 22050, 24000, 32000, 44100, 48000, 96000,
+    0, 0, 0, 0
+};
+
+static const int flac_bitdepths[8] = {
+    0, 8, 12, 0, 16, 20, 24, 0
+};
+
+static const int flac_blocksizes[15] = {
+    0,
+    192,
+    576, 1152, 2304, 4608,
+    0, 0,
+    256, 512, 1024, 2048, 4096, 8192, 16384
+};
+
+
 /**
  * Write streaminfo metadata block to byte array
  */
@@ -48,10 +68,10 @@ write_streaminfo(FlacEncodeContext *ctx, uint8_t *streaminfo, int last)
     bitwriter_writebits(&ctx->bw, 7, 0);
     bitwriter_writebits(&ctx->bw, 24, 34);
 
-    bitwriter_writebits(&ctx->bw, 16, ctx->blocksize);
-    bitwriter_writebits(&ctx->bw, 16, ctx->blocksize);
+    bitwriter_writebits(&ctx->bw, 16, ctx->params.block_size);
+    bitwriter_writebits(&ctx->bw, 16, ctx->params.block_size);
     bitwriter_writebits(&ctx->bw, 24, 0);
-    bitwriter_writebits(&ctx->bw, 24, ctx->max_framesize);
+    bitwriter_writebits(&ctx->bw, 24, ctx->max_frame_size);
     bitwriter_writebits(&ctx->bw, 20, ctx->samplerate);
     bitwriter_writebits(&ctx->bw, 3, ctx->channels-1);
     bitwriter_writebits(&ctx->bw, 5, ctx->bps-1);
@@ -78,8 +98,6 @@ write_padding(FlacEncodeContext *ctx, uint8_t *padding, int last, int padlen)
     bitwriter_writebits(&ctx->bw, 1, last);
     bitwriter_writebits(&ctx->bw, 7, 1);
     bitwriter_writebits(&ctx->bw, 24, padlen);
-
-    memset(&padding[4], 0, padlen);
 
     return padlen + 4;
 }
@@ -142,14 +160,14 @@ write_headers(FlacEncodeContext *ctx, uint8_t *header)
     header_size += 38;
 
     // vorbis comment
-    if(ctx->padding_size == 0) last = 1;
+    if(ctx->params.padding_size == 0) last = 1;
     header_size += write_vorbis_comment(ctx, &header[header_size], last);
 
     // padding
-    if(ctx->padding_size > 0) {
+    if(ctx->params.padding_size > 0) {
         last = 1;
         header_size += write_padding(ctx, &header[header_size], last,
-                                     ctx->padding_size);
+                                     ctx->params.padding_size);
     }
 
     return header_size;
@@ -164,20 +182,166 @@ select_blocksize(int samplerate, int time_ms)
 {
     int i, target, blocksize;
 
-    assert(samplerate > 0);
-    blocksize = 0;
+    blocksize = flac_blocksizes[1];
     target = (samplerate * time_ms) / 1000;
-    for(i=12; i>=0; i--) {
-        if(target >= flac_blocksizes_ordered[i]) {
-            blocksize = flac_blocksizes_ordered[i];
-            break;
+    for(i=0; i<16; i++) {
+        if(target >= flac_blocksizes[i] && flac_blocksizes[i] > blocksize) {
+            blocksize = flac_blocksizes[i];
         }
     }
-    if(blocksize == 0) {
-        i = 1;
-        blocksize = flac_blocksizes_ordered[i];
-    }
     return blocksize;
+}
+
+int
+flake_set_defaults(FlakeEncodeParams *params)
+{
+    int lvl;
+
+    if(!params) {
+        fprintf(stderr, "null params pointer\n");
+        return -1;
+    }
+    lvl = params->compression;
+    if(lvl < 0 || lvl > 12) {
+        fprintf(stderr, "invalid compression level: %d\n", lvl);
+        return -1;
+    }
+
+    params->order_method = ((int[]){ FLAKE_ORDER_METHOD_MAX,
+                                     FLAKE_ORDER_METHOD_EST,
+                                     FLAKE_ORDER_METHOD_EST,
+                                     FLAKE_ORDER_METHOD_EST,
+                                     FLAKE_ORDER_METHOD_EST,
+                                     FLAKE_ORDER_METHOD_EST,
+                                     FLAKE_ORDER_METHOD_2LEVEL,
+                                     FLAKE_ORDER_METHOD_4LEVEL,
+                                     FLAKE_ORDER_METHOD_4LEVEL,
+                                     FLAKE_ORDER_METHOD_LOG,
+                                     FLAKE_ORDER_METHOD_SEARCH,
+                                     FLAKE_ORDER_METHOD_LOG,
+                                     FLAKE_ORDER_METHOD_SEARCH})[lvl];
+
+    params->stereo_method = ((int[]){ FLAKE_STEREO_METHOD_INDEPENDENT,
+                                      FLAKE_STEREO_METHOD_ESTIMATE,
+                                      FLAKE_STEREO_METHOD_ESTIMATE,
+                                      FLAKE_STEREO_METHOD_ESTIMATE,
+                                      FLAKE_STEREO_METHOD_ESTIMATE,
+                                      FLAKE_STEREO_METHOD_ESTIMATE,
+                                      FLAKE_STEREO_METHOD_ESTIMATE,
+                                      FLAKE_STEREO_METHOD_ESTIMATE,
+                                      FLAKE_STEREO_METHOD_ESTIMATE,
+                                      FLAKE_STEREO_METHOD_ESTIMATE,
+                                      FLAKE_STEREO_METHOD_ESTIMATE,
+                                      FLAKE_STEREO_METHOD_ESTIMATE,
+                                      FLAKE_STEREO_METHOD_ESTIMATE })[lvl];
+
+    params->block_size = 0;
+    params->block_time_ms = ((int[]){  27,  27,  27, 105,
+                                      105, 105, 105, 105,
+                                      105, 105, 105, 105,
+                                      105 })[lvl];
+
+    params->prediction_type = ((int[]){ FLAKE_PREDICTION_FIXED,
+                                        FLAKE_PREDICTION_FIXED,
+                                        FLAKE_PREDICTION_FIXED,
+                                        FLAKE_PREDICTION_LEVINSON,
+                                        FLAKE_PREDICTION_LEVINSON,
+                                        FLAKE_PREDICTION_LEVINSON,
+                                        FLAKE_PREDICTION_LEVINSON,
+                                        FLAKE_PREDICTION_LEVINSON,
+                                        FLAKE_PREDICTION_LEVINSON,
+                                        FLAKE_PREDICTION_LEVINSON,
+                                        FLAKE_PREDICTION_LEVINSON,
+                                        FLAKE_PREDICTION_LEVINSON,
+                                        FLAKE_PREDICTION_LEVINSON })[lvl];
+
+    params->min_prediction_order = ((int[]){  2,  0,  0,  1,  1,  1,
+                                              1,  1,  1,  1,  1,  1,
+                                              1 })[lvl];
+    params->max_prediction_order = ((int[]){  2,  4,  4,  6,  8,  8,
+                                              8,  8, 12, 12, 12, 32,
+                                             32 })[lvl];
+
+    params->min_partition_order = ((int[]){ 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                            0 })[lvl];
+    params->max_partition_order = ((int[]){ 0, 2, 3, 3, 3, 6, 8, 8, 8, 8, 8, 8,
+                                            8 })[lvl];
+
+    params->padding_size = 4096;
+
+    return 0;
+}
+
+int
+flake_validate_params(FlakeEncodeParams *params)
+{
+    if(params == NULL) {
+        return -1;
+    }
+
+    if(params->compression < 0 || params->compression > 12) {
+        return -1;
+    }
+
+    if(params->order_method < 0 || params->order_method > 6) {
+        return -1;
+    }
+
+    if(params->stereo_method < 0 || params->stereo_method > 1) {
+        return -1;
+    }
+
+    if(params->block_size != 0 && (params->block_size < FLAC_MIN_BLOCKSIZE ||
+       params->block_size > FLAC_MAX_BLOCKSIZE)) {
+        return -1;
+    }
+
+    if(params->block_time_ms < 0) {
+        return -1;
+    }
+
+    if(params->prediction_type < 0 || params->prediction_type > 1) {
+        return -1;
+    }
+
+    if(params->min_prediction_order > params->max_prediction_order) {
+        return -1;
+    }
+    if(params->prediction_type == FLAKE_PREDICTION_FIXED) {
+        if(params->min_prediction_order < 0 ||
+           params->min_prediction_order > 4) {
+            return -1;
+        }
+        if(params->max_prediction_order < 0 ||
+           params->max_prediction_order > 4) {
+            return -1;
+        }
+    } else {
+        if(params->min_prediction_order < 1 ||
+           params->min_prediction_order > 32) {
+            return -1;
+        }
+        if(params->max_prediction_order < 1 ||
+           params->max_prediction_order > 32) {
+            return -1;
+        }
+    }
+
+    if(params->min_partition_order > params->max_partition_order) {
+        return -1;
+    }
+    if(params->min_partition_order < 0 || params->min_partition_order > 8) {
+        return -1;
+    }
+    if(params->max_partition_order < 0 || params->max_partition_order > 8) {
+        return -1;
+    }
+
+    if(params->padding_size >= (1<<24)) {
+        return -1;
+    }
+
+    return 0;
 }
 
 /**
@@ -245,198 +409,38 @@ flake_encode_init(FlakeContext *s)
 
     ctx->sample_count = s->samples;
 
-    if(s->compression < 0 || s->compression > 12) {
+    if(s->params.block_size == 0) {
+        s->params.block_size = select_blocksize(ctx->samplerate, s->params.block_time_ms);
+    }
+
+    if(flake_validate_params(&s->params)) {
         return -1;
     }
 
-    // select order method based on compression level
-    ctx->order_method = ((int[]){ FLAKE_ORDER_METHOD_MAX,
-                                  FLAKE_ORDER_METHOD_EST,
-                                  FLAKE_ORDER_METHOD_EST,
-                                  FLAKE_ORDER_METHOD_EST,
-                                  FLAKE_ORDER_METHOD_EST,
-                                  FLAKE_ORDER_METHOD_EST,
-                                  FLAKE_ORDER_METHOD_2LEVEL,
-                                  FLAKE_ORDER_METHOD_4LEVEL,
-                                  FLAKE_ORDER_METHOD_4LEVEL,
-                                  FLAKE_ORDER_METHOD_LOG,
-                                  FLAKE_ORDER_METHOD_SEARCH,
-                                  FLAKE_ORDER_METHOD_LOG,
-                                  FLAKE_ORDER_METHOD_SEARCH})[s->compression];
-    // user override for order method
-    if(s->order_method >= 0) {
-        if(s->order_method > FLAKE_ORDER_METHOD_LOG) {
-            return -1;
-        }
-        ctx->order_method = s->order_method;
-    } else {
-        s->order_method = ctx->order_method;
-    }
-
-    // select stereo method based on compression level
-    ctx->stereo_method = ((int[]){ FLAKE_STEREO_METHOD_INDEPENDENT,
-                                   FLAKE_STEREO_METHOD_ESTIMATE,
-                                   FLAKE_STEREO_METHOD_ESTIMATE,
-                                   FLAKE_STEREO_METHOD_ESTIMATE,
-                                   FLAKE_STEREO_METHOD_ESTIMATE,
-                                   FLAKE_STEREO_METHOD_ESTIMATE,
-                                   FLAKE_STEREO_METHOD_ESTIMATE,
-                                   FLAKE_STEREO_METHOD_ESTIMATE,
-                                   FLAKE_STEREO_METHOD_ESTIMATE,
-                                   FLAKE_STEREO_METHOD_ESTIMATE,
-                                   FLAKE_STEREO_METHOD_ESTIMATE,
-                                   FLAKE_STEREO_METHOD_ESTIMATE,
-                                   FLAKE_STEREO_METHOD_ESTIMATE })[s->compression];
-    // user override for stereo method
-    if(s->stereo_method >= 0) {
-        if(s->stereo_method > FLAKE_STEREO_METHOD_ESTIMATE) {
-            return -1;
-        }
-        ctx->stereo_method = s->stereo_method;
-    } else {
-        s->stereo_method = ctx->stereo_method;
-    }
-
-    // select block time based on compression level
-    ctx->block_time_ms = ((int[]){  27,  27,  27, 105,
-                                   105, 105, 105, 105,
-                                   105, 105, 105, 105,
-                                   105 })[s->compression];
-    ctx->blocksize = select_blocksize(ctx->samplerate, ctx->block_time_ms);
-    // user override for block size
-    if(s->block_size > 0) {
-        if(s->block_size < FLAC_MIN_BLOCKSIZE || s->block_size > FLAC_MAX_BLOCKSIZE) {
-            return -1;
-        }
-        ctx->blocksize = s->block_size;
-    } else {
-        s->block_size = ctx->blocksize;
-    }
-
-    // select prediction type based on compression level
-    ctx->prediction_type = ((int[]){ FLAKE_PREDICTION_FIXED,
-                                     FLAKE_PREDICTION_FIXED,
-                                     FLAKE_PREDICTION_FIXED,
-                                     FLAKE_PREDICTION_LEVINSON,
-                                     FLAKE_PREDICTION_LEVINSON,
-                                     FLAKE_PREDICTION_LEVINSON,
-                                     FLAKE_PREDICTION_LEVINSON,
-                                     FLAKE_PREDICTION_LEVINSON,
-                                     FLAKE_PREDICTION_LEVINSON,
-                                     FLAKE_PREDICTION_LEVINSON,
-                                     FLAKE_PREDICTION_LEVINSON,
-                                     FLAKE_PREDICTION_LEVINSON,
-                                     FLAKE_PREDICTION_LEVINSON })[s->compression];
-    // user override for maximum predictor order
-    if(s->prediction_type >= 0) {
-        if(s->prediction_type > FLAKE_PREDICTION_LEVINSON) {
-            return -1;
-        }
-        ctx->prediction_type = s->prediction_type;
-    } else {
-        s->prediction_type = ctx->prediction_type;
-    }
-
-    // select min and max predictor order based on compression level
-    ctx->min_predictor_order = ((int[]){  2,  0,  0,  1,  1,  1,
-                                          1,  1,  1,  1,  1,  1,
-                                          1 })[s->compression];
-    ctx->max_predictor_order = ((int[]){  2,  4,  4,  6,  8,  8,
-                                          8,  8, 12, 12, 12, 32,
-                                         32 })[s->compression];
-    // user overrides for min and max predictor order
-    if(s->min_order >= 0) {
-        if(ctx->prediction_type == FLAKE_PREDICTION_FIXED) {
-            if(s->min_order > 4) {
-                return -1;
-            }
-        } else {
-            if(s->min_order < 1 || s->min_order > 32) {
-                return -1;
-            }
-        }
-        ctx->min_predictor_order = s->min_order;
-    } else {
-        s->min_order = ctx->min_predictor_order;
-    }
-    if(s->max_order >= 0) {
-        if(ctx->prediction_type == FLAKE_PREDICTION_FIXED) {
-            if(s->max_order > 4) {
-                return -1;
-            }
-        } else {
-            if(s->max_order < 1 || s->max_order > 32) {
-                return -1;
-            }
-        }
-        ctx->max_predictor_order = s->max_order;
-    } else {
-        s->max_order = ctx->max_predictor_order;
-    }
-    if(ctx->min_predictor_order > ctx->max_predictor_order) {
-        return -1;
-    }
-
-    // select min and max partition order based on compression level
-    ctx->min_partition_order = ((int[]){ 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                                         0 })[s->compression];
-    ctx->max_partition_order = ((int[]){ 0, 2, 3, 3, 3, 6, 8, 8, 8, 8, 8, 8,
-                                         8 })[s->compression];
-    // user overrides for min and max partition order
-    if(s->min_partition_order >= 0) {
-        if(s->min_partition_order > 8) {
-            return -1;
-        }
-        ctx->min_partition_order = s->min_partition_order;
-    } else {
-        s->min_partition_order = ctx->min_partition_order;
-    }
-    if(s->max_partition_order >= 0) {
-        if(s->max_partition_order > 8) {
-            return -1;
-        }
-        ctx->max_partition_order = s->max_partition_order;
-    } else {
-        s->max_partition_order = ctx->max_partition_order;
-    }
-    if(ctx->min_partition_order > ctx->max_partition_order) {
-        return -1;
-    }
+    ctx->params = s->params;
 
     // select LPC precision based on block size
-    if(     ctx->blocksize <=   192) ctx->lpc_precision =  7;
-    else if(ctx->blocksize <=   384) ctx->lpc_precision =  8;
-    else if(ctx->blocksize <=   576) ctx->lpc_precision =  9;
-    else if(ctx->blocksize <=  1152) ctx->lpc_precision = 10;
-    else if(ctx->blocksize <=  2304) ctx->lpc_precision = 11;
-    else if(ctx->blocksize <=  4608) ctx->lpc_precision = 12;
-    else if(ctx->blocksize <=  8192) ctx->lpc_precision = 13;
-    else if(ctx->blocksize <= 16384) ctx->lpc_precision = 14;
-    else                             ctx->lpc_precision = 15;
+    if(     ctx->params.block_size <=   192) ctx->lpc_precision =  7;
+    else if(ctx->params.block_size <=   384) ctx->lpc_precision =  8;
+    else if(ctx->params.block_size <=   576) ctx->lpc_precision =  9;
+    else if(ctx->params.block_size <=  1152) ctx->lpc_precision = 10;
+    else if(ctx->params.block_size <=  2304) ctx->lpc_precision = 11;
+    else if(ctx->params.block_size <=  4608) ctx->lpc_precision = 12;
+    else if(ctx->params.block_size <=  8192) ctx->lpc_precision = 13;
+    else if(ctx->params.block_size <= 16384) ctx->lpc_precision = 14;
+    else                                     ctx->lpc_precision = 15;
 
-    // set maximum encoded frame size in verbatim mode
+    // set maximum encoded frame size (if larger, re-encodes in verbatim mode)
     if(ctx->channels == 2) {
-        s->max_frame_size = 16 + ((ctx->blocksize * (ctx->bps+ctx->bps+1) + 7) >> 3);
+        ctx->max_frame_size = 16 + ((ctx->params.block_size * (ctx->bps+ctx->bps+1) + 7) >> 3);
     } else {
-        s->max_frame_size = 16 + ((ctx->blocksize * ctx->channels * ctx->bps + 7) >> 3);
+        ctx->max_frame_size = 16 + ((ctx->params.block_size * ctx->channels * ctx->bps + 7) >> 3);
     }
-    ctx->max_framesize = s->max_frame_size;
-
-    // default amount of padding to use in header
-    ctx->padding_size = 4096;
-    // user override for padding
-    if(s->padding_size >= 0) {
-        if(s->padding_size >= (1<<24)) {
-            return -1;
-        }
-        ctx->padding_size = s->padding_size;
-    } else {
-        s->padding_size = ctx->padding_size;
-    }
+    s->max_frame_size = ctx->max_frame_size;
 
     // output header bytes
-    s->header = malloc(ctx->padding_size + 1024);
-    header_len = 0;
+    s->header = calloc(ctx->params.padding_size + 1024, 1);
+    header_len = -1;
     if(s->header != NULL) {
         header_len = write_headers(ctx, s->header);
     }
@@ -461,15 +465,27 @@ init_frame(FlacEncodeContext *ctx)
 
     frame = &ctx->frame;
 
-    if(ctx->blocksize < 0 || ctx->blocksize > FLAC_MAX_BLOCKSIZE) {
+    if(ctx->params.block_time_ms < 0) {
         return -1;
     }
-    if(ctx->blocksize == 0) {
-        ctx->blocksize = select_blocksize(ctx->samplerate, ctx->block_time_ms);
+    if(ctx->params.block_size == 0) {
+        ctx->params.block_size = select_blocksize(ctx->samplerate, ctx->params.block_time_ms);
     }
+    if(ctx->params.block_size < 1 ||
+       ctx->params.block_size > FLAC_MAX_BLOCKSIZE) {
+        return -1;
+    }
+
+    // set maximum encoded frame size (if larger, re-encodes in verbatim mode)
+    if(ctx->channels == 2) {
+        ctx->max_frame_size = 16 + ((ctx->params.block_size * (ctx->bps+ctx->bps+1) + 7) >> 3);
+    } else {
+        ctx->max_frame_size = 16 + ((ctx->params.block_size * ctx->channels * ctx->bps + 7) >> 3);
+    }
+
     // get block size codes
     for(i=0; i<15; i++) {
-        if(ctx->blocksize == flac_blocksizes[i]) {
+        if(ctx->params.block_size == flac_blocksizes[i]) {
             frame->blocksize = flac_blocksizes[i];
             frame->bs_code[0] = i;
             frame->bs_code[1] = -1;
@@ -477,7 +493,7 @@ init_frame(FlacEncodeContext *ctx)
         }
     }
     if(i == 15) {
-        frame->blocksize = ctx->blocksize;
+        frame->blocksize = ctx->params.block_size;
         if(frame->blocksize <= 256) {
             frame->bs_code[0] = 6;
             frame->bs_code[1] = frame->blocksize-1;
@@ -501,7 +517,7 @@ init_frame(FlacEncodeContext *ctx)
 static void
 update_md5_checksum(FlacEncodeContext *ctx, int16_t *samples)
 {
-    md5_accumulate(&ctx->md5ctx, samples, ctx->channels, ctx->blocksize);
+    md5_accumulate(&ctx->md5ctx, samples, ctx->channels, ctx->params.block_size);
 }
 
 /**
@@ -590,7 +606,7 @@ channel_decorrelation(FlacEncodeContext *ctx)
         frame->ch_mode = FLAC_CHMODE_NOT_STEREO;
         return;
     }
-    if(ctx->blocksize <= 32 || ctx->stereo_method == FLAKE_STEREO_METHOD_INDEPENDENT) {
+    if(frame->blocksize <= 32 || ctx->params.stereo_method == FLAKE_STEREO_METHOD_INDEPENDENT) {
         frame->ch_mode = FLAC_CHMODE_LEFT_RIGHT;
         return;
     }
@@ -753,7 +769,7 @@ output_subframe_verbatim(FlacEncodeContext *ctx, int ch)
 
     frame = &ctx->frame;
     sub = &frame->subframes[ch];
-    n = ctx->blocksize;
+    n = frame->blocksize;
 
     for(i=0; i<n; i++) {
         bitwriter_writebits_signed(&ctx->bw, sub->obits, sub->residual[i]);
@@ -854,12 +870,12 @@ flake_encode_frame(FlakeContext *s, uint8_t frame_buffer[], int16_t samples[])
 
     ctx = (FlacEncodeContext *) s->private_ctx;
     if(ctx == NULL) return -1;
-    ctx->blocksize = s->block_size;
 
+    ctx->params.block_size = s->params.block_size;
     if(init_frame(ctx)) {
         return -1;
     }
-    s->block_size = ctx->blocksize;
+    s->params.block_size = ctx->params.block_size;
 
     update_md5_checksum(ctx, samples);
 
@@ -873,7 +889,7 @@ flake_encode_frame(FlakeContext *s, uint8_t frame_buffer[], int16_t samples[])
         }
     }
 
-    bitwriter_init(&ctx->bw, frame_buffer, ctx->max_framesize);
+    bitwriter_init(&ctx->bw, frame_buffer, ctx->max_frame_size);
     output_frame_header(ctx);
     output_subframes(ctx);
     output_frame_footer(ctx);
@@ -884,7 +900,7 @@ flake_encode_frame(FlakeContext *s, uint8_t frame_buffer[], int16_t samples[])
             ch = i;
             reencode_residual_verbatim(ctx, ch);
         }
-        bitwriter_init(&ctx->bw, frame_buffer, ctx->max_framesize);
+        bitwriter_init(&ctx->bw, frame_buffer, ctx->max_frame_size);
         output_frame_header(ctx);
         output_subframes(ctx);
         output_frame_footer(ctx);
@@ -904,12 +920,10 @@ flake_encode_close(FlakeContext *s)
     if(s == NULL) return;
     if(s->private_ctx == NULL) return;
     ctx = (FlacEncodeContext *) s->private_ctx;
-
-    // finalize MD5 checksum
-    md5_final(s->md5digest, &ctx->md5ctx);
-
-    // free memory
-    free(s->header);
-    free(ctx);
+    if(ctx) {
+        md5_final(s->md5digest, &ctx->md5ctx);
+        free(ctx);
+    }
+    if(s->header) free(s->header);
     s->private_ctx = NULL;
 }

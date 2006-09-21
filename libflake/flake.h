@@ -37,26 +37,7 @@
 #define FLAKE_PREDICTION_FIXED     0
 #define FLAKE_PREDICTION_LEVINSON  1
 
-typedef struct FlakeContext {
-
-    // number of audio channels
-    // set by user prior to calling flake_encode_init
-    // valid values are 1 to 8
-    int channels;
-
-    // audio sample rate in Hz
-    // set by user prior to calling flake_encode_init
-    int sample_rate;
-
-    // sample size in bits
-    // set by user prior to calling flake_encode_init
-    // only 16-bit is currently supported
-    int bits_per_sample;
-
-    // total stream samples
-    // set by user prior to calling flake_encode_init
-    // if 0, stream length is unknown
-    unsigned int samples;
+typedef struct FlakeEncodeParams {
 
     // compression quality
     // set by user prior to calling flake_encode_init
@@ -90,9 +71,17 @@ typedef struct FlakeContext {
 
     // block size in samples
     // set by the user prior to calling flake_encode_init
-    // if set to 0, a block size is chosen automatically
+    // if set to 0, a block size is chosen based on block_time_ms
     // can also be changed by user before encoding a frame
+    // any changes during encoding must be lower than initial value
     int block_size;
+
+    // block time in milliseconds
+    // set by the user prior to calling flake_encode_init
+    // used to calculate block_size based on sample rate
+    // can also be changed by user before encoding a frame
+    // any changes during encoding must be lower than initial value
+    int block_time_ms;
 
     // padding size in bytes
     // set by the user prior to calling flake_encode_init
@@ -108,13 +97,13 @@ typedef struct FlakeContext {
     // set by user prior to calling flake_encode_init
     // if set to less than 0, it is chosen based on compression.
     // valid values are 0 to 4 for fixed prediction and 1 to 32 for non-fixed
-    int min_order;
+    int min_prediction_order;
 
     // maximum prediction order
     // set by user prior to calling flake_encode_init
     // if set to less than 0, it is chosen based on compression.
     // valid values are 0 to 4 for fixed prediction and 1 to 32 for non-fixed
-    int max_order;
+    int max_prediction_order;
 
     // type of linear prediction
     // set by user prior to calling flake_encode_init
@@ -135,6 +124,36 @@ typedef struct FlakeContext {
     // valid values are 0 to 8
     int max_partition_order;
 
+} FlakeEncodeParams;
+
+typedef struct FlakeContext {
+
+    // number of audio channels
+    // set by user prior to calling flake_encode_init
+    // valid values are 1 to 8
+    int channels;
+
+    // audio sample rate in Hz
+    // set by user prior to calling flake_encode_init
+    int sample_rate;
+
+    // sample size in bits
+    // set by user prior to calling flake_encode_init
+    // only 16-bit is currently supported
+    int bits_per_sample;
+
+    // total stream samples
+    // set by user prior to calling flake_encode_init
+    // if 0, stream length is unknown
+    unsigned int samples;
+
+    FlakeEncodeParams params;
+
+    // maximum frame size in bytes
+    // set by flake_encode_init
+    // this can be used to allocate memory for output
+    int max_frame_size;
+
     // MD5 digest
     // set by flake_encode_close;
     unsigned char md5digest[16];
@@ -148,6 +167,14 @@ typedef struct FlakeContext {
     void *private_ctx;
 
 } FlakeContext;
+
+/**
+ * Sets encoding defaults based on compression level
+ * params->compression must be set prior to calling
+ */
+extern int flake_set_defaults(FlakeEncodeParams *params);
+
+extern int flake_validate_params(FlakeEncodeParams *params);
 
 extern int flake_encode_init(FlakeContext *s);
 

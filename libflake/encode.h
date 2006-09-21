@@ -23,6 +23,7 @@
 #include "config.h"
 
 #include <inttypes.h>
+#include "flake.h"
 #include "bitio.h"
 #include "rice.h"
 #include "lpc.h"
@@ -74,44 +75,13 @@ typedef struct FlacEncodeContext {
     int bps;
     int bps_code;
     uint32_t sample_count;
-    int blocksize;
-    int block_time_ms;
-    int min_predictor_order;
-    int max_predictor_order;
-    int prediction_type;
-    int min_partition_order;
-    int max_partition_order;
+    FlakeEncodeParams params;
+    int max_frame_size;
     int lpc_precision;
-    int max_framesize;
-    int order_method;
-    int stereo_method;
-    int padding_size;
     uint32_t frame_count;
     FlacFrame frame;
     MD5Context md5ctx;
     BitWriter bw;
 } FlacEncodeContext;
-
-static const int flac_samplerates[16] = {
-    0, 0, 0, 0,
-    8000, 16000, 22050, 24000, 32000, 44100, 48000, 96000,
-    0, 0, 0, 0
-};
-
-static const int flac_bitdepths[8] = {
-    0, 8, 12, 0, 16, 20, 24, 0
-};
-
-static const int flac_blocksizes[15] = {
-    0,
-    192,
-    576, 1152, 2304, 4608,
-    0, 0,
-    256, 512, 1024, 2048, 4096, 8192, 16384
-};
-
-static const int flac_blocksizes_ordered[13] = {
-    0, 192, 256, 512, 576, 1024, 1152, 2048, 2304, 4096, 4608, 8192, 16384
-};
 
 #endif /* FLAC_H */
