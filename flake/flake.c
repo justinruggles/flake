@@ -35,6 +35,7 @@
 #include <io.h>
 #endif
 
+#include "bswap.h"
 #include "wav.h"
 #include "flake.h"
 
@@ -405,15 +406,10 @@ main(int argc, char **argv)
 
     flake_encode_close(s);
 
+    // if seeking is possible, rewrite sample count and MD5 checksum
     if(!fseek(ofp, 22, SEEK_SET)) {
-        // note: use be2me_32()
-        uint8_t sc[4] = { 0, 0, 0, 0 };
-        sc[0] = (samplecount >> 24) & 0xFF;
-        sc[1] = (samplecount >> 16) & 0xFF;
-        sc[2] = (samplecount >>  8) & 0xFF;
-        sc[3] =  samplecount        & 0xFF;
-        fwrite(sc, 1, 4, ofp);
-
+        uint32_t sc = be2me_32(samplecount);
+        fwrite(&sc, 4, 1, ofp);
         fwrite(s->md5digest, 1, 16, ofp);
     }
 
