@@ -187,7 +187,7 @@ encode_residual(FlacEncodeContext *ctx, int ch)
     }
 
     omethod = ctx->order_method;
-    min_order = ctx->max_predictor_order;
+    min_order = 0;
     max_order = ctx->max_predictor_order;
     min_porder = ctx->min_partition_order;
     max_porder = ctx->max_partition_order;
@@ -213,7 +213,6 @@ encode_residual(FlacEncodeContext *ctx, int ch)
         // estimated order
         opt_order = est_order;
     } else if(omethod == FLAKE_ORDER_METHOD_2LEVEL) {
-        // select the best of the estimated order or maximum order
         double bits_est, bits_max;
 
         i = max_order-1;

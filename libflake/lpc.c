@@ -228,7 +228,8 @@ lpc_calc_coefs(const int32_t *samples, int blocksize, int max_order,
             quantize_lpc_coefs(lpc[i], i+1, precision, coefs[i], &shift[i]);
             break;
         case FLAKE_ORDER_METHOD_2LEVEL:
-            i = (max_order/2)-1;
+            opt_order = max_order/2;
+            i = opt_order-1;
             if(i < 0) i = 0;
             quantize_lpc_coefs(lpc[i], i+1, precision, coefs[i], &shift[i]);
             i = max_order-1;

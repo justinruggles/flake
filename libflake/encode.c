@@ -256,10 +256,10 @@ flake_encode_init(FlakeContext *s)
                                   FLAKE_ORDER_METHOD_EST,
                                   FLAKE_ORDER_METHOD_EST,
                                   FLAKE_ORDER_METHOD_EST,
-                                  FLAKE_ORDER_METHOD_LOG,
+                                  FLAKE_ORDER_METHOD_2LEVEL,
+                                  FLAKE_ORDER_METHOD_4LEVEL,
                                   FLAKE_ORDER_METHOD_4LEVEL,
                                   FLAKE_ORDER_METHOD_LOG,
-                                  FLAKE_ORDER_METHOD_4LEVEL,
                                   FLAKE_ORDER_METHOD_SEARCH,
                                   FLAKE_ORDER_METHOD_LOG,
                                   FLAKE_ORDER_METHOD_SEARCH})[s->compression];
@@ -332,7 +332,7 @@ flake_encode_init(FlakeContext *s)
     // select min and max partition order based on compression level
     ctx->min_partition_order = ((int[]){ 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                                          0 })[s->compression];
-    ctx->max_partition_order = ((int[]){ 2, 2, 3, 3, 3, 8, 8, 8, 8, 8, 8, 8,
+    ctx->max_partition_order = ((int[]){ 2, 2, 3, 3, 3, 6, 8, 8, 8, 8, 8, 8,
                                          8 })[s->compression];
     // user overrides for min and max partition order
     if(s->min_partition_order >= 0) {
