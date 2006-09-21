@@ -638,6 +638,19 @@ channel_decorrelation(FlacEncodeContext *ctx)
     }
 }
 
+static inline int
+log2i(uint32_t v)
+{
+    int i;
+    int n = 0;
+    if(v & 0xffff0000){ v >>= 16; n += 16; }
+    if(v & 0xff00){ v >>= 8; n += 8; }
+    for(i=2; i<256; i<<=1) {
+        if(v >= i) n++;
+    }
+    return n;
+}
+
 /**
  * Write UTF-8 encoded integer value
  * Used to encode frame number in frame header
@@ -645,24 +658,16 @@ channel_decorrelation(FlacEncodeContext *ctx)
 static void
 write_utf8(BitWriter *bw, uint32_t val)
 {
-    int i, bytes, mask, shift;
+    int bytes, shift;
 
-    bytes = 1;
-    if(val >= 0x80)      bytes++;
-    if(val >= 0x800)     bytes++;
-    if(val >= 0x10000)   bytes++;
-    if(val >= 0x200000)  bytes++;
-    if(val >= 0x4000000) bytes++;
-
-    if(bytes == 1) {
+    if(val < 0x80){
         bitwriter_writebits(bw, 8, val);
         return;
     }
-
+    bytes = (log2i(val)+4) / 5;
     shift = (bytes - 1) * 6;
-    mask = 0x80 + ((1 << 7) - (1 << (8 - bytes)));
-    bitwriter_writebits(bw, 8, mask | (val >> shift));
-    for(i=0; i<bytes-1; i++) {
+    bitwriter_writebits(bw, 8, (256 - (256>>bytes)) | (val >> shift));
+    while(shift >= 6){
         shift -= 6;
         bitwriter_writebits(bw, 8, 0x80 | ((val >> shift) & 0x3F));
     }
