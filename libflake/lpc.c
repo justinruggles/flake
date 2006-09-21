@@ -60,8 +60,9 @@ compute_autocorr(const int32_t *data, int len, int lag, double *autoc)
     double *data1;
     double temp, temp2;
 
-    data1 = calloc((len+1), sizeof(double));
+    data1 = malloc((len+16) * sizeof(double));
     apply_welch_window(data, len, data1);
+    data1[len] = 0;
 
     for (i=0; i<=lag; ++i) {
         temp = 1.0;
