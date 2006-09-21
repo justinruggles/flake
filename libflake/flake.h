@@ -34,6 +34,9 @@
 #define FLAKE_STEREO_METHOD_INDEPENDENT  0
 #define FLAKE_STEREO_METHOD_ESTIMATE     1
 
+#define FLAKE_PREDICTION_FIXED     0
+#define FLAKE_PREDICTION_LEVINSON  1
+
 typedef struct FlakeContext {
 
     // number of audio channels
@@ -101,11 +104,24 @@ typedef struct FlakeContext {
     // it can be used by the user to allocate an output buffer
     int max_frame_size;
 
+    // minimum prediction order
+    // set by user prior to calling flake_encode_init
+    // if set to less than 0, it is chosen based on compression.
+    // valid values are 0 to 4 for fixed prediction and 1 to 32 for non-fixed
+    int min_order;
+
     // maximum prediction order
     // set by user prior to calling flake_encode_init
     // if set to less than 0, it is chosen based on compression.
-    // valid values are 0 to 32
+    // valid values are 0 to 4 for fixed prediction and 1 to 32 for non-fixed
     int max_order;
+
+    // type of linear prediction
+    // set by user prior to calling flake_encode_init
+    // if set to less than 0, it is chosen based on compression.
+    // 0 = fixed prediction
+    // 1 = Levinson-Durbin recursion
+    int prediction_type;
 
     // minimum partition order
     // set by user prior to calling flake_encode_init

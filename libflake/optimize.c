@@ -187,19 +187,34 @@ encode_residual(FlacEncodeContext *ctx, int ch)
     }
 
     omethod = ctx->order_method;
-    min_order = 0;
+    min_order = ctx->min_predictor_order;
     max_order = ctx->max_predictor_order;
     min_porder = ctx->min_partition_order;
     max_porder = ctx->max_partition_order;
 
     // FIXED
-    if(max_order == 0 || (n <= max_order)) {
-        sub->order = 2;
+    if(ctx->prediction_type == FLAKE_PREDICTION_FIXED || n <= max_order) {
+        uint32_t bits[5];
+        if(max_order > 4) max_order = 4;
+        opt_order = 0;
+        bits[0] = UINT32_MAX;
+        for(i=min_order; i<=max_order; i++) {
+            encode_residual_fixed(res, smp, n, i);
+            bits[i] = calc_rice_params_fixed(&sub->rc, min_porder, max_porder, res,
+                                             n, i, sub->obits);
+            if(bits[i] < bits[opt_order]) {
+                opt_order = i;
+            }
+        }
+        sub->order = opt_order;
         sub->type = FLAC_SUBFRAME_FIXED;
         sub->type_code = sub->type | sub->order;
-        encode_residual_fixed(res, smp, n, sub->order);
-        return calc_rice_params_fixed(&sub->rc, min_porder, max_porder, res, n,
-                                      sub->order, sub->obits);
+        if(sub->order != max_order) {
+            encode_residual_fixed(res, smp, n, sub->order);
+            return calc_rice_params_fixed(&sub->rc, min_porder, max_porder, res, n,
+                                          sub->order, sub->obits);
+        }
+        return bits[sub->order];
     }
 
     // LPC
@@ -212,51 +227,17 @@ encode_residual(FlacEncodeContext *ctx, int ch)
     } else if(omethod == FLAKE_ORDER_METHOD_EST) {
         // estimated order
         opt_order = est_order;
-    } else if(omethod == FLAKE_ORDER_METHOD_2LEVEL) {
-        double bits_est, bits_max;
-
-        i = max_order-1;
-        encode_residual_lpc(res, smp, n, i+1, coefs[i], shift[i]);
-        bits_max = calc_rice_params_lpc(&sub->rc, min_porder, max_porder,
-                                        res, n, i+1, sub->obits,
-                                        ctx->lpc_precision);
-        i = est_order-1;
-        encode_residual_lpc(res, smp, n, i+1, coefs[i], shift[i]);
-        bits_est = calc_rice_params_lpc(&sub->rc, min_porder, max_porder,
-                                        res, n, i+1, sub->obits,
-                                        ctx->lpc_precision);
-
-        opt_order = max_order;
-        if(bits_est < bits_max) {
-            opt_order = est_order;
-        }
-    } else if(omethod == FLAKE_ORDER_METHOD_4LEVEL) {
-        uint32_t bits[4];
+    } else if(omethod == FLAKE_ORDER_METHOD_2LEVEL ||
+              omethod == FLAKE_ORDER_METHOD_4LEVEL ||
+              omethod == FLAKE_ORDER_METHOD_8LEVEL) {
+        int levels = 1 << (omethod-1);
+        uint32_t bits[levels];
         int order;
-        int opt_index = 3;
+        int opt_index = levels-1;
         opt_order = max_order-1;
-        bits[3] = UINT32_MAX;
-        for(i=3; i>=0; i--) {
-            order = ((max_order * (i+1)) / 4)-1;
-            if(order < 0) order = 0;
-            encode_residual_lpc(res, smp, n, order+1, coefs[order], shift[order]);
-            bits[i] = calc_rice_params_lpc(&sub->rc, min_porder, max_porder,
-                                           res, n, order+1, sub->obits,
-                                           ctx->lpc_precision);
-            if(bits[i] < bits[opt_index]) {
-                opt_index = i;
-                opt_order = order;
-            }
-        }
-        opt_order++;
-    } else if(omethod == FLAKE_ORDER_METHOD_8LEVEL) {
-        uint32_t bits[8];
-        int order;
-        int opt_index = 7;
-        opt_order = max_order-1;
-        bits[7] = UINT32_MAX;
-        for(i=7; i>=0; i--) {
-            order = ((max_order * (i+1)) / 8)-1;
+        bits[opt_index] = UINT32_MAX;
+        for(i=opt_index; i>=0; i--) {
+            order = min_order + (((max_order-min_order+1) * (i+1)) / levels)-1;
             if(order < 0) order = 0;
             encode_residual_lpc(res, smp, n, order+1, coefs[order], shift[order]);
             bits[i] = calc_rice_params_lpc(&sub->rc, min_porder, max_porder,

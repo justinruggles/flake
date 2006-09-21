@@ -68,7 +68,10 @@ print_help(FILE *out)
                  "                       11 = -b 4608  -l 32 -o 6 -s 1 -r 0,8\n"
                  "                       12 = -b 4608  -l 32 -o 5 -s 1 -r 0,8\n"
                  "       [-b #]       Block size [16 - 65535] (default: 4608)\n"
-                 "       [-l #]       Maximum prediction order [0 - 32] (default: 8)\n"
+                 "       [-t #]       Prediction type\n"
+                 "                        0 = fixed prediction\n"
+                 "                        1 = Levinson-Durbin recursion (default)\n"
+                 "       [-l #[,#]]   Prediction order {max} or {min},{max} (default: 1,8)\n"
                  "       [-o #]       Prediction order selection method\n"
                  "                        0 = maximum\n"
                  "                        1 = estimate (default)\n"
@@ -91,6 +94,8 @@ typedef struct CommandOptions {
     int found_output;
     int compr;
     int omethod;
+    int ptype;
+    int omin;
     int omax;
     int pomin;
     int pomax;
@@ -140,7 +145,7 @@ static int
 parse_commandline(int argc, char **argv, CommandOptions *opts)
 {
     int i;
-    static const char *param_str = "hbloprs";
+    static const char *param_str = "bhloprst";
 
     if(argc < 2) {
         return 1;
@@ -152,6 +157,8 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
     opts->found_output = 0;
     opts->compr = 5;
     opts->omethod = -1;
+    opts->ptype = -1;
+    opts->omin = -1;
     opts->omax = -1;
     opts->pomin = -1;
     opts->pomax = -1;
@@ -209,10 +216,32 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
                         }
                         break;
                     case 'l':
-                        opts->omax = parse_number(argv[i], 2);
+                        if(strchr(argv[i], ',') == NULL) {
+                            opts->omin = 0;
+                            opts->omax = parse_number(argv[i], 2);
+                        } else {
+                            char *po = strchr(argv[i], ',');
+                            po[0] = '\0';
+                            opts->omin = parse_number(argv[i], 2);
+                            opts->omax = parse_number(&po[1], 2);
+                        }
+                        if(opts->omin < 0 || opts->omin > 32) {
+                            fprintf(stderr, "invalid minimum order: %d. must be 0 to 32.\n", opts->omin);
+                            return 1;
+                        }
                         if(opts->omax < 0 || opts->omax > 32) {
                             fprintf(stderr, "invalid maximum order: %d. must be 0 to 32.\n", opts->omax);
                             return 1;
+                        }
+                        if(opts->omin > opts->omax) {
+                            fprintf(stderr, "invalid minimum order: %d. must be <= maximum order.\n", opts->omin);
+                            return 1;
+                        }
+                        // constrain bounds based on prediction type
+                        if(opts->ptype == FLAKE_PREDICTION_FIXED) {
+                            if(opts->omax > 4) opts->omax = 4;
+                        } else if(opts->ptype == FLAKE_PREDICTION_LEVINSON) {
+                            if(opts->omin == 0) opts->omin = 1;
                         }
                         break;
                     case 'o':
@@ -259,6 +288,13 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
                             return 1;
                         }
                         break;
+                    case 't':
+                        opts->ptype = parse_number(argv[i], 1);
+                        if(opts->ptype < 0 || opts->ptype > 1) {
+                            fprintf(stderr, "invalid prediction type: %d. must be 0 or 1.\n", opts->ptype);
+                            return 1;
+                        }
+                        break;
                 }
             }
         } else {
@@ -291,7 +327,7 @@ main(int argc, char **argv)
     uint32_t nr, fs, samplecount, bytecount, framecount;
     int t0, t1;
     float kb, sec, kbps, wav_bytes;
-    char *omethod_s, *stmethod_s;
+    char *omethod_s, *stmethod_s, *ptype_s;
 
     fprintf(stderr, "\nFlake: FLAC audio encoder\n(c) 2006  Justin Ruggles\n\n");
 
@@ -362,6 +398,8 @@ main(int argc, char **argv)
     s->compression = opts.compr;
     s->order_method = opts.omethod;
     s->stereo_method = opts.stmethod;
+    s->prediction_type = opts.ptype;
+    s->min_order = opts.omin;
     s->max_order = opts.omax;
     s->min_partition_order = opts.pomin;
     s->max_partition_order = opts.pomax;
@@ -378,7 +416,13 @@ main(int argc, char **argv)
 
     // print encoding options info
     fprintf(stderr, "\nblocksize: %d\n", s->block_size);
-    fprintf(stderr, "max prediction order: %d\n", s->max_order);
+    ptype_s = "ERROR";
+    switch(s->prediction_type) {
+        case 0: ptype_s = "fixed";  break;
+        case 1: ptype_s = "levinson-durbin"; break;
+    }
+    fprintf(stderr, "prediction type: %s\n", ptype_s);
+    fprintf(stderr, "prediction order: %d,%d\n", s->min_order, s->max_order);
     fprintf(stderr, "partition order: %d,%d\n", s->min_partition_order, s->max_partition_order);
     omethod_s = "ERROR";
     switch(s->order_method) {

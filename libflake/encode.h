@@ -76,7 +76,9 @@ typedef struct FlacEncodeContext {
     uint32_t sample_count;
     int blocksize;
     int block_time_ms;
+    int min_predictor_order;
     int max_predictor_order;
+    int prediction_type;
     int min_partition_order;
     int max_partition_order;
     int lpc_precision;
