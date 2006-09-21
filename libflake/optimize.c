@@ -168,7 +168,7 @@ encode_residual(FlacEncodeContext *ctx, int ch)
     smp = sub->samples;
     n = frame->blocksize;
 
-    /* CONSTANT */
+    // CONSTANT
     for(i=1; i<n; i++) {
         if(smp[i] != smp[0]) break;
     }
@@ -178,7 +178,7 @@ encode_residual(FlacEncodeContext *ctx, int ch)
         return sub->obits;
     }
 
-    /* VERBATIM */
+    // VERBATIM
     if(n < 5) {
         sub->type = sub->type_code = FLAC_SUBFRAME_VERBATIM;
         encode_residual_verbatim(res, smp, n);
@@ -190,7 +190,7 @@ encode_residual(FlacEncodeContext *ctx, int ch)
     min_porder = 0;
     max_porder = 8;
 
-    /* FIXED */
+    // FIXED
     if(max_order == 0 || (n <= max_order)) {
         sub->order = 2;
         sub->type = FLAC_SUBFRAME_FIXED;
@@ -200,7 +200,7 @@ encode_residual(FlacEncodeContext *ctx, int ch)
                                       sub->order, sub->obits);
     }
 
-    /* LPC */
+    // LPC
     est_order = lpc_calc_coefs(smp, n, max_order, ctx->lpc_precision,
                                ctx->order_method, coefs, shift);
 

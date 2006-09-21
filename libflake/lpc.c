@@ -79,7 +79,6 @@ compute_autocorr(const int32_t *data, int len, int lag, double *autoc)
     free(data1);
 }
 
-
 /**
  * Levinson-Durbin recursion.
  * Produces LPC coefficients from autocorrelation data.
@@ -134,15 +133,15 @@ quantize_lpc_coefs(double *lpc_in, int order, int precision, int32_t *lpc_out,
 	int32_t qmax;
 	int sh, max_shift;
 
-    /* limit order & precision to FLAC specification */
+    // limit order & precision to FLAC specification
     assert(order >= 0 && order <= MAX_LPC_ORDER);
 	assert(precision > 0 && precision < 16);
 
-    /* define maximum levels */
+    // define maximum levels
     max_shift = 15;
     qmax = (1 << (precision - 1)) - 1;
 
-    /* find maximum coefficient value */
+    // find maximum coefficient value
     cmax = 0.0;
     for(i=0; i<order; i++) {
         d = lpc_in[i];
@@ -151,7 +150,7 @@ quantize_lpc_coefs(double *lpc_in, int order, int precision, int32_t *lpc_out,
             cmax = d;
     }
 
-    /* if maximum value quantizes to zero, return all zeros */
+    // if maximum value quantizes to zero, return all zeros
     if(cmax * (1 << max_shift) < 1.0) {
         *shift = 0;
         for(i=0; i<order; i++) {
@@ -160,14 +159,14 @@ quantize_lpc_coefs(double *lpc_in, int order, int precision, int32_t *lpc_out,
         return;
     }
 
-    /* calculate level shift which scales max coeff to available bits */
+    // calculate level shift which scales max coeff to available bits
     sh = max_shift;
     while((cmax * (1 << sh) > qmax) && (sh > 0)) {
         sh--;
     }
 
-    /* since negative shift values are unsupported in decoder, scale down
-       coefficients instead */
+    // since negative shift values are unsupported in decoder, scale down
+    // coefficients instead
     if(sh == 0 && cmax > qmax) {
         double scale = ((double)qmax) / cmax;
         for(i=0; i<order; i++) {
@@ -175,7 +174,7 @@ quantize_lpc_coefs(double *lpc_in, int order, int precision, int32_t *lpc_out,
         }
     }
 
-    /* output quantized coefficients and level shift */
+    // output quantized coefficients and level shift
     for(i=0; i<order; i++) {
         lpc_out[i] = (int32_t)(lpc_in[i] * (1 << sh));
     }
@@ -211,7 +210,7 @@ lpc_calc_coefs(const int32_t *samples, int blocksize, int max_order,
     int i, j;
     int opt_order;
 
-    /* order 0 is not valid in LPC mode */
+    // order 0 is not valid in LPC mode
     if(max_order < 1) return 1;
 
     compute_autocorr(samples, blocksize, max_order+1, autoc);

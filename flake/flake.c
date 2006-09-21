@@ -344,7 +344,7 @@ main(int argc, char **argv)
     }
     fwrite(s->header, 1, header_size, ofp);
 
-    /* print encoding options info */
+    // print encoding options info
     fprintf(stderr, "\nblocksize: %d\n", s->block_size);
     fprintf(stderr, "max order: %d\n", s->max_order);
     omethod_s = "ERROR";
@@ -406,7 +406,7 @@ main(int argc, char **argv)
     flake_encode_close(s);
 
     if(!fseek(ofp, 22, SEEK_SET)) {
-        /* note: use be2me_32() */
+        // note: use be2me_32()
         uint8_t sc[4] = { 0, 0, 0, 0 };
         sc[0] = (samplecount >> 24) & 0xFF;
         sc[1] = (samplecount >> 16) & 0xFF;

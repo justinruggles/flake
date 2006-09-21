@@ -65,7 +65,7 @@ wavfile_init(WavFile *wf, FILE *fp)
     memset(wf, 0, sizeof(WavFile));
     wf->fp = fp;
 
-    /* attempt to get file size */
+    // attempt to get file size
     wf->file_size = 0;
     wf->seekable = !fseek(fp, 0, SEEK_END);
     if(wf->seekable) {

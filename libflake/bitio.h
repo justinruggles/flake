@@ -58,7 +58,7 @@ bitwriter_init(BitWriter *bw, void *buf, int len)
 static inline uint32_t
 bitwriter_count(BitWriter *bw)
 {
-    /* TODO: simplify */
+    // TODO: simplify
     return ((((bw->buf_ptr - bw->buffer) << 3) + 32 - bw->bit_left) + 7) >> 3;
 }
 
@@ -128,11 +128,11 @@ bitwriter_write_rice_signed(BitWriter *bw, int k, int32_t val)
 
     if(k < 0) return;
 
-    /* convert signed to unsigned */
+    // convert signed to unsigned
     v = -2*val-1;
     v ^= (v>>31);
 
-    /* write quotient in unary */
+    // write quotient in unary
     q = (v >> k) + 1;
     while(q > 31) {
         bitwriter_writebits(bw, 31, 0);
@@ -140,7 +140,7 @@ bitwriter_write_rice_signed(BitWriter *bw, int k, int32_t val)
     }
     bitwriter_writebits(bw, q, 1);
 
-    /* write write remainder in binary using 'k' bits*/
+    // write write remainder in binary using 'k' bits
     if(k > 0) {
         bitwriter_writebits(bw, k, v&((1<<k)-1));
     }

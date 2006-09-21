@@ -345,10 +345,10 @@ main(int argc, char **argv)
     WavInfo wi;
     WavFile *wf = &wi.wf;
 
-    /* initialize WavInfo to zero */
+    // initialize WavInfo to zero
     memset(&wi, 0, sizeof(WavInfo));
 
-    /* open file */
+    // open file
     if(argc > 2) {
         wavfile_error("\nusage: wavinfo [test.wav]\n");
     }
@@ -363,7 +363,7 @@ main(int argc, char **argv)
 
     wavfile_init(wf, fp);
 
-    /* print info */
+    // print info
     wavinfo_print(&wi);
 
     fclose(fp);

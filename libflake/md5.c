@@ -74,7 +74,7 @@ body(MD5Context *ctx, const void *data, uint32_t size)
         saved_c = c;
         saved_d = d;
 
-        /* Round 1 */
+        // Round 1
         STEP(F, a, b, c, d, SET( 0), 0xD76AA478,  7)
         STEP(F, d, a, b, c, SET( 1), 0xE8C7B756, 12)
         STEP(F, c, d, a, b, SET( 2), 0x242070DB, 17)
@@ -92,7 +92,7 @@ body(MD5Context *ctx, const void *data, uint32_t size)
         STEP(F, c, d, a, b, SET(14), 0xA679438E, 17)
         STEP(F, b, c, d, a, SET(15), 0x49B40821, 22)
 
-        /* Round 2 */
+        // Round 2
         STEP(G, a, b, c, d, GET( 1), 0xF61E2562,  5)
         STEP(G, d, a, b, c, GET( 6), 0xC040B340,  9)
         STEP(G, c, d, a, b, GET(11), 0x265E5A51, 14)
@@ -110,7 +110,7 @@ body(MD5Context *ctx, const void *data, uint32_t size)
         STEP(G, c, d, a, b, GET( 7), 0x676F02D9, 14)
         STEP(G, b, c, d, a, GET(12), 0x8D2A4C8A, 20)
 
-        /* Round 3 */
+        // Round 3
         STEP(H, a, b, c, d, GET( 5), 0xFFFA3942,  4)
         STEP(H, d, a, b, c, GET( 8), 0x8771F681, 11)
         STEP(H, c, d, a, b, GET(11), 0x6D9D6122, 16)
@@ -128,7 +128,7 @@ body(MD5Context *ctx, const void *data, uint32_t size)
         STEP(H, c, d, a, b, GET(15), 0x1FA27CF8, 16)
         STEP(H, b, c, d, a, GET( 2), 0xC4AC5665, 23)
 
-        /* Round 4 */
+        // Round 4
         STEP(I, a, b, c, d, GET( 0), 0xF4292244,  6)
         STEP(I, d, a, b, c, GET( 7), 0x432AFF97, 10)
         STEP(I, c, d, a, b, GET(14), 0xAB9423A7, 15)

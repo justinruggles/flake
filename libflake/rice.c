@@ -82,7 +82,7 @@ calc_sums(int pmin, int pmax, uint32_t *data, int n, int pred_order,
     int parts, cnt;
     uint32_t *res;
 
-    /* means for highest level */
+    // means for highest level
     parts = (1 << pmax);
     res = &data[pred_order];
     cnt = (n >> pmax) - pred_order;
@@ -94,7 +94,7 @@ calc_sums(int pmin, int pmax, uint32_t *data, int n, int pred_order,
             sums[pmax][i] += res[j];
         }
     }
-    /* means for lower levels */
+    // means for lower levels
     for(i=pmax-1; i>=pmin; i--) {
         parts = (1 << i);
         for(j=0; j<parts; j++) {
