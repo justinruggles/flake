@@ -265,7 +265,7 @@ encode_residual(FlacEncodeContext *ctx, int ch)
         }
         opt_order++;
     } else if(omethod == FLAKE_ORDER_METHOD_LOG) {
-        // log search
+        // log search (written by Michael Niedermayer for FFmpeg)
         uint32_t bits[MAX_LPC_ORDER];
         int step;
 
