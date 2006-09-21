@@ -57,7 +57,11 @@ void
 bitwriter_flush(BitWriter *bw)
 {
     bw->bit_buf <<= bw->bit_left;
-    while(bw->bit_left < 32) {
+    while(bw->bit_left < 32 && !bw->eof) {
+        if(bw->buf_ptr >= bw->buf_end) {
+            bw->eof = 1;
+            break;
+        }
         *bw->buf_ptr++ = bw->bit_buf >> 24;
         bw->bit_buf <<= 8;
         bw->bit_left += 8;
@@ -77,7 +81,7 @@ bitwriter_writebits(BitWriter *bw, int bits, uint32_t val)
         fprintf(stderr, "ERROR: bits=%d val=%u\n", bits, val);
     }*/
     
-    if(bw->eof || bw->buf_ptr >= bw->buf_end) {
+    if(bw->eof || (bw->buf_ptr+3) >= bw->buf_end) {
         bw->eof = 1;
         return;
     }
