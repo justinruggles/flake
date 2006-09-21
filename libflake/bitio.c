@@ -22,16 +22,25 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef BITIO_H
+#define BITIO_H
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <inttypes.h>
 #include <string.h>
 #include <assert.h>
 
-#include "bitio.h"
 #include "bswap.h"
 
-void
+typedef struct BitWriter {
+    uint32_t bit_buf;
+    int bit_left;
+    uint8_t *buffer, *buf_ptr, *buf_end;
+    int eof;
+} BitWriter;
+
+static inline void
 bitwriter_init(BitWriter *bw, void *buf, int len)
 {
     if(len < 0) {
@@ -46,14 +55,14 @@ bitwriter_init(BitWriter *bw, void *buf, int len)
     bw->eof = 0;
 }
 
-uint32_t
+static inline uint32_t
 bitwriter_count(BitWriter *bw)
 {
     /* TODO: simplify */
     return ((((bw->buf_ptr - bw->buffer) << 3) + 32 - bw->bit_left) + 7) >> 3;
 }
 
-void
+static inline void
 bitwriter_flush(BitWriter *bw)
 {
     bw->bit_buf <<= bw->bit_left;
@@ -70,7 +79,7 @@ bitwriter_flush(BitWriter *bw)
     bw->bit_buf = 0;
 }
 
-void
+static inline void
 bitwriter_writebits(BitWriter *bw, int bits, uint32_t val)
 {
     unsigned int bit_buf;
@@ -105,14 +114,14 @@ bitwriter_writebits(BitWriter *bw, int bits, uint32_t val)
     bw->bit_left = bit_left;
 }
 
-void
+static inline void
 bitwriter_writebits_signed(BitWriter *bw, int bits, int32_t val)
 {
     assert(bits >= 0 && bits <= 31);
     bitwriter_writebits(bw, bits, val & ((1ULL<<bits)-1));
 }
 
-void
+static inline void
 bitwriter_write_rice_signed(BitWriter *bw, int k, int32_t val)
 {
     int v, q;
@@ -136,3 +145,5 @@ bitwriter_write_rice_signed(BitWriter *bw, int k, int32_t val)
         bitwriter_writebits(bw, k, v&((1<<k)-1));
     }
 }
+
+#endif /* BITIO_H */

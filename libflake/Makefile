@@ -6,7 +6,7 @@ include ../config.mak
 CFLAGS=$(OPTFLAGS) -I. -I.. -I$(SRC_PATH)/libaften \
        -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_ISOC9X_SOURCE
 
-OBJS= bitio.o crc.o encode.o lpc.o md5.o optimize.o rice.o \
+OBJS= crc.o encode.o lpc.o md5.o optimize.o rice.o \
 
 
 HEADERS = flake.h
