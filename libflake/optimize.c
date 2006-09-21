@@ -135,21 +135,6 @@ encode_residual_lpc(int32_t res[], int32_t smp[], int n, int order,
     }
 }
 
-static inline int
-get_max_p_order(int max, int n, int order) {
-    int porder, max_parts;
-
-    porder = max;
-    while(porder > 0) {
-        max_parts = (1 << porder);
-        if(!(n % max_parts) && (n > max_parts*order)) {
-            break;
-        }
-        porder--;
-    }
-    return porder;
-}
-
 int
 encode_residual(FlacEncodeContext *ctx, int ch)
 {
