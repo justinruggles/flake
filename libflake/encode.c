@@ -342,9 +342,9 @@ flake_encode_init(FlakeContext *s)
 
     /* set maximum encoded frame size in verbatim mode */
     if(ctx->channels == 2) {
-        s->max_frame_size = 14 + ((ctx->blocksize * 33 + 7) >> 3);
+        s->max_frame_size = 16 + ((ctx->blocksize * (ctx->bps+ctx->bps+1) + 7) >> 3);
     } else {
-        s->max_frame_size = 14 + (ctx->blocksize * ctx->channels * 2);
+        s->max_frame_size = 16 + ((ctx->blocksize * ctx->channels * ctx->bps + 7) >> 3);
     }
     ctx->max_framesize = s->max_frame_size;
 
