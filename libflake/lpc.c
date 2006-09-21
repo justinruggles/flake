@@ -41,7 +41,7 @@ apply_welch_window(const int32_t *data, int len, double *w_data)
 
     n2 = (len >> 1);
     c = (2.0 / (len - 1.0)) - 1.0;
-	for(i=0; i<n2; i++) {
+    for(i=0; i<n2; i++) {
         w = 1.0 - ((c-i) * (c-i));
         w_data[i] = data[i] * w;
         w_data[len-1-i] = data[len-1-i] * w;
@@ -128,10 +128,10 @@ static void
 quantize_lpc_coefs(double *lpc_in, int order, int precision, int32_t *lpc_out,
                    int *shift)
 {
-	int i;
-	double d, cmax, error;
-	int32_t qmax;
-	int sh, q;
+    int i;
+    double d, cmax, error;
+    int32_t qmax;
+    int sh, q;
 
     // define maximum levels
     qmax = (1 << (precision - 1)) - 1;
