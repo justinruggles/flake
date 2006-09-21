@@ -45,7 +45,7 @@ apply_welch_window(const int32_t *data, int len, double *w_data)
         w = 1.0 - ((c-i) * (c-i));
         w_data[i] = data[i] * w;
         w_data[len-1-i] = data[len-1-i] * w;
-	}
+    }
 }
 
 /**
