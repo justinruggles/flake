@@ -106,12 +106,28 @@ calc_sums(int pmin, int pmax, uint32_t *data, int n, int pred_order,
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 
-/* slow, temporary log-base2 */
-#include <math.h>
+static const uint8_t log2tab[256] = {
+    0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4,
+    4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+    5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6,
+    6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+    6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+    6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7
+};
+
 static inline int
-LOG2(uint32_t v) {
-    if(v == 0) return 0;
-    return (int)(log((double)(v)) / log(2.0));
+log2i(uint32_t v)
+{
+    int n = 0;
+    if(v & 0xffff0000){ v >>= 16; n += 16; }
+    if(v & 0xff00){ v >>= 8; n += 8; }
+    n += log2tab[v];
+    return n;
 }
 
 #ifdef ENABLE_24_BIT
@@ -153,7 +169,7 @@ try_escape_codes(RiceContext *rc, int32_t *data, uint32_t *udata, int n,
         for(j=0; j<cnt; j++) {
             rmax = MAX(rmax, abs(res[j]));
         }
-        rc->esc_bps[i] = LOG2(rmax)+3;
+        rc->esc_bps[i] = log2i(rmax)+3;
         if(rc->esc_bps[i] > 31) continue;
         bits = (rc->esc_bps[i] * cnt) + 5;
         rbits = rice_encode_count_exact(ures, cnt, rc->params[i]);
@@ -203,11 +219,13 @@ calc_rice_params(RiceContext *rc, int pmin, int pmax, int32_t *data, int n,
     free(udata);
     return bits[opt_porder];
 }
-static int get_max_p_order(int max_porder, int n, int order)
+
+static int
+get_max_p_order(int max_porder, int n, int order)
 {
-    int porder = MIN(max_porder, LOG2(n^(n-1)));
+    int porder = MIN(max_porder, log2i(n^(n-1)));
     if(order > 0)
-        porder = MIN(porder, LOG2(n/order));
+        porder = MIN(porder, log2i(n/order));
     return porder;
 }
 
