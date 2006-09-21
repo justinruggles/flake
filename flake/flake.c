@@ -54,19 +54,19 @@ print_help(FILE *out)
                  "       [-h]         Print out list of commandline options\n"
                  "       [-p #]       Padding bytes to put in header (default: 4096)\n"
                  "       [-0 ... -12] Compression level (default: 5)\n"
-                 "                        0 = -b 1024  -l 0  -o 0 -s 1\n"
-                 "                        1 = -b 1024  -l 4  -o 0 -s 1\n"
-                 "                        2 = -b 1024  -l 4  -o 1 -s 1\n"
-                 "                        3 = -b 2048  -l 5  -o 1 -s 1\n"
-                 "                        4 = -b 4096  -l 6  -o 1 -s 1\n"
-                 "                        5 = -b 4608  -l 8  -o 1 -s 1\n"
-                 "                        6 = -b 4608  -l 8  -o 2 -s 2\n"
-                 "                        7 = -b 4608  -l 8  -o 3 -s 2\n"
-                 "                        8 = -b 4608  -l 12 -o 3 -s 2\n"
-                 "                        9 = -b 4608  -l 12 -o 4 -s 2\n"
-                 "                       10 = -b 4608  -l 12 -o 5 -s 2\n"
-                 "                       11 = -b 4608  -l 32 -o 4 -s 2\n"
-                 "                       12 = -b 4608  -l 32 -o 5 -s 2\n"
+                 "                        0 = -b 1024  -l 0  -o 0 -s 1 -r 2,2\n"
+                 "                        1 = -b 1024  -l 4  -o 1 -s 1 -r 2,2\n"
+                 "                        2 = -b 1024  -l 4  -o 1 -s 1 -r 0,3\n"
+                 "                        3 = -b 2048  -l 6  -o 1 -s 1 -r 0,3\n"
+                 "                        4 = -b 4096  -l 8  -o 1 -s 1 -r 0,3\n"
+                 "                        5 = -b 4608  -l 8  -o 1 -s 1 -r 0,8\n"
+                 "                        6 = -b 4608  -l 8  -o 6 -s 1 -r 0,8\n"
+                 "                        7 = -b 4608  -l 8  -o 3 -s 1 -r 0,8\n"
+                 "                        8 = -b 4608  -l 12 -o 6 -s 1 -r 0,8\n"
+                 "                        9 = -b 4608  -l 12 -o 3 -s 1 -r 0,8\n"
+                 "                       10 = -b 4608  -l 12 -o 5 -s 1 -r 0,8\n"
+                 "                       11 = -b 4608  -l 32 -o 6 -s 1 -r 0,8\n"
+                 "                       12 = -b 4608  -l 32 -o 5 -s 1 -r 0,8\n"
                  "       [-b #]       Block size [16 - 65535] (default: 4608)\n"
                  "       [-l #]       Maximum prediction order [0 - 32] (default: 8)\n"
                  "       [-o #]       Prediction order selection method\n"
@@ -76,6 +76,8 @@ print_help(FILE *out)
                  "                        3 = 4-level\n"
                  "                        4 = 8-level\n"
                  "                        5 = full search\n"
+                 "                        6 = log search\n"
+                 "       [-r #[,#]]   Rice partition order {max} or {min},{max} (default: 0,8)\n"
                  "       [-s #]       Stereo decorrelation method\n"
                  "                        0 = independent L+R channels\n"
                  "                        1 = mid-side (default)\n"
@@ -90,6 +92,8 @@ typedef struct CommandOptions {
     int compr;
     int omethod;
     int omax;
+    int pomin;
+    int pomax;
     int bsize;
     int stmethod;
     int padding;
@@ -136,7 +140,7 @@ static int
 parse_commandline(int argc, char **argv, CommandOptions *opts)
 {
     int i;
-    static const char *param_str = "hblops";
+    static const char *param_str = "hbloprs";
 
     if(argc < 2) {
         return 1;
@@ -149,6 +153,8 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
     opts->compr = 5;
     opts->omethod = -1;
     opts->omax = -1;
+    opts->pomin = -1;
+    opts->pomax = -1;
     opts->bsize = 0;
     opts->stmethod = -1;
     opts->padding = -1;
@@ -211,7 +217,7 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
                         break;
                     case 'o':
                         opts->omethod = parse_number(argv[i], 1);
-                        if(opts->omethod < 0 || opts->omethod > 5) {
+                        if(opts->omethod < 0 || opts->omethod > 6) {
                             fprintf(stderr, "invalid order selection method: %d. must be 0 to 4.\n", opts->omethod);
                             return 1;
                         }
@@ -220,6 +226,29 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
                         opts->padding = parse_number(argv[i], 8);
                         if(opts->padding < 0 || opts->padding >= (1<<24)) {
                             fprintf(stderr, "invalid order padding amount: %d. must be 0 to 16777215.\n", opts->omethod);
+                            return 1;
+                        }
+                        break;
+                    case 'r':
+                        if(strchr(argv[i], ',') == NULL) {
+                            opts->pomin = 0;
+                            opts->pomax = parse_number(argv[i], 1);
+                        } else {
+                            char *po = strchr(argv[i], ',');
+                            po[0] = '\0';
+                            opts->pomin = parse_number(argv[i], 1);
+                            opts->pomax = parse_number(&po[1], 1);
+                        }
+                        if(opts->pomin < 0 || opts->pomin > 8) {
+                            fprintf(stderr, "invalid min partition order: %d. must be 0 to 8.\n", opts->pomin);
+                            return 1;
+                        }
+                        if(opts->pomax < 0 || opts->pomax > 8) {
+                            fprintf(stderr, "invalid max partition order: %d. must be 0 to 8.\n", opts->pomax);
+                            return 1;
+                        }
+                        if(opts->pomin > opts->pomax) {
+                            fprintf(stderr, "invalid min partition order: %d. must be <= max partition order.\n", opts->pomin);
                             return 1;
                         }
                         break;
@@ -334,6 +363,8 @@ main(int argc, char **argv)
     s->order_method = opts.omethod;
     s->stereo_method = opts.stmethod;
     s->max_order = opts.omax;
+    s->min_partition_order = opts.pomin;
+    s->max_partition_order = opts.pomax;
     s->padding_size = opts.padding;
     header_size = flake_encode_init(s);
     if(header_size < 0) {
@@ -347,7 +378,8 @@ main(int argc, char **argv)
 
     // print encoding options info
     fprintf(stderr, "\nblocksize: %d\n", s->block_size);
-    fprintf(stderr, "max order: %d\n", s->max_order);
+    fprintf(stderr, "max prediction order: %d\n", s->max_order);
+    fprintf(stderr, "partition order: %d,%d\n", s->min_partition_order, s->max_partition_order);
     omethod_s = "ERROR";
     switch(s->order_method) {
         case 0: omethod_s = "maximum";  break;
@@ -356,6 +388,7 @@ main(int argc, char **argv)
         case 3: omethod_s = "4-level"; break;
         case 4: omethod_s = "8-level"; break;
         case 5: omethod_s = "full search";   break;
+        case 6: omethod_s = "log search";  break;
     }
     fprintf(stderr, "order method: %s\n", omethod_s);
     if(s->channels == 2) {

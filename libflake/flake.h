@@ -29,6 +29,7 @@
 #define FLAKE_ORDER_METHOD_4LEVEL 3
 #define FLAKE_ORDER_METHOD_8LEVEL 4
 #define FLAKE_ORDER_METHOD_SEARCH 5
+#define FLAKE_ORDER_METHOD_LOG    6
 
 #define FLAKE_STEREO_METHOD_INDEPENDENT  0
 #define FLAKE_STEREO_METHOD_ESTIMATE     1
@@ -73,6 +74,7 @@ typedef struct FlakeContext {
     // 3 = 4-level
     // 4 = 8-level
     // 5 = full search
+    // 6 = log search
     int order_method;
 
     // stereo decorrelation method
@@ -104,6 +106,18 @@ typedef struct FlakeContext {
     // if set to less than 0, it is chosen based on compression.
     // valid values are 0 to 32
     int max_order;
+
+    // minimum partition order
+    // set by user prior to calling flake_encode_init
+    // if set to less than 0, it is chosen based on compression.
+    // valid values are 0 to 8
+    int min_partition_order;
+
+    // maximum partition order
+    // set by user prior to calling flake_encode_init
+    // if set to less than 0, it is chosen based on compression.
+    // valid values are 0 to 8
+    int max_partition_order;
 
     // MD5 digest
     // set by flake_encode_close;

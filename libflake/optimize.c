@@ -159,6 +159,7 @@ encode_residual(FlacEncodeContext *ctx, int ch)
     int32_t coefs[MAX_LPC_ORDER][MAX_LPC_ORDER];
     int shift[MAX_LPC_ORDER];
     int n, max_order, opt_order, min_porder, max_porder;
+    int min_order;
     int32_t *res, *smp;
     int est_order, omethod;
 
@@ -186,9 +187,10 @@ encode_residual(FlacEncodeContext *ctx, int ch)
     }
 
     omethod = ctx->order_method;
+    min_order = ctx->max_predictor_order;
     max_order = ctx->max_predictor_order;
-    min_porder = 0;
-    max_porder = 8;
+    min_porder = ctx->min_partition_order;
+    max_porder = ctx->max_partition_order;
 
     // FIXED
     if(max_order == 0 || (n <= max_order)) {
@@ -267,7 +269,7 @@ encode_residual(FlacEncodeContext *ctx, int ch)
             }
         }
         opt_order++;
-    } else {
+    } else if(omethod == FLAKE_ORDER_METHOD_SEARCH) {
         // brute-force optimal order search
         uint32_t bits[MAX_LPC_ORDER];
         opt_order = 0;
@@ -279,6 +281,29 @@ encode_residual(FlacEncodeContext *ctx, int ch)
                                            ctx->lpc_precision);
             if(bits[i] < bits[opt_order]) {
                 opt_order = i;
+            }
+        }
+        opt_order++;
+    } else if(omethod == FLAKE_ORDER_METHOD_LOG) {
+        // log search
+        uint32_t bits[MAX_LPC_ORDER];
+        int step;
+
+        opt_order = min_order - 1 + (max_order-min_order)/3;
+        memset(bits, -1, sizeof(bits));
+
+        for(step=16; step>0; step>>=1){
+            int last = opt_order;
+            for(i=last-step; i<=last+step; i+= step){
+                if(i<min_order-1 || i>=max_order || bits[i] < UINT32_MAX)
+                    continue;
+                encode_residual_lpc(res, smp, n, i+1, coefs[i], shift[i]);
+                bits[i] = calc_rice_params_lpc(&sub->rc, min_porder, max_porder,
+                                               res, n, i+1, sub->obits,
+                                               ctx->lpc_precision);
+                if(bits[i] < bits[opt_order]) {
+                    opt_order = i;
+                }
             }
         }
         opt_order++;

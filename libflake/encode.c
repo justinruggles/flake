@@ -251,21 +251,21 @@ flake_encode_init(FlakeContext *s)
 
     // select order method based on compression level
     ctx->order_method = ((int[]){ FLAKE_ORDER_METHOD_MAX,
-                                  FLAKE_ORDER_METHOD_MAX,
                                   FLAKE_ORDER_METHOD_EST,
                                   FLAKE_ORDER_METHOD_EST,
                                   FLAKE_ORDER_METHOD_EST,
                                   FLAKE_ORDER_METHOD_EST,
-                                  FLAKE_ORDER_METHOD_2LEVEL,
+                                  FLAKE_ORDER_METHOD_EST,
+                                  FLAKE_ORDER_METHOD_LOG,
                                   FLAKE_ORDER_METHOD_4LEVEL,
+                                  FLAKE_ORDER_METHOD_LOG,
                                   FLAKE_ORDER_METHOD_4LEVEL,
-                                  FLAKE_ORDER_METHOD_8LEVEL,
                                   FLAKE_ORDER_METHOD_SEARCH,
-                                  FLAKE_ORDER_METHOD_8LEVEL,
+                                  FLAKE_ORDER_METHOD_LOG,
                                   FLAKE_ORDER_METHOD_SEARCH})[s->compression];
     // user override for order method
     if(s->order_method >= 0) {
-        if(s->order_method > FLAKE_ORDER_METHOD_SEARCH) {
+        if(s->order_method > FLAKE_ORDER_METHOD_LOG) {
             return -1;
         }
         ctx->order_method = s->order_method;
@@ -302,7 +302,7 @@ flake_encode_init(FlakeContext *s)
     }
 
     // select maximum predictor order based on compression level
-    ctx->max_predictor_order = ((int[]){  0,  4,  4,  5,  6,  8,
+    ctx->max_predictor_order = ((int[]){  0,  4,  4,  6,  8,  8,
                                           8,  8, 12, 12, 12, 32,
                                          32 })[s->compression];
     // user override for maximum predictor order
@@ -313,6 +313,46 @@ flake_encode_init(FlakeContext *s)
         ctx->max_predictor_order = s->max_order;
     } else {
         s->max_order = ctx->max_predictor_order;
+    }
+
+    // select maximum predictor order based on compression level
+    ctx->max_predictor_order = ((int[]){  0,  4,  4,  6,  8,  8,
+                                          8,  8, 12, 12, 12, 32,
+                                         32 })[s->compression];
+    // user override for maximum predictor order
+    if(s->max_order >= 0) {
+        if(s->max_order > 32) {
+            return -1;
+        }
+        ctx->max_predictor_order = s->max_order;
+    } else {
+        s->max_order = ctx->max_predictor_order;
+    }
+
+    // select min and max partition order based on compression level
+    ctx->min_partition_order = ((int[]){ 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                         0 })[s->compression];
+    ctx->max_partition_order = ((int[]){ 2, 2, 3, 3, 3, 8, 8, 8, 8, 8, 8, 8,
+                                         8 })[s->compression];
+    // user overrides for min and max partition order
+    if(s->min_partition_order >= 0) {
+        if(s->min_partition_order > 8) {
+            return -1;
+        }
+        ctx->min_partition_order = s->min_partition_order;
+    } else {
+        s->min_partition_order = ctx->min_partition_order;
+    }
+    if(s->max_partition_order >= 0) {
+        if(s->max_partition_order > 8) {
+            return -1;
+        }
+        ctx->max_partition_order = s->max_partition_order;
+    } else {
+        s->max_partition_order = ctx->max_partition_order;
+    }
+    if(ctx->min_partition_order > ctx->max_partition_order) {
+        return -1;
     }
 
     // select LPC precision based on block size

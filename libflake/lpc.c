@@ -249,6 +249,7 @@ lpc_calc_coefs(const int32_t *samples, int blocksize, int max_order,
             }
             break;
         case FLAKE_ORDER_METHOD_SEARCH:
+        case FLAKE_ORDER_METHOD_LOG:
             for(i=0; i<max_order; i++) {
                 quantize_lpc_coefs(lpc[i], i+1, precision, coefs[i], &shift[i]);
             }
