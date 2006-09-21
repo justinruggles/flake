@@ -732,7 +732,11 @@ void foo(char * $restrict_keyword p);
 EOF
 done
 
-enabled debug && add_cflags -g
+if test $debug = "yes"; then
+    add_cflags -g
+else
+    add_cflags -DNDEBUG
+fi
 
 # add some useful compiler flags if supported
 check_cflags -Wdeclaration-after-statement
