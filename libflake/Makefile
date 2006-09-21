@@ -30,13 +30,6 @@ $(LIB): $(STATIC_OBJS)
 %.o: %.c
 	$(CC) $(CFLAGS) $(LIBOBJFLAGS) -c -o $@ $<
 
-%.o: %.S
-	$(CC) $(CFLAGS) $(LIBOBJFLAGS) -c -o $@ $<
-
-# BeOS: remove -Wall to get rid of all the "multibyte constant" warnings
-%.o: %.cpp
-	g++ $(subst -Wall,,$(CFLAGS)) -c -o $@ $<
-
 depend: $(SRCS)
 	$(CC) -MM $(CFLAGS) $^ 1>.depend
 
