@@ -957,7 +957,7 @@ split_frame(int16_t *samples, int channels, int block_size,
 {
     int i, ch, j;
     int n = block_size >> 3;
-    int64_t res[4][8];
+    int64_t res[2][8];
     int layout[8];
     int32_t *mono = malloc(block_size * sizeof(int32_t));
     int32_t *mono_ptr;
@@ -973,9 +973,8 @@ split_frame(int16_t *samples, int channels, int block_size,
 
     // calculate absolute sum of 2nd order residual
     for(j=0; j<8; j++) {
-        for(i=0; i<4; i++) {
-            res[3-i][j>>i] = 1;
-        }
+        res[1][j] = 0;
+        res[0][j>>1] = 1;
     }
     for(j=0; j<8; j++) {
         int64_t r = 0;
@@ -983,35 +982,34 @@ split_frame(int16_t *samples, int channels, int block_size,
         for(i=2; i<n; i++) {
             r += abs(mono_ptr[i] - 2*mono_ptr[i-1] + mono_ptr[i-2]);
         }
-        for(i=0; i<4; i++) {
-            res[3-i][j>>i] += r;
-        }
+        res[1][j] += r;
+        res[0][j>>1] += r;
     }
     free(mono);
 
     // determine frame layout
-    for(i=0; i<8; i++) layout[i] = 0;
+    memset(layout, 0, 8 * sizeof(int));
     layout[0] = 1;
-    if(abs(res[3][0]-res[3][1])*200 / res[2][0] > SPLIT_THRESHOLD) {
+    if(abs(res[1][0]-res[1][1])*200 / res[0][0] > SPLIT_THRESHOLD) {
         layout[1] = 1;
         layout[2] = 1;
         layout[4] = 1;
     }
-    if(abs(res[3][2]-res[3][3])*200 / res[2][1] > SPLIT_THRESHOLD) {
+    if(abs(res[1][2]-res[1][3])*200 / res[0][1] > SPLIT_THRESHOLD) {
         layout[3] = 1;
         layout[4] = 1;
     }
-    if(abs(res[3][4]-res[3][5])*200 / res[2][2] > SPLIT_THRESHOLD) {
+    if(abs(res[1][4]-res[1][5])*200 / res[0][2] > SPLIT_THRESHOLD) {
         layout[5] = 1;
         layout[6] = 1;
     }
-    if(abs(res[3][6]-res[3][7])*200 / res[2][3] > SPLIT_THRESHOLD) {
+    if(abs(res[1][6]-res[1][7])*200 / res[0][3] > SPLIT_THRESHOLD) {
         layout[7] = 1;
     }
 
     // generate frame count and frame sizes from layout
     frames[0] = 0;
-    for(i=0; i<8; i++) sizes[i] = 0;
+    memset(sizes, 0, 8 * sizeof(int));
     for(i=0; i<8; i++) {
         if(layout[i]) {
             frames[0]++;
