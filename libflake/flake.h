@@ -73,14 +73,12 @@ typedef struct FlakeEncodeParams {
     // set by the user prior to calling flake_encode_init
     // if set to 0, a block size is chosen based on block_time_ms
     // can also be changed by user before encoding a frame
-    // any changes during encoding must be lower than initial value
     int block_size;
 
     // block time in milliseconds
     // set by the user prior to calling flake_encode_init
     // used to calculate block_size based on sample rate
     // can also be changed by user before encoding a frame
-    // any changes during encoding must be lower than initial value
     int block_time_ms;
 
     // padding size in bytes
@@ -123,6 +121,12 @@ typedef struct FlakeEncodeParams {
     // if set to less than 0, it is chosen based on compression.
     // valid values are 0 to 8
     int max_partition_order;
+
+    // whether to use variable block sizes
+    // set by user prior to calling flake_encode_init
+    // 0 = fixed block size
+    // 1 = variable block size
+    int variable_block_size;
 
 } FlakeEncodeParams;
 

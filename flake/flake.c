@@ -84,6 +84,9 @@ print_help(FILE *out)
                  "       [-s #]       Stereo decorrelation method\n"
                  "                        0 = independent L+R channels\n"
                  "                        1 = mid-side (default)\n"
+                 "       [-v #]       Variable block size\n"
+                 "                        0 = fixed (default)\n"
+                 "                        1 = variable\n"
                  "\n");
 }
 
@@ -102,6 +105,7 @@ typedef struct CommandOptions {
     int bsize;
     int stmethod;
     int padding;
+    int vbs;
 } CommandOptions;
 
 static int
@@ -129,6 +133,7 @@ parse_number(char *arg, int max) {
         if(m == 0) m = 1;
         else m *= 10;
     }
+    if(arg[i] != '\0') return -1;
     digits = i;
     for(i=0; i<digits; i++) {
         if(arg[i] < '0' || arg[i] > '9') {
@@ -145,7 +150,8 @@ static int
 parse_commandline(int argc, char **argv, CommandOptions *opts)
 {
     int i;
-    static const char *param_str = "bhloprst";
+    static const char *param_str = "bhloprstv";
+    int max_digits = 8;
 
     if(argc < 2) {
         return 1;
@@ -165,6 +171,7 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
     opts->bsize = -1;
     opts->stmethod = -1;
     opts->padding = -1;
+    opts->vbs = -1;
 
     for(i=1; i<argc; i++) {
         if(argv[i][0] == '-' && argv[i][1] != '\0') {
@@ -175,7 +182,8 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
                         return 1;
                     }
                 } else {
-                    opts->compr = parse_number(&argv[i][1], 2);
+                    opts->compr = parse_number(&argv[i][1], max_digits);
+                    if(opts->compr < 0) return 1;
                 }
             } else {
                 // if argument starts with '-' and is more than 1 char, treat
@@ -205,17 +213,21 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
 
                 switch(argv[i-1][1]) {
                     case 'b':
-                        opts->bsize = parse_number(argv[i], 5);
+                        opts->bsize = parse_number(argv[i], max_digits);
+                        if(opts->bsize < 0) return 1;
                         break;
                     case 'l':
                         if(strchr(argv[i], ',') == NULL) {
                             opts->omin = 0;
-                            opts->omax = parse_number(argv[i], 2);
+                            opts->omax = parse_number(argv[i], max_digits);
+                            if(opts->omax < 0) return 1;
                         } else {
                             char *po = strchr(argv[i], ',');
                             po[0] = '\0';
-                            opts->omin = parse_number(argv[i], 2);
-                            opts->omax = parse_number(&po[1], 2);
+                            opts->omin = parse_number(argv[i], max_digits);
+                            if(opts->omin < 0) return 1;
+                            opts->omax = parse_number(&po[1], max_digits);
+                            if(opts->omax < 0) return 1;
                         }
                         // constrain bounds based on prediction type
                         if(opts->ptype == FLAKE_PREDICTION_FIXED) {
@@ -225,27 +237,38 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
                         }
                         break;
                     case 'o':
-                        opts->omethod = parse_number(argv[i], 1);
+                        opts->omethod = parse_number(argv[i], max_digits);
+                        if(opts->omethod < 0) return 1;
                         break;
                     case 'p':
-                        opts->padding = parse_number(argv[i], 8);
+                        opts->padding = parse_number(argv[i], max_digits);
+                        if(opts->padding < 0) return 1;
                         break;
                     case 'r':
                         if(strchr(argv[i], ',') == NULL) {
                             opts->pomin = 0;
-                            opts->pomax = parse_number(argv[i], 1);
+                            opts->pomax = parse_number(argv[i], max_digits);
+                            if(opts->pomax < 0) return 1;
                         } else {
                             char *po = strchr(argv[i], ',');
                             po[0] = '\0';
-                            opts->pomin = parse_number(argv[i], 1);
-                            opts->pomax = parse_number(&po[1], 1);
+                            opts->pomin = parse_number(argv[i], max_digits);
+                            if(opts->pomin < 0) return 1;
+                            opts->pomax = parse_number(&po[1], max_digits);
+                            if(opts->pomax < 0) return 1;
                         }
                         break;
                     case 's':
-                        opts->stmethod = parse_number(argv[i], 1);
+                        opts->stmethod = parse_number(argv[i], max_digits);
+                        if(opts->stmethod < 0) return 1;
                         break;
                     case 't':
-                        opts->ptype = parse_number(argv[i], 1);
+                        opts->ptype = parse_number(argv[i], max_digits);
+                        if(opts->ptype < 0) return 1;
+                        break;
+                    case 'v':
+                        opts->vbs = parse_number(argv[i], max_digits);
+                        if(opts->vbs < 0) return 1;
                         break;
                 }
             }
@@ -276,7 +299,7 @@ main(int argc, char **argv)
     uint8_t *frame;
     int16_t *wav;
     int err, percent;
-    uint32_t nr, fs, samplecount, bytecount, framecount;
+    uint32_t nr, fs, samplecount, bytecount;
     int t0, t1;
     float kb, sec, kbps, wav_bytes;
     char *omethod_s, *stmethod_s, *ptype_s;
@@ -359,6 +382,7 @@ main(int argc, char **argv)
     if(opts.pomin    >= 0) s.params.min_partition_order  = opts.pomin;
     if(opts.pomax    >= 0) s.params.max_partition_order  = opts.pomax;
     if(opts.padding  >= 0) s.params.padding_size         = opts.padding;
+    if(opts.vbs      >= 0) s.params.variable_block_size  = opts.vbs;
 
     header_size = flake_encode_init(&s);
     if(header_size < 0) {
@@ -370,6 +394,7 @@ main(int argc, char **argv)
 
     // print encoding options info
     fprintf(stderr, "\nblock size: %d\n", s.params.block_size);
+    fprintf(stderr, "variable: %s\n", s.params.variable_block_size ? "yes" : "no");
     ptype_s = "ERROR";
     switch(s.params.prediction_type) {
         case 0: ptype_s = "fixed";  break;
@@ -404,7 +429,7 @@ main(int argc, char **argv)
     frame = malloc(s.max_frame_size);
     wav = malloc(s.params.block_size * wf.channels * sizeof(int16_t));
 
-    samplecount = framecount = t0 = percent = 0;
+    samplecount = t0 = percent = 0;
     wav_bytes = 0;
     bytecount = header_size;
     nr = wavfile_read_samples(&wf, wav, s.params.block_size);
@@ -417,7 +442,6 @@ main(int argc, char **argv)
             fwrite(frame, 1, fs, ofp);
             samplecount += s.params.block_size;
             bytecount += fs;
-            framecount++;
             t1 = samplecount / s.sample_rate;
             if(t1 > t0) {
                 kb = ((bytecount * 8.0) / 1000.0);

@@ -68,7 +68,11 @@ write_streaminfo(FlacEncodeContext *ctx, uint8_t *streaminfo, int last)
     bitwriter_writebits(&ctx->bw, 7, 0);
     bitwriter_writebits(&ctx->bw, 24, 34);
 
-    bitwriter_writebits(&ctx->bw, 16, ctx->params.block_size);
+    if(ctx->params.variable_block_size) {
+        bitwriter_writebits(&ctx->bw, 16, 0);
+    } else {
+        bitwriter_writebits(&ctx->bw, 16, ctx->params.block_size);
+    }
     bitwriter_writebits(&ctx->bw, 16, ctx->params.block_size);
     bitwriter_writebits(&ctx->bw, 24, 0);
     bitwriter_writebits(&ctx->bw, 24, ctx->max_frame_size);
@@ -269,6 +273,8 @@ flake_set_defaults(FlakeEncodeParams *params)
 
     params->padding_size = 4096;
 
+    params->variable_block_size = 0;
+
     return 0;
 }
 
@@ -337,7 +343,11 @@ flake_validate_params(FlakeEncodeParams *params)
         return -1;
     }
 
-    if(params->padding_size >= (1<<24)) {
+    if(params->padding_size < 0 || params->padding_size >= (1<<24)) {
+        return -1;
+    }
+
+    if(params->variable_block_size < 0 || params->variable_block_size > 1) {
         return -1;
     }
 
@@ -484,12 +494,15 @@ init_frame(FlacEncodeContext *ctx)
     }
 
     // get block size codes
-    for(i=0; i<15; i++) {
-        if(ctx->params.block_size == flac_blocksizes[i]) {
-            frame->blocksize = flac_blocksizes[i];
-            frame->bs_code[0] = i;
-            frame->bs_code[1] = -1;
-            break;
+    i = 15;
+    if(!ctx->params.variable_block_size) {
+        for(i=0; i<15; i++) {
+            if(ctx->params.block_size == flac_blocksizes[i]) {
+                frame->blocksize = flac_blocksizes[i];
+                frame->bs_code[0] = i;
+                frame->bs_code[1] = -1;
+                break;
+            }
         }
     }
     if(i == 15) {
@@ -647,6 +660,7 @@ log2i(uint32_t v)
     if(v & 0xff00){ v >>= 8; n += 8; }
     for(i=2; i<256; i<<=1) {
         if(v >= i) n++;
+        else break;
     }
     return n;
 }
@@ -867,8 +881,8 @@ output_frame_footer(FlacEncodeContext *ctx)
     bitwriter_flush(&ctx->bw);
 }
 
-int
-flake_encode_frame(FlakeContext *s, uint8_t frame_buffer[], int16_t samples[])
+static int
+encode_frame(FlakeContext *s, uint8_t *frame_buffer, int16_t *samples)
 {
     int i, ch;
     FlacEncodeContext *ctx;
@@ -915,6 +929,107 @@ flake_encode_frame(FlakeContext *s, uint8_t frame_buffer[], int16_t samples[])
     }
     ctx->frame_count++;
     return bitwriter_count(&ctx->bw);
+}
+
+#define SPLIT_THRESHOLD 48
+
+static void
+split_frame(int16_t *samples, int channels, int block_size,
+            int *frames, int sizes[8])
+{
+    int i, ch, j;
+    int n = block_size >> 3;
+    int64_t res[4][8];
+    int layout[8];
+    int32_t *mono = malloc(block_size * sizeof(int32_t));
+    int32_t *mono_ptr;
+
+    // combine channels
+    for(i=0; i<block_size; i++) {
+        mono[i] = 0;
+        for(ch=0; ch<channels; ch++) {
+            mono[i] += samples[i*channels+ch];
+        }
+        mono[i] /= channels;
+    }
+
+    // calculate power of 2nd order residual
+    for(j=0; j<8; j++) {
+        for(i=0; i<4; i++) {
+            res[3-i][j>>i] = 1;
+        }
+    }
+    for(j=0; j<8; j++) {
+        int64_t r = 0;
+        mono_ptr = &mono[j*n];
+        for(i=2; i<n; i++) {
+            r += abs(mono_ptr[i] - 2*mono_ptr[i-1] + mono_ptr[i-2]);
+        }
+        for(i=0; i<4; i++) {
+            res[3-i][j>>i] += r;
+        }
+    }
+    free(mono);
+
+    // determine frame layout
+    for(i=0; i<8; i++) layout[i] = 0;
+    layout[0] = 1;
+    if(abs(res[3][0]-res[3][1])*200 / res[2][0] > SPLIT_THRESHOLD) {
+        layout[1] = 1;
+        layout[2] = 1;
+        layout[4] = 1;
+    }
+    if(abs(res[3][2]-res[3][3])*200 / res[2][1] > SPLIT_THRESHOLD) {
+        layout[3] = 1;
+        layout[4] = 1;
+    }
+    if(abs(res[3][4]-res[3][5])*200 / res[2][2] > SPLIT_THRESHOLD) {
+        layout[5] = 1;
+        layout[6] = 1;
+    }
+    if(abs(res[3][6]-res[3][7])*200 / res[2][3] > SPLIT_THRESHOLD) {
+        layout[7] = 1;
+    }
+
+    // generate frame count and frame sizes from layout
+    frames[0] = 0;
+    for(i=0; i<8; i++) sizes[i] = 0;
+    for(i=0; i<8; i++) {
+        if(layout[i]) {
+            frames[0]++;
+        }
+        sizes[frames[0]-1] += n;
+    }
+}
+
+int
+flake_encode_frame(FlakeContext *s, uint8_t *frame_buffer, int16_t *samples)
+{
+    FlacEncodeContext *ctx;
+
+    ctx = (FlacEncodeContext *) s->private_ctx;
+    if(ctx->params.variable_block_size &&
+       !(s->params.block_size & 7) && s->params.block_size >= 16*8) {
+        int frames;
+        int sizes[8];
+        split_frame(samples, s->channels, s->params.block_size, &frames, sizes);
+        if(frames > 1) {
+            int i, fs, fpos, spos, bs;
+            fpos = 0;
+            spos = 0;
+            bs = s->params.block_size;
+            for(i=0; i<frames; i++) {
+                s->params.block_size = sizes[i];
+                fs = encode_frame(s, &frame_buffer[fpos], &samples[spos*ctx->channels]);
+                if(fs < 0) return -1;
+                fpos += fs;
+                spos += sizes[i];
+            }
+            s->params.block_size = bs;
+            return fpos;
+        }
+    }
+    return encode_frame(s, frame_buffer, samples);
 }
 
 void
