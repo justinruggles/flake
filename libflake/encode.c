@@ -281,6 +281,9 @@ flake_set_defaults(FlakeEncodeParams *params)
 int
 flake_validate_params(FlakeEncodeParams *params)
 {
+    int i;
+    int subset = 0;
+
     if(params == NULL) {
         return -1;
     }
@@ -301,6 +304,10 @@ flake_validate_params(FlakeEncodeParams *params)
        params->block_size > FLAC_MAX_BLOCKSIZE)) {
         return -1;
     }
+    for(i=0; i<15; i++) {
+        if(params->block_size == flac_blocksizes[i]) break;
+    }
+    if(i == 15) subset = 1;
 
     if(params->block_time_ms < 0) {
         return -1;
@@ -350,8 +357,11 @@ flake_validate_params(FlakeEncodeParams *params)
     if(params->variable_block_size < 0 || params->variable_block_size > 1) {
         return -1;
     }
+    if(params->variable_block_size == 1) {
+        subset = 1;
+    }
 
-    return 0;
+    return subset;
 }
 
 /**
@@ -361,7 +371,8 @@ int
 flake_encode_init(FlakeContext *s)
 {
     FlacEncodeContext *ctx;
-    int i, header_len;
+    int i, header_len, compliance;
+    int subset = 1;
 
     if(s == NULL) {
         return -1;
@@ -390,6 +401,7 @@ flake_encode_init(FlakeContext *s)
     }
     // if not in table, samplerate is non-standard
     if(i == 12) {
+        subset = 0;
         ctx->samplerate = s->sample_rate;
         if(ctx->samplerate % 1000 == 0 && ctx->samplerate < 255000) {
             ctx->sr_code[0] = 12;
@@ -414,8 +426,8 @@ flake_encode_init(FlakeContext *s)
         }
     }
     if(i == 8) return -1;
-    // FIXME: For now, only 8-bit & 16-bit encoding are supported
-    if(ctx->bps != 8 && ctx->bps != 16) return -1;
+    // FIXME: For now, only 16-bit encoding is supported
+    if(ctx->bps != 16) return -1;
 
     ctx->sample_count = s->samples;
 
@@ -423,8 +435,14 @@ flake_encode_init(FlakeContext *s)
         s->params.block_size = select_blocksize(ctx->samplerate, s->params.block_time_ms);
     }
 
-    if(flake_validate_params(&s->params)) {
+    compliance = flake_validate_params(&s->params);
+    if(compliance < 0) {
         return -1;
+    } else if(compliance == 1) {
+        subset = 0;
+    }
+    if(!subset) {
+        fprintf(stderr, "\n** WARNING! FLAC file will not be Subset compliant **\n");
     }
 
     ctx->params = s->params;
