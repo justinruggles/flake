@@ -953,7 +953,7 @@ split_frame(int16_t *samples, int channels, int block_size,
         mono[i] /= channels;
     }
 
-    // calculate power of 2nd order residual
+    // calculate absolute sum of 2nd order residual
     for(j=0; j<8; j++) {
         for(i=0; i<4; i++) {
             res[3-i][j>>i] = 1;
