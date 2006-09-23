@@ -30,7 +30,7 @@
 #include "vbs.h"
 #include "encode.h"
 
-#define SPLIT_THRESHOLD 48
+#define SPLIT_THRESHOLD 100
 
 /**
  * Split single frame into smaller frames using predictability comparison.
@@ -46,7 +46,7 @@ split_frame_v1(int16_t *samples, int channels, int block_size,
 {
     int i, ch, j;
     int n = block_size >> 3;
-    int64_t res[2][8];
+    int64_t res[8];
     int layout[8];
     int32_t *mono = malloc(block_size * sizeof(int32_t));
     int32_t *mono_ptr;
@@ -61,39 +61,22 @@ split_frame_v1(int16_t *samples, int channels, int block_size,
     }
 
     // calculate absolute sum of 2nd order residual
-    for(j=0; j<8; j++) {
-        res[1][j] = 0;
-        res[0][j>>1] = 1;
-    }
-    for(j=0; j<8; j++) {
-        int64_t r = 0;
-        mono_ptr = &mono[j*n];
-        for(i=2; i<n; i++) {
-            r += abs(mono_ptr[i] - 2*mono_ptr[i-1] + mono_ptr[i-2]);
+    for(i=0; i<8; i++) {
+        res[i] = 1;
+        mono_ptr = &mono[i*n];
+        for(j=2; j<n; j++) {
+            res[i] += abs(mono_ptr[j] - 2*mono_ptr[j-1] + mono_ptr[j-2]);
         }
-        res[1][j] += r;
-        res[0][j>>1] += r;
     }
     free(mono);
 
     // determine frame layout
     memset(layout, 0, 8 * sizeof(int));
     layout[0] = 1;
-    if(abs(res[1][0]-res[1][1])*200 / res[0][0] > SPLIT_THRESHOLD) {
-        layout[1] = 1;
-        layout[2] = 1;
-        layout[4] = 1;
-    }
-    if(abs(res[1][2]-res[1][3])*200 / res[0][1] > SPLIT_THRESHOLD) {
-        layout[3] = 1;
-        layout[4] = 1;
-    }
-    if(abs(res[1][4]-res[1][5])*200 / res[0][2] > SPLIT_THRESHOLD) {
-        layout[5] = 1;
-        layout[6] = 1;
-    }
-    if(abs(res[1][6]-res[1][7])*200 / res[0][3] > SPLIT_THRESHOLD) {
-        layout[7] = 1;
+    for(i=0; i<7; i++) {
+        if(abs(res[i]-res[i+1])*200 / res[i] > SPLIT_THRESHOLD) {
+            layout[i+1] = 1;
+        }
     }
 
     // generate frame count and frame sizes from layout
