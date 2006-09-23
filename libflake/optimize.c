@@ -216,7 +216,7 @@ encode_residual(FlacEncodeContext *ctx, int ch)
               omethod == FLAKE_ORDER_METHOD_4LEVEL ||
               omethod == FLAKE_ORDER_METHOD_8LEVEL) {
         int levels = 1 << (omethod-1);
-        uint32_t bits[levels];
+        uint32_t bits[8];
         int order;
         int opt_index = levels-1;
         opt_order = max_order-1;
