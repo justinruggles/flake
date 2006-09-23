@@ -84,4 +84,6 @@ typedef struct FlacEncodeContext {
     BitWriter bw;
 } FlacEncodeContext;
 
+extern int encode_frame(FlakeContext *s, uint8_t *frame_buffer, int16_t *samples);
+
 #endif /* FLAC_H */

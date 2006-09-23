@@ -302,7 +302,7 @@ main(int argc, char **argv)
     uint32_t nr, fs, samplecount, bytecount;
     int t0, t1;
     float kb, sec, kbps, wav_bytes;
-    char *omethod_s, *stmethod_s, *ptype_s;
+    char *omethod_s, *stmethod_s, *ptype_s, *vbs_s;
 
     fprintf(stderr, "\nFlake: FLAC audio encoder\n(c) 2006  Justin Ruggles\n\n");
 
@@ -394,7 +394,13 @@ main(int argc, char **argv)
 
     // print encoding options info
     fprintf(stderr, "\nblock size: %d\n", s.params.block_size);
-    fprintf(stderr, "variable: %s\n", s.params.variable_block_size ? "yes" : "no");
+    vbs_s = "ERROR";
+    switch(s.params.variable_block_size) {
+        case 0: vbs_s = "none";  break;
+        case 1: vbs_s = "method 1"; break;
+        case 2: vbs_s = "method 2"; break;
+    }
+    fprintf(stderr, "variable: %s\n", vbs_s);
     ptype_s = "ERROR";
     switch(s.params.prediction_type) {
         case 0: ptype_s = "fixed";  break;
