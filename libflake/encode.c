@@ -442,7 +442,12 @@ flake_encode_init(FlakeContext *s)
         subset = 0;
     }
     if(!subset) {
-        fprintf(stderr, "\n** WARNING! FLAC file will not be Subset compliant **\n");
+        fprintf(stderr,"\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n"
+                         " WARNING! The chosen encoding options are\n"
+                         " not FLAC Subset compliant. Therefore, the\n"
+                         " encoded file(s) may not work properly with\n"
+                         " some FLAC players and decoders.\n"
+                         "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n");
     }
 
     ctx->params = s->params;
