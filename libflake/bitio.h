@@ -71,7 +71,10 @@ bitwriter_flush(BitWriter *bw)
             bw->eof = 1;
             break;
         }
-        *bw->buf_ptr++ = bw->bit_buf >> 24;
+        if(bw->buffer != NULL) {
+            *bw->buf_ptr = bw->bit_buf >> 24;
+        }
+        bw->buf_ptr++;
         bw->bit_buf <<= 8;
         bw->bit_left += 8;
     }
@@ -104,7 +107,9 @@ bitwriter_writebits(BitWriter *bw, int bits, uint32_t val)
     } else {
         bit_buf <<= bit_left;
         bit_buf |= val >> (bits - bit_left);
-        *(uint32_t *)bw->buf_ptr = be2me_32(bit_buf);
+        if(bw->buffer != NULL) {
+            *(uint32_t *)bw->buf_ptr = be2me_32(bit_buf);
+        }
         bw->buf_ptr += 4;
         bit_left += (32 - bits);
         bit_buf = val;

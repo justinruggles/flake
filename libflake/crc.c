@@ -80,7 +80,7 @@ calc_crc8(const uint8_t *data, uint32_t len)
 {
 	uint8_t crc;
 
-    assert(data != NULL);
+    if(data == NULL) return 0;
 
     crc = calc_crc(crc8tab, 8, data, len);
     return crc;
@@ -91,7 +91,7 @@ calc_crc16(const uint8_t *data, uint32_t len)
 {
 	uint16_t crc;
 
-    assert(data != NULL);
+    if(data == NULL) return 0;
 
     crc = calc_crc(crc16tab, 16, data, len);
     return crc;
