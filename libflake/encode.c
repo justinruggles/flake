@@ -207,9 +207,25 @@ flake_set_defaults(FlakeEncodeParams *params)
         return -1;
     }
     lvl = params->compression;
-    if(lvl < 0 || lvl > 12) {
+    if((lvl < 0 || lvl > 12) && (lvl != 99)) {
         fprintf(stderr, "invalid compression level: %d\n", lvl);
         return -1;
+    }
+
+    // maximum compression mode
+    if(lvl == 99) {
+        params->order_method = FLAKE_ORDER_METHOD_SEARCH;
+        params->stereo_method = FLAKE_STEREO_METHOD_ESTIMATE;
+        params->block_size = 0;
+        params->block_time_ms = 186;
+        params->prediction_type = FLAKE_PREDICTION_LEVINSON;
+        params->min_prediction_order = 1;
+        params->max_prediction_order = 32;
+        params->min_partition_order = 0;
+        params->max_partition_order = 8;
+        params->padding_size = 0;
+        params->variable_block_size = 2;
+        return 0;
     }
 
     params->order_method = ((int[]){ FLAKE_ORDER_METHOD_MAX,
@@ -289,7 +305,8 @@ flake_validate_params(FlakeEncodeParams *params)
         return -1;
     }
 
-    if(params->compression < 0 || params->compression > 12) {
+    if((params->compression < 0 || params->compression > 12) &&
+       (params->compression != 99)) {
         return -1;
     }
 
