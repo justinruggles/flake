@@ -174,6 +174,7 @@ encode_residual(FlacEncodeContext *ctx, int ch)
     omethod = ctx->params.order_method;
     min_order = ctx->params.min_prediction_order;
     max_order = ctx->params.max_prediction_order;
+    opt_order = max_order;
     min_porder = ctx->params.min_partition_order;
     max_porder = ctx->params.max_partition_order;
 
@@ -272,6 +273,8 @@ encode_residual(FlacEncodeContext *ctx, int ch)
             }
         }
         opt_order++;
+    } else {
+        return -1;
     }
 
     sub->order = opt_order;
