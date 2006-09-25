@@ -359,12 +359,12 @@ main(int argc, char **argv)
     }
     wf.read_format = WAV_SAMPLE_FMT_S16;
     if(!opts.quiet) {
-    wavfile_print(stderr, &wf);
-    if(wf.samples > 0) {
-        fprintf(stderr, "samples: %d\n", wf.samples);
-    } else {
-        fprintf(stderr, "samples: unknown\n");
-    }
+        wavfile_print(stderr, &wf);
+        if(wf.samples > 0) {
+            fprintf(stderr, "samples: %d\n", wf.samples);
+        } else {
+            fprintf(stderr, "samples: unknown\n");
+        }
     }
 
     // initialize encoder
@@ -415,44 +415,44 @@ main(int argc, char **argv)
 
     // print encoding options info
     if(!opts.quiet) {
-    fprintf(stderr, "\nblock size: %d\n", s.params.block_size);
-    vbs_s = "ERROR";
-    switch(s.params.variable_block_size) {
-        case 0: vbs_s = "none";  break;
-        case 1: vbs_s = "method 1"; break;
-        case 2: vbs_s = "method 2"; break;
-    }
-    fprintf(stderr, "variable: %s\n", vbs_s);
-    ptype_s = "ERROR";
-    switch(s.params.prediction_type) {
-        case 0: ptype_s = "fixed";  break;
-        case 1: ptype_s = "levinson-durbin"; break;
-    }
-    fprintf(stderr, "prediction type: %s\n", ptype_s);
-    fprintf(stderr, "prediction order: %d,%d\n", s.params.min_prediction_order,
-                                                 s.params.max_prediction_order);
-    fprintf(stderr, "partition order: %d,%d\n", s.params.min_partition_order,
-                                                s.params.max_partition_order);
-    omethod_s = "ERROR";
-    switch(s.params.order_method) {
-        case 0: omethod_s = "maximum";  break;
-        case 1: omethod_s = "estimate"; break;
-        case 2: omethod_s = "2-level"; break;
-        case 3: omethod_s = "4-level"; break;
-        case 4: omethod_s = "8-level"; break;
-        case 5: omethod_s = "full search";   break;
-        case 6: omethod_s = "log search";  break;
-    }
-    fprintf(stderr, "order method: %s\n", omethod_s);
-    if(s.channels == 2) {
-        stmethod_s = "ERROR";
-        switch(s.params.stereo_method) {
-            case 0: stmethod_s = "independent";  break;
-            case 1: stmethod_s = "mid-side";     break;
+        fprintf(stderr, "\nblock size: %d\n", s.params.block_size);
+        vbs_s = "ERROR";
+        switch(s.params.variable_block_size) {
+            case 0: vbs_s = "none";  break;
+            case 1: vbs_s = "method 1"; break;
+            case 2: vbs_s = "method 2"; break;
         }
-        fprintf(stderr, "stereo method: %s\n", stmethod_s);
-    }
-    fprintf(stderr, "header padding: %d\n\n", s.params.padding_size);
+        fprintf(stderr, "variable: %s\n", vbs_s);
+        ptype_s = "ERROR";
+        switch(s.params.prediction_type) {
+            case 0: ptype_s = "fixed";  break;
+            case 1: ptype_s = "levinson-durbin"; break;
+        }
+        fprintf(stderr, "prediction type: %s\n", ptype_s);
+        fprintf(stderr, "prediction order: %d,%d\n", s.params.min_prediction_order,
+                                                     s.params.max_prediction_order);
+        fprintf(stderr, "partition order: %d,%d\n", s.params.min_partition_order,
+                                                    s.params.max_partition_order);
+        omethod_s = "ERROR";
+        switch(s.params.order_method) {
+            case 0: omethod_s = "maximum";  break;
+            case 1: omethod_s = "estimate"; break;
+            case 2: omethod_s = "2-level"; break;
+            case 3: omethod_s = "4-level"; break;
+            case 4: omethod_s = "8-level"; break;
+            case 5: omethod_s = "full search";   break;
+            case 6: omethod_s = "log search";  break;
+        }
+        fprintf(stderr, "order method: %s\n", omethod_s);
+        if(s.channels == 2) {
+            stmethod_s = "ERROR";
+            switch(s.params.stereo_method) {
+                case 0: stmethod_s = "independent";  break;
+                case 1: stmethod_s = "mid-side";     break;
+            }
+            fprintf(stderr, "stereo method: %s\n", stmethod_s);
+        }
+        fprintf(stderr, "header padding: %d\n\n", s.params.padding_size);
     }
 
     frame = malloc(s.max_frame_size);
@@ -482,9 +482,9 @@ main(int argc, char **argv)
                 }
                 wav_bytes = samplecount*wf.block_align;
                 if(!opts.quiet) {
-                fprintf(stderr, "\rprogress: %3d%% | ratio: %1.3f | "
-                                "bitrate: %4.1f kbps ",
-                        percent, (bytecount / wav_bytes), kbps);
+                    fprintf(stderr, "\rprogress: %3d%% | ratio: %1.3f | "
+                                    "bitrate: %4.1f kbps ",
+                            percent, (bytecount / wav_bytes), kbps);
                 }
             }
             t0 = t1;
@@ -492,7 +492,7 @@ main(int argc, char **argv)
         nr = wavfile_read_samples(&wf, wav, s.params.block_size);
     }
     if(!opts.quiet) {
-    fprintf(stderr, "| bytes: %d \n\n", bytecount);
+        fprintf(stderr, "| bytes: %d \n\n", bytecount);
     }
 
     flake_encode_close(&s);
