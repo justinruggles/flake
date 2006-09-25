@@ -513,7 +513,8 @@ fmt_convert(enum WavSampleFormat dest_fmt, void *dest,
 int
 wavfile_read_samples(WavFile *wf, void *output, int num_samples)
 {
-    int nr, bytes_needed, i, j, bps, nsmp, v;
+    int nr, i, j, bps, nsmp, v;
+    int convert = 1;
     uint8_t *buffer;
 
     if(wf == NULL || wf->fp == NULL || output == NULL) return -1;
@@ -521,8 +522,12 @@ wavfile_read_samples(WavFile *wf, void *output, int num_samples)
     if(num_samples < 0) return -1;
     if(num_samples == 0) return 0;
 
-    bytes_needed = wf->block_align * num_samples;
-    buffer = calloc(bytes_needed, 1);
+    convert = (wf->read_format != wf->source_format);
+    if(convert) {
+        buffer = calloc(wf->block_align * num_samples, 1);
+    } else {
+        buffer = output;
+    }
 
     nr = fread(buffer, wf->block_align, num_samples, wf->fp);
     wf->filepos += nr * wf->block_align;
@@ -531,9 +536,10 @@ wavfile_read_samples(WavFile *wf, void *output, int num_samples)
     bps = wf->block_align / wf->channels;
     if(bps == 1) {
         if(wf->source_format != WAV_SAMPLE_FMT_U8) return -1;
-        fmt_convert(wf->read_format, output, wf->source_format, buffer, nsmp);
+        if(convert) {
+            fmt_convert(wf->read_format, output, wf->source_format, buffer, nsmp);
+        }
     } else if(bps == 2) {
-        int16_t *input = (int16_t *)buffer;
 #ifdef WORDS_BIG_ENDIAN
         uint16_t *buf16 = (uint16_t *)buffer;
         for(i=0; i<nsmp; i++) {
@@ -541,7 +547,9 @@ wavfile_read_samples(WavFile *wf, void *output, int num_samples)
         }
 #endif
         if(wf->source_format != WAV_SAMPLE_FMT_S16) return -1;
-        fmt_convert(wf->read_format, output, wf->source_format, input, nsmp);
+        if(convert) {
+            fmt_convert(wf->read_format, output, wf->source_format, (int16_t *)buffer, nsmp);
+        }
     } else if(bps == 3) {
         int32_t *input = calloc(nsmp, sizeof(int32_t));
         for(i=0,j=0; i<nsmp*bps; i+=bps,j++) {
@@ -560,34 +568,29 @@ wavfile_read_samples(WavFile *wf, void *output, int num_samples)
                 wf->source_format != WAV_SAMPLE_FMT_S24) {
             return -1;
         }
-        fmt_convert(wf->read_format, output, wf->source_format, input, nsmp);
+        if(convert) {
+            fmt_convert(wf->read_format, output, wf->source_format, input, nsmp);
+        }
         free(input);
     } else if(bps == 4) {
-        if(wf->format == WAVE_FORMAT_IEEEFLOAT) {
-            float *input = (float *)buffer;
 #ifdef WORDS_BIG_ENDIAN
-            uint32_t *buf32 = (uint32_t *)buffer;
-            for(i=0; i<nsmp; i++) {
-                buf32[i] = bswap_32(buf32[i]);
-            }
+        uint32_t *buf32 = (uint32_t *)buffer;
+        for(i=0; i<nsmp; i++) {
+            buf32[i] = bswap_32(buf32[i]);
+        }
 #endif
+        if(wf->format == WAVE_FORMAT_IEEEFLOAT) {
             if(wf->source_format != WAV_SAMPLE_FMT_FLT) return -1;
-            fmt_convert(wf->read_format, output, wf->source_format, input, nsmp);
-        } else {
-            int64_t v64;
-            int32_t *input = calloc(nsmp, sizeof(int32_t));
-            for(i=0,j=0; i<nsmp*bps; i+=bps,j++) {
-                v64 = buffer[i] + (buffer[i+1] << 8) + (buffer[i+2] << 16) +
-                      (((uint32_t)buffer[i+3]) << 24);
-                if(v64 >= (1LL<<31)) v64 -= (1LL<<32);
-                input[j] = v64;
+            if(convert) {
+                fmt_convert(wf->read_format, output, wf->source_format, (float *)buffer, nsmp);
             }
+        } else {
             if(wf->source_format != WAV_SAMPLE_FMT_S32) return -1;
-            fmt_convert(wf->read_format, output, wf->source_format, input, nsmp);
-            free(input);
+            if(convert) {
+                fmt_convert(wf->read_format, output, wf->source_format, (int32_t *)buffer, nsmp);
+            }
         }
     } else if(wf->format == WAVE_FORMAT_IEEEFLOAT && bps == 8) {
-        double *input = (double *)buffer;
 #ifdef WORDS_BIG_ENDIAN
         uint64_t *buf64 = (uint64_t *)buffer;
         for(i=0; i<nsmp; i++) {
@@ -595,9 +598,13 @@ wavfile_read_samples(WavFile *wf, void *output, int num_samples)
         }
 #endif
         if(wf->source_format != WAV_SAMPLE_FMT_DBL) return -1;
-        fmt_convert(wf->read_format, output, wf->source_format, input, nsmp);
+        if(convert) {
+            fmt_convert(wf->read_format, output, wf->source_format, (double *)buffer, nsmp);
+        }
     }
-    free(buffer);
+    if(convert) {
+        free(buffer);
+    }
 
     return nr;
 }
