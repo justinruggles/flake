@@ -35,8 +35,8 @@
 /**
  * Split single frame into smaller frames using predictability comparison.
  * This algorithm computes predictablity estimates for sections of the frame
- * by first downmixing the channels to mono, the summing the absolute value of
- * fixed 2nd order residual.  The predictability is compared between adjacent
+ * by first summing the absolute value of fixed 2nd order residual, averaged
+ * across all channels.  The predictability is compared between adjacent
  * sections to determine if they should be merged based on a fixed comparison
  * threshold.
  */
@@ -48,27 +48,20 @@ split_frame_v1(int16_t *samples, int channels, int block_size,
     int n = block_size >> 3;
     int64_t res[8];
     int layout[8];
-    int32_t *mono = malloc(block_size * sizeof(int32_t));
-    int32_t *mono_ptr;
-
-    // combine channels
-    for(i=0; i<block_size; i++) {
-        mono[i] = 0;
-        for(ch=0; ch<channels; ch++) {
-            mono[i] += samples[i*channels+ch];
-        }
-        mono[i] /= channels;
-    }
+    int16_t *sample_ptr;
 
     // calculate absolute sum of 2nd order residual
     for(i=0; i<8; i++) {
-        res[i] = 1;
-        mono_ptr = &mono[i*n];
-        for(j=2; j<n; j++) {
-            res[i] += abs(mono_ptr[j] - 2*mono_ptr[j-1] + mono_ptr[j-2]);
+        res[i] = 0;
+        for(ch=0; ch<channels; ch++) {
+            sample_ptr = &samples[i*n*channels+ch];
+            for(j=2*channels; j<n*channels; j+=channels) {
+                res[i] += abs(sample_ptr[j] - 2*sample_ptr[j-channels] + sample_ptr[j-(2*channels)]);
+            }
         }
+        res[i] /= channels;
+        res[i]++;
     }
-    free(mono);
 
     // determine frame layout
     memset(layout, 0, 8 * sizeof(int));
