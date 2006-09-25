@@ -178,7 +178,11 @@ typedef struct FlakeContext {
  */
 extern int flake_set_defaults(FlakeEncodeParams *params);
 
-extern int flake_validate_params(FlakeEncodeParams *params);
+/**
+ * Validates encoding parameters
+ * @return -1 if error. 0 if ok. 1 if ok but non-Subset.
+ */
+extern int flake_validate_params(FlakeContext *s);
 
 extern int flake_encode_init(FlakeContext *s);
 

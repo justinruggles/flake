@@ -295,7 +295,7 @@ main(int argc, char **argv)
     FILE *ofp;
     WavFile wf;
     FlakeContext s;
-    int header_size;
+    int header_size, subset;
     uint8_t *frame;
     int16_t *wav;
     int err, percent;
@@ -384,6 +384,18 @@ main(int argc, char **argv)
     if(opts.padding  >= 0) s.params.padding_size         = opts.padding;
     if(opts.vbs      >= 0) s.params.variable_block_size  = opts.vbs;
 
+    subset = flake_validate_params(&s);
+    if(subset < 0) {
+        fprintf(stderr, "Error initializing encoder.\n");
+        exit(1);
+    } else if(subset == 1) {
+        fprintf(stderr,"\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n"
+                         " WARNING! The chosen encoding options are\n"
+                         " not FLAC Subset compliant. Therefore, the\n"
+                         " encoded file(s) may not work properly with\n"
+                         " some FLAC players and decoders.\n"
+                         "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n");
+    }
     header_size = flake_encode_init(&s);
     if(header_size < 0) {
         flake_encode_close(&s);

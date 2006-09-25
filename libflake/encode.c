@@ -296,13 +296,43 @@ flake_set_defaults(FlakeEncodeParams *params)
 }
 
 int
-flake_validate_params(FlakeEncodeParams *params)
+flake_validate_params(FlakeContext *s)
 {
     int i;
     int subset = 0;
+    int bs;
+    FlakeEncodeParams *params;
 
-    if(params == NULL) {
+    if(s == NULL) {
         return -1;
+    }
+    params = &s->params;
+
+    if(s->channels < 1 || s->channels > FLAC_MAX_CH) {
+        return -1;
+    }
+
+    if(s->sample_rate < 1 || s->sample_rate > 655350) {
+        return -1;
+    }
+    for(i=4; i<12; i++) {
+        if(s->sample_rate == flac_samplerates[i]) {
+            break;
+        }
+    }
+    if(i == 12) {
+        subset = 1;
+    }
+
+    if(s->bits_per_sample < 4 || s->bits_per_sample > 32) {
+        return -1;
+    }
+    for(i=1; i<8; i++) {
+        if(s->bits_per_sample == flac_bitdepths[i])
+            break;
+    }
+    if(i == 8) {
+        subset = 1;
     }
 
     if((params->compression < 0 || params->compression > 12) &&
@@ -318,18 +348,22 @@ flake_validate_params(FlakeEncodeParams *params)
         return -1;
     }
 
-    if(params->block_size != 0 && (params->block_size < FLAC_MIN_BLOCKSIZE ||
-       params->block_size > FLAC_MAX_BLOCKSIZE)) {
-        return -1;
-    }
-    for(i=0; i<15; i++) {
-        if(params->block_size == flac_blocksizes[i]) break;
-    }
-    if(i == 15) subset = 1;
-
     if(params->block_time_ms < 0) {
         return -1;
     }
+
+    bs = params->block_size;
+    if(bs == 0) {
+        bs = select_blocksize(s->sample_rate, params->block_time_ms);
+    }
+    if(bs < FLAC_MIN_BLOCKSIZE || bs > FLAC_MAX_BLOCKSIZE) {
+        return -1;
+    }
+    for(i=0; i<15; i++) {
+        if(bs == flac_blocksizes[i])
+            break;
+    }
+    if(i == 15) subset = 1;
 
     if(params->prediction_type < 0 || params->prediction_type > 1) {
         return -1;
@@ -389,8 +423,7 @@ int
 flake_encode_init(FlakeContext *s)
 {
     FlacEncodeContext *ctx;
-    int i, header_len, compliance;
-    int subset = 1;
+    int i, header_len;
 
     if(s == NULL) {
         return -1;
@@ -400,15 +433,14 @@ flake_encode_init(FlakeContext *s)
     ctx = calloc(1, sizeof(FlacEncodeContext));
     s->private_ctx = ctx;
 
-    if(s->channels < 1 || s->channels > FLAC_MAX_CH) {
+    if(flake_validate_params(s) < 0) {
         return -1;
     }
+
     ctx->channels = s->channels;
     ctx->ch_code = s->channels-1;
 
     // find samplerate in table
-    if(s->sample_rate < 1)
-        return -1;
     for(i=4; i<12; i++) {
         if(s->sample_rate == flac_samplerates[i]) {
             ctx->samplerate = flac_samplerates[i];
@@ -419,7 +451,6 @@ flake_encode_init(FlakeContext *s)
     }
     // if not in table, samplerate is non-standard
     if(i == 12) {
-        subset = 0;
         ctx->samplerate = s->sample_rate;
         if(ctx->samplerate % 1000 == 0 && ctx->samplerate < 255000) {
             ctx->sr_code[0] = 12;
@@ -430,12 +461,9 @@ flake_encode_init(FlakeContext *s)
         } else if(ctx->samplerate < 65535) {
             ctx->sr_code[0] = 13;
             ctx->sr_code[1] = ctx->samplerate;
-        } else {
-            return -1;
         }
     }
 
-    if(s->bits_per_sample == 0) return -1;
     for(i=1; i<8; i++) {
         if(s->bits_per_sample == flac_bitdepths[i]) {
             ctx->bps = flac_bitdepths[i];
@@ -451,21 +479,6 @@ flake_encode_init(FlakeContext *s)
 
     if(s->params.block_size == 0) {
         s->params.block_size = select_blocksize(ctx->samplerate, s->params.block_time_ms);
-    }
-
-    compliance = flake_validate_params(&s->params);
-    if(compliance < 0) {
-        return -1;
-    } else if(compliance == 1) {
-        subset = 0;
-    }
-    if(!subset) {
-        fprintf(stderr,"\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n"
-                         " WARNING! The chosen encoding options are\n"
-                         " not FLAC Subset compliant. Therefore, the\n"
-                         " encoded file(s) may not work properly with\n"
-                         " some FLAC players and decoders.\n"
-                         "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n");
     }
 
     ctx->params = s->params;
