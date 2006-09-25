@@ -10,8 +10,6 @@ CFLAGS=$(OPTFLAGS) -I. -I$(SRC_PATH) -I$(SRC_PATH)/libflake \
 
 LDFLAGS+= -g
 
-DEP_LIBS=libflake/$(LIBPREF)flake$(LIBSUF)
-
 FLAKE_LIBDIRS = -L./libflake
 FLAKE_LIBS = -lflake$(BUILDSUF)
 
@@ -32,7 +30,6 @@ install: install-progs install-libs install-headers
 
 install-progs: progs
 	$(MAKE) -C flake install
-	$(MAKE) -C util install
 
 install-libs:
 	$(MAKE) -C libflake install-libs
@@ -44,14 +41,12 @@ uninstall: uninstall-progs uninstall-libs uninstall-headers
 
 uninstall-progs:
 	$(MAKE) -C flake uninstall-progs
-	$(MAKE) -C util uninstall-progs
 
 uninstall-libs:
 	$(MAKE) -C libflake uninstall-libs
 
 uninstall-headers:
 	$(MAKE) -C libflake uninstall-headers
-	-rmdir "$(incdir)"
 
 dep:	depend
 
@@ -59,10 +54,6 @@ depend:
 	$(MAKE) -C libflake depend
 	$(MAKE) -C flake    depend
 	$(MAKE) -C util     depend
-
-.libs: lib
-	@test -f .libs || touch .libs
-	@for i in $(DEP_LIBS) ; do if test $$i -nt .libs ; then touch .libs; fi ; done
 
 clean:
 	$(MAKE) -C libflake clean

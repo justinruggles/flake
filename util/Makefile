@@ -3,16 +3,14 @@
 #
 include ../config.mak
 
-VPATH=$(SRC_PATH)
-
-CFLAGS=$(OPTFLAGS) -I. -I.. -I$(SRC_PATH)/flake \
-       -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_ISOC9X_SOURCE
+CFLAGS=$(OPTFLAGS) -I. -I.. \
+	-D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_ISOC9X_SOURCE
 
 LDFLAGS+= -g
 
 PROGS=wavinfo$(EXESUF)
 
-OBJS = wavinfo.o ../flake/wav.o
+OBJS = wavinfo.o $(SRC_PATH)/flake/wav.o
 SRCS = $(OBJS:.o=.c)
 
 all: $(PROGS)
@@ -34,6 +32,7 @@ depend: .depend
 
 clean:
 	rm -f *.o *~ \
+	*.d *.a *.lib *.def *.exp \
 	   $(PROGS)
 
 distclean: clean

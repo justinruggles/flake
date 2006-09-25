@@ -3,24 +3,24 @@
 #
 include ../config.mak
 
-VPATH=$(SRC_PATH)
-
 CFLAGS=$(OPTFLAGS) -I. -I.. -I$(SRC_PATH)/libflake \
 	-D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_ISOC9X_SOURCE
 
 LDFLAGS+= -g
+
+DEP_LIBS=$(SRC_PATH)/libflake/$(LIBPREF)flake$(LIBSUF)
 
 PROGS_G=flake_g$(EXESUF)
 PROGS=flake$(EXESUF)
 
 OBJS = flake.o wav.o
 SRCS = $(OBJS:.o=.c)
-FLAKE_LIBDIRS = -L../libflake
+FLAKE_LIBDIRS = -L$(SRC_PATH)/libflake
 FLAKE_LIBS = -lflake$(BUILDSUF)
 
 all: $(PROGS_G) $(PROGS)
 
-flake_g$(EXESUF): flake.o wav.o libflake/libflake.a
+flake_g$(EXESUF): flake.o wav.o $(DEP_LIBS)
 	$(CC) $(FLAKE_LIBDIRS) $(LDFLAGS) -o $@ flake.o wav.o $(FLAKE_LIBS) $(EXTRALIBS)
 	cp -p flake_g$(EXESUF) flake$(EXESUF)
 	$(STRIP) flake$(EXESUF)
@@ -47,7 +47,7 @@ depend: .depend
 	$(CC) -MM $(CFLAGS) $^ 1>.depend
 
 clean:
-	rm -f *.o *~ \
+	rm -f *.o *.d *~ *.a *.lib *.def *.exp \
 	   $(PROGS) $(PROGS_G)
 
 distclean: clean
