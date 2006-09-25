@@ -30,7 +30,7 @@
 #include <inttypes.h>
 #include <string.h>
 
-#if (defined __MINGW32__) || (defined _WIN32)
+#ifdef _WIN32
 #include <fcntl.h>
 #include <io.h>
 #endif
@@ -325,9 +325,7 @@ main(int argc, char **argv)
     }
 
     if(!strncmp(opts.infile, "-", 2)) {
-#if defined(__MINGW32__)
-        setmode(fileno(stdin), O_BINARY);
-#elif defined(_WIN32)
+#ifdef _WIN32
         _setmode(_fileno(stdin), _O_BINARY);
 #endif
         ifp = stdin;
@@ -339,9 +337,7 @@ main(int argc, char **argv)
         }
     }
     if(!strncmp(opts.outfile, "-", 2)) {
-#if defined(__MINGW32__)
-        setmode(fileno(stdout), O_BINARY);
-#elif defined(_WIN32)
+#ifdef _WIN32
         _setmode(_fileno(stdout), _O_BINARY);
 #endif
         ofp = stdout;
