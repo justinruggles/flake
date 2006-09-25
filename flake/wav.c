@@ -102,7 +102,7 @@ wavfile_init(WavFile *wf, FILE *fp)
                 wf->bit_width = read2le(fp);
                 wf->filepos += 16;
                 if(!wf->channels || !wf->sample_rate || !wf->block_align || !wf->bit_width) {
-                   return -1;
+                    return -1;
                 }
                 chunksize -= 16;
 
