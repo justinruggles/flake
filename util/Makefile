@@ -3,7 +3,7 @@
 #
 include ../config.mak
 
-CFLAGS=$(OPTFLAGS) -I. -I.. \
+CFLAGS=$(OPTFLAGS) -I. -I.. -I$(SRC_PATH)/flake \
 	-D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_ISOC9X_SOURCE
 
 LDFLAGS+= -g
