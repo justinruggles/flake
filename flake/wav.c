@@ -95,32 +95,24 @@ wavfile_init(WavFile *wf, FILE *fp)
             case FMT__ID:
                 if(chunksize < 16) return -1;
                 wf->format = read2le(fp);
-                wf->filepos += 2;
                 wf->channels = read2le(fp);
-                wf->filepos += 2;
-                if(wf->channels == 0) return -1;
                 wf->sample_rate = read4le(fp);
-                wf->filepos += 4;
-                if(wf->sample_rate == 0) return -1;
                 read4le(fp);
-                wf->filepos += 4;
                 wf->block_align = read2le(fp);
-                wf->filepos += 2;
-                if(wf->block_align == 0) return -1;
                 wf->bit_width = read2le(fp);
-                wf->filepos += 2;
-                if(wf->bit_width == 0) return -1;
+                wf->filepos += 16;
+                if(!wf->channels || !wf->sample_rate || !wf->block_align || !wf->bit_width) {
+                   return -1;
+                }
                 chunksize -= 16;
 
                 // WAVE_FORMAT_EXTENSIBLE data
                 wf->ch_mask = 0;
                 if(wf->format == WAVE_FORMAT_EXTENSIBLE && chunksize >= 10) {
                     read4le(fp);    // skip CbSize and ValidBitsPerSample
-                    wf->filepos += 4;
                     wf->ch_mask = read4le(fp);
-                    wf->filepos += 4;
                     wf->format = read2le(fp);
-                    wf->filepos += 2;
+                    wf->filepos += 10;
                     chunksize -= 10;
                 }
 
