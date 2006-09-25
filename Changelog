@@ -17,6 +17,7 @@ version SVN : current
 - Added log search
 - Added variable block size encoding
 - Added level 99 high-compression level
+- Quiet encoding mode (no console output except errors)
 
 version 0.10 : 11 September 2006 (Initial SVN import)
 - New configure system
