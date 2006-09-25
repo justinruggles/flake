@@ -48,15 +48,22 @@ split_frame_v1(int16_t *samples, int channels, int block_size,
     int n = block_size >> 3;
     int64_t res[8];
     int layout[8];
-    int16_t *sample_ptr;
+    int16_t *sptr, *sptr0, *sptr1, *sptr2;
 
     // calculate absolute sum of 2nd order residual
     for(i=0; i<8; i++) {
+        sptr = &samples[i*n*channels];
         res[i] = 0;
         for(ch=0; ch<channels; ch++) {
-            sample_ptr = &samples[i*n*channels+ch];
-            for(j=2*channels; j<n*channels; j+=channels) {
-                res[i] += abs(sample_ptr[j] - 2*sample_ptr[j-channels] + sample_ptr[j-(2*channels)]);
+            sptr0 = sptr + (2*channels+ch);
+            sptr1 = sptr0 - channels;
+            sptr2 = sptr1 - channels;
+            //while(sptr0 < (i+1)*n*channels) {
+            for(j=2; j<n; j++) {
+                res[i] += abs((*sptr0) - 2*(*sptr1) + (*sptr2));
+                sptr0 += channels;
+                sptr1 += channels;
+                sptr2 += channels;
             }
         }
         res[i] /= channels;
