@@ -106,6 +106,7 @@ typedef struct CommandOptions {
     int stmethod;
     int padding;
     int vbs;
+    int quiet;
 } CommandOptions;
 
 static int
@@ -150,7 +151,7 @@ static int
 parse_commandline(int argc, char **argv, CommandOptions *opts)
 {
     int i;
-    static const char *param_str = "bhloprstv";
+    static const char *param_str = "bhlopqrstv";
     int max_digits = 8;
 
     if(argc < 2) {
@@ -172,6 +173,7 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
     opts->stmethod = -1;
     opts->padding = -1;
     opts->vbs = -1;
+    opts->quiet = 0;
 
     for(i=1; i<argc; i++) {
         if(argv[i][0] == '-' && argv[i][1] != '\0') {
@@ -244,6 +246,10 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
                         opts->padding = parse_number(argv[i], max_digits);
                         if(opts->padding < 0) return 1;
                         break;
+                    case 'q':
+                        i--;
+                        opts->quiet = 1;
+                        break;
                     case 'r':
                         if(strchr(argv[i], ',') == NULL) {
                             opts->pomin = 0;
@@ -304,9 +310,10 @@ main(int argc, char **argv)
     float kb, sec, kbps, wav_bytes;
     char *omethod_s, *stmethod_s, *ptype_s, *vbs_s;
 
-    fprintf(stderr, "\nFlake: FLAC audio encoder\n(c) 2006  Justin Ruggles\n\n");
-
     err = parse_commandline(argc, argv, &opts);
+    if(!opts.quiet) {
+        fprintf(stderr, "\nFlake: FLAC audio encoder\n(c) 2006  Justin Ruggles\n\n");
+    }
     if(err) {
         if(err == 2) {
             print_help(stdout);
@@ -351,18 +358,20 @@ main(int argc, char **argv)
         return 1;
     }
     wf.read_format = WAV_SAMPLE_FMT_S16;
+    if(!opts.quiet) {
     wavfile_print(stderr, &wf);
     if(wf.samples > 0) {
         fprintf(stderr, "samples: %d\n", wf.samples);
     } else {
         fprintf(stderr, "samples: unknown\n");
     }
+    }
 
     // initialize encoder
     s.channels = wf.channels;
     s.sample_rate = wf.sample_rate;
     s.bits_per_sample = 16;
-    if(wf.bit_width != 16) {
+    if(wf.bit_width != 16 && !opts.quiet) {
         fprintf(stderr, "warning! converting to 16-bit (not lossless)\n");
     }
     s.samples = wf.samples;
@@ -388,7 +397,7 @@ main(int argc, char **argv)
     if(subset < 0) {
         fprintf(stderr, "Error initializing encoder.\n");
         exit(1);
-    } else if(subset == 1) {
+    } else if(subset == 1 && !opts.quiet) {
         fprintf(stderr,"\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n"
                          " WARNING! The chosen encoding options are\n"
                          " not FLAC Subset compliant. Therefore, the\n"
@@ -405,6 +414,7 @@ main(int argc, char **argv)
     fwrite(s.header, 1, header_size, ofp);
 
     // print encoding options info
+    if(!opts.quiet) {
     fprintf(stderr, "\nblock size: %d\n", s.params.block_size);
     vbs_s = "ERROR";
     switch(s.params.variable_block_size) {
@@ -443,6 +453,7 @@ main(int argc, char **argv)
         fprintf(stderr, "stereo method: %s\n", stmethod_s);
     }
     fprintf(stderr, "header padding: %d\n\n", s.params.padding_size);
+    }
 
     frame = malloc(s.max_frame_size);
     wav = malloc(s.params.block_size * wf.channels * sizeof(int16_t));
@@ -470,15 +481,19 @@ main(int argc, char **argv)
                     percent = ((samplecount * 100.5) / s.samples);
                 }
                 wav_bytes = samplecount*wf.block_align;
+                if(!opts.quiet) {
                 fprintf(stderr, "\rprogress: %3d%% | ratio: %1.3f | "
                                 "bitrate: %4.1f kbps ",
                         percent, (bytecount / wav_bytes), kbps);
+                }
             }
             t0 = t1;
         }
         nr = wavfile_read_samples(&wf, wav, s.params.block_size);
     }
+    if(!opts.quiet) {
     fprintf(stderr, "| bytes: %d \n\n", bytecount);
+    }
 
     flake_encode_close(&s);
 

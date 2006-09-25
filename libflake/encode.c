@@ -203,12 +203,10 @@ flake_set_defaults(FlakeEncodeParams *params)
     int lvl;
 
     if(!params) {
-        fprintf(stderr, "null params pointer\n");
         return -1;
     }
     lvl = params->compression;
     if((lvl < 0 || lvl > 12) && (lvl != 99)) {
-        fprintf(stderr, "invalid compression level: %d\n", lvl);
         return -1;
     }
 
