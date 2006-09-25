@@ -374,7 +374,7 @@ main(int argc, char **argv)
 
     s.params.compression = opts.compr;
     if(flake_set_defaults(&s.params)) {
-        exit(1);
+        return 1;
     }
 
     // commandline parameter overrides
@@ -392,7 +392,7 @@ main(int argc, char **argv)
     subset = flake_validate_params(&s);
     if(subset < 0) {
         fprintf(stderr, "Error initializing encoder.\n");
-        exit(1);
+        return 1;
     } else if(subset == 1 && !opts.quiet) {
         fprintf(stderr,"\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n"
                          " WARNING! The chosen encoding options are\n"
@@ -405,7 +405,7 @@ main(int argc, char **argv)
     if(header_size < 0) {
         flake_encode_close(&s);
         fprintf(stderr, "Error initializing encoder.\n");
-        exit(1);
+        return 1;
     }
     fwrite(s.header, 1, header_size, ofp);
 
