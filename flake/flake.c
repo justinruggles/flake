@@ -314,14 +314,12 @@ main(int argc, char **argv)
     if(!opts.quiet) {
         fprintf(stderr, "\nFlake: FLAC audio encoder\n(c) 2006  Justin Ruggles\n\n");
     }
-    if(err) {
-        if(err == 2) {
-            print_help(stdout);
-            return 0;
-        } else {
-            print_usage(stderr);
-            return 1;
-        }
+    if(err == 2) {
+        print_help(stdout);
+        return 0;
+    } else if(err) {
+        print_usage(stderr);
+        return 1;
     }
 
     if(!strncmp(opts.infile, "-", 2)) {
