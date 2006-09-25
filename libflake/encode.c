@@ -452,10 +452,10 @@ flake_encode_init(FlakeContext *s)
     // if not in table, samplerate is non-standard
     if(i == 12) {
         ctx->samplerate = s->sample_rate;
-        if(ctx->samplerate % 1000 == 0 && ctx->samplerate < 255000) {
+        if(ctx->samplerate % 1000 == 0 && ctx->samplerate <= 255000) {
             ctx->sr_code[0] = 12;
             ctx->sr_code[1] = ctx->samplerate / 1000;
-        } else if(ctx->samplerate % 10 == 0 && ctx->samplerate < 655350) {
+        } else if(ctx->samplerate % 10 == 0 && ctx->samplerate <= 655350) {
             ctx->sr_code[0] = 14;
             ctx->sr_code[1] = s->sample_rate / 10;
         } else if(ctx->samplerate < 65535) {
