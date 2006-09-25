@@ -58,7 +58,6 @@ split_frame_v1(int16_t *samples, int channels, int block_size,
             sptr0 = sptr + (2*channels+ch);
             sptr1 = sptr0 - channels;
             sptr2 = sptr1 - channels;
-            //while(sptr0 < (i+1)*n*channels) {
             for(j=2; j<n; j++) {
                 res[i] += abs((*sptr0) - 2*(*sptr1) + (*sptr2));
                 sptr0 += channels;
