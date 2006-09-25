@@ -641,7 +641,11 @@ check_exec <<EOF && have_lrintf=yes || have_lrintf=no
 int main( void ) { return (lrintf(3.999f) > 0)?0:1; }
 EOF
 
-enabled debug && add_cflags -g -DNDEBUG
+if enabled debug; then
+    add_cflags -g
+else
+    add_cflags -DNDEBUG
+fi
 
 # add some useful compiler flags if supported
 check_cflags -Wdeclaration-after-statement
