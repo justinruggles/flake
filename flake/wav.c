@@ -49,7 +49,7 @@ read4le(FILE *fp)
     return le2me_32(x);
 }
 
-static uint16_t
+static inline uint16_t
 read2le(FILE *fp)
 {
     uint16_t x;
