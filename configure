@@ -652,9 +652,6 @@ check_cflags -Wpointer-arith
 check_cflags -Wredundant-decls
 check_cflags -Winline
 
-# add some linker flags
-check_ldflags '-Wl,--as-needed' '-Wl,-rpath-link,\$(BUILD_ROOT)/libflake'
-
 # not all compilers support -Os
 test "$optimize" = "small" && check_cflags -Os
 
