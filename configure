@@ -576,8 +576,19 @@ if test $tune != "generic"; then
             TUNECPU=ppc970
             POWERPCMODE="64bits"
         ;;
+        power5*|Power5*)
+            add_cflags "-mcpu=power5 -mtune=power5 -mpowerpc-gfxopt -mpowerpc64"
+            if test $altivec = "no"; then
+                echo "WARNING: Tuning for POWER5 but AltiVec disabled!";
+            fi
+            TUNECPU=power5
+            POWERPCMODE="64bits"
+        ;;
         i[3456]86|pentium|pentiumpro|pentium-mmx|pentium[234]|prescott|k6|k6-[23]|athlon|athlon-tbird|athlon-4|athlon-[mx]p|winchip-c6|winchip2|c3|nocona|athlon64|k8|opteron|athlon-fx)
             add_cflags "-march=$tune"
+        ;;
+        ev4|ev45|ev5|ev56|ev6|ev67|21064|21164|21164a|21164pc|21164PC|21264|21264a)
+            add_cflags "-mcpu=$tune"
         ;;
         sparc64)
             add_cflags "-mcpu=v9 -mtune=v9"
