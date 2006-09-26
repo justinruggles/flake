@@ -534,7 +534,7 @@ wavfile_read_samples(WavFile *wf, void *output, int num_samples)
             fmt_convert(wf->read_format, output, wf->source_format, buffer, nsmp);
         }
     } else if(bps == 2) {
-#ifdef WORDS_BIG_ENDIAN
+#ifdef WORDS_BIGENDIAN
         uint16_t *buf16 = (uint16_t *)buffer;
         for(i=0; i<nsmp; i++) {
             buf16[i] = bswap_16(buf16[i]);
@@ -567,7 +567,7 @@ wavfile_read_samples(WavFile *wf, void *output, int num_samples)
         }
         free(input);
     } else if(bps == 4) {
-#ifdef WORDS_BIG_ENDIAN
+#ifdef WORDS_BIGENDIAN
         uint32_t *buf32 = (uint32_t *)buffer;
         for(i=0; i<nsmp; i++) {
             buf32[i] = bswap_32(buf32[i]);
@@ -585,7 +585,7 @@ wavfile_read_samples(WavFile *wf, void *output, int num_samples)
             }
         }
     } else if(wf->format == WAVE_FORMAT_IEEEFLOAT && bps == 8) {
-#ifdef WORDS_BIG_ENDIAN
+#ifdef WORDS_BIGENDIAN
         uint64_t *buf64 = (uint64_t *)buffer;
         for(i=0; i<nsmp; i++) {
             buf64[i] = bswap_64(buf64[i]);
