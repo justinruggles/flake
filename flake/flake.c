@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <string.h>
+#include <limits.h>
 
 #ifdef _WIN32
 #include <fcntl.h>
@@ -39,17 +40,21 @@
 #include "wav.h"
 #include "flake.h"
 
+#ifndef PATH_MAX
+#define PATH_MAX 255
+#endif
+
 static void
 print_usage(FILE *out)
 {
-    fprintf(out, "usage: flake [options] <input.wav> <output.flac>\n"
+    fprintf(out, "usage: flake [options] <input.wav> [output.flac]\n"
                  "type 'flake -h' for more details.\n\n");
 }
 
 static void
 print_help(FILE *out)
 {
-    fprintf(out, "usage: flake [options] <input.wav> <output.flac>\n"
+    fprintf(out, "usage: flake [options] <input.wav> [output.flac]\n"
                  "options:\n"
                  "       [-h]         Print out list of commandline options\n"
                  "       [-p #]       Padding bytes to put in header (default: 4096)\n"
@@ -92,7 +97,7 @@ print_help(FILE *out)
 
 typedef struct CommandOptions {
     char *infile;
-    char *outfile;
+    char outfile[PATH_MAX];
     int found_input;
     int found_output;
     int compr;
@@ -109,6 +114,17 @@ typedef struct CommandOptions {
     int quiet;
 } CommandOptions;
 
+// strnlen is a GNU extention. providing implementation if needed.
+#ifndef __USE_GNU
+static inline size_t
+strnlen(const char *s, size_t maxlen)
+{
+    int i = 0;
+    while((s[i] != '\0') && (i < maxlen)) i++;
+    return i;
+}
+#endif
+
 static int
 parse_files(CommandOptions *opts, char *arg)
 {
@@ -116,8 +132,10 @@ parse_files(CommandOptions *opts, char *arg)
         opts->infile = arg;
         opts->found_input = 1;
     } else {
+        int arglen;
         if(opts->found_output) return 1;
-        opts->outfile = arg;
+        arglen = strnlen(arg, PATH_MAX);
+        strncpy(opts->outfile, arg, arglen);
         opts->found_output = 1;
     }
     return 0;
@@ -158,8 +176,7 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
         return 1;
     }
 
-    opts->infile = argv[1];
-    opts->outfile = argv[2];
+    opts->infile = NULL;
     opts->found_input = 0;
     opts->found_output = 0;
     opts->compr = 5;
@@ -279,6 +296,7 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
                 }
             }
         } else {
+            // if argument does not start with '-' parse as a filename. also,
             // if the argument is a single '-' treat it as a filename
             if(parse_files(opts, argv[i])) {
                 fprintf(stderr, "error parsing filenames.\n");
@@ -286,9 +304,22 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
             }
         }
     }
-    if(!opts->found_input || !opts->found_output) {
+    if(!opts->found_input) {
         fprintf(stderr, "error parsing filenames.\n");
         return 1;
+    }
+    if(!opts->found_output) {
+        // if no output is specified, use input filename with .flac extension
+        int ext = strnlen(opts->infile, PATH_MAX);
+        strncpy(opts->outfile, opts->infile, ext);
+        opts->outfile[ext] = '\0';
+        while(ext > 0 && opts->outfile[ext] != '.') ext--;
+        if(ext >= (PATH_MAX-5)) {
+            fprintf(stderr, "input filename too long\n");
+            return 1;
+        }
+        strncpy(&opts->outfile[ext], ".flac", 6);
+        opts->found_output = 1;
     }
     return 0;
 }
