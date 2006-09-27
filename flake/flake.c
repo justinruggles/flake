@@ -119,7 +119,7 @@ typedef struct CommandOptions {
 static inline size_t
 strnlen(const char *s, size_t maxlen)
 {
-    int i = 0;
+    size_t i = 0;
     while((s[i] != '\0') && (i < maxlen)) i++;
     return i;
 }
