@@ -39,6 +39,9 @@ show_help(){
   echo "  --cross-compile          assume a cross-compiler is used"
   echo "  --cc=CC                  use C compiler CC [$cc]"
   echo "  --make=MAKE              use specified make [$make]"
+  echo "  --ar=AR                  use specified ar [$ar]"
+  echo "  --ranlib=RANLIB          use specified ranlib [$ranlib]"
+  echo "  --strip=STRIP            use specified ranlib [$strip]"
   echo "  --extra-cflags=ECFLAGS   add ECFLAGS to CFLAGS [$CFLAGS]"
   echo "  --extra-ldflags=ELDFLAGS add ELDFLAGS to LDFLAGS [$LDFLAGS]"
   echo "  --extra-libs=ELIBS       add ELIBS [$ELIBS]"
@@ -424,6 +427,12 @@ for opt do
   --cc=*) cc="$optval"
   ;;
   --make=*) make="$optval"
+  ;;
+  --ar=*) ar="$optval"
+  ;;
+  --ranlib=*) ranlib="$optval"
+  ;;
+  --strip=*) strip="$optval"
   ;;
   --extra-cflags=*) add_cflags "$optval"
   ;;
