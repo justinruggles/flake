@@ -451,21 +451,21 @@ main(int argc, char **argv)
         }
         fprintf(stderr, "prediction type: %s\n", ptype_s);
         if(s.params.prediction_type != FLAKE_PREDICTION_NONE) {
-        fprintf(stderr, "prediction order: %d,%d\n", s.params.min_prediction_order,
-                                                     s.params.max_prediction_order);
-        fprintf(stderr, "partition order: %d,%d\n", s.params.min_partition_order,
-                                                    s.params.max_partition_order);
-        omethod_s = "ERROR";
-        switch(s.params.order_method) {
-            case 0: omethod_s = "maximum";  break;
-            case 1: omethod_s = "estimate"; break;
-            case 2: omethod_s = "2-level"; break;
-            case 3: omethod_s = "4-level"; break;
-            case 4: omethod_s = "8-level"; break;
-            case 5: omethod_s = "full search";   break;
-            case 6: omethod_s = "log search";  break;
-        }
-        fprintf(stderr, "order method: %s\n", omethod_s);
+            fprintf(stderr, "prediction order: %d,%d\n", s.params.min_prediction_order,
+                                                         s.params.max_prediction_order);
+            fprintf(stderr, "partition order: %d,%d\n", s.params.min_partition_order,
+                                                        s.params.max_partition_order);
+            omethod_s = "ERROR";
+            switch(s.params.order_method) {
+                case 0: omethod_s = "maximum";  break;
+                case 1: omethod_s = "estimate"; break;
+                case 2: omethod_s = "2-level"; break;
+                case 3: omethod_s = "4-level"; break;
+                case 4: omethod_s = "8-level"; break;
+                case 5: omethod_s = "full search";   break;
+                case 6: omethod_s = "log search";  break;
+            }
+            fprintf(stderr, "order method: %s\n", omethod_s);
         }
         if(s.channels == 2) {
             stmethod_s = "ERROR";
