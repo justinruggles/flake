@@ -35,14 +35,12 @@
 static inline void
 apply_welch_window(const int32_t *data, int len, double *w_data)
 {
-    int i, n2;
-    double w;
+    int i;
     double c;
 
-    n2 = (len >> 1);
     c = (2.0 / (len - 1.0)) - 1.0;
-    for(i=0; i<n2; i++) {
-        w = 1.0 - ((c-i) * (c-i));
+    for(i=0; i<(len >> 1); i++) {
+        double w = 1.0 - ((c-i) * (c-i));
         w_data[i] = data[i] * w;
         w_data[len-1-i] = data[len-1-i] * w;
     }
