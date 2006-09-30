@@ -445,10 +445,12 @@ main(int argc, char **argv)
         fprintf(stderr, "variable: %s\n", vbs_s);
         ptype_s = "ERROR";
         switch(s.params.prediction_type) {
-            case 0: ptype_s = "fixed";  break;
-            case 1: ptype_s = "levinson-durbin"; break;
+            case 0: ptype_s = "none (verbatim mode)";  break;
+            case 1: ptype_s = "fixed";  break;
+            case 2: ptype_s = "levinson-durbin"; break;
         }
         fprintf(stderr, "prediction type: %s\n", ptype_s);
+        if(s.params.prediction_type != FLAKE_PREDICTION_NONE) {
         fprintf(stderr, "prediction order: %d,%d\n", s.params.min_prediction_order,
                                                      s.params.max_prediction_order);
         fprintf(stderr, "partition order: %d,%d\n", s.params.min_partition_order,
@@ -464,6 +466,7 @@ main(int argc, char **argv)
             case 6: omethod_s = "log search";  break;
         }
         fprintf(stderr, "order method: %s\n", omethod_s);
+        }
         if(s.channels == 2) {
             stmethod_s = "ERROR";
             switch(s.params.stereo_method) {
