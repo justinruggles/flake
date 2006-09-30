@@ -120,56 +120,6 @@ log2i(uint32_t v)
     return n;
 }
 
-#ifdef ENABLE_24_BIT
-
-static inline uint32_t
-rice_encode_count_exact(uint32_t *data, int n, int k)
-{
-    int i;
-    uint32_t sum = (k+1) * n;
-    for(i=0; i<n; i++) sum += (data[i] >> k);
-    return sum;
-}
-
-/**
- * Test to see if using escape codes gives better compression
- */
-static void
-try_escape_codes(RiceContext *rc, int32_t *data, uint32_t *udata, int n,
-                 int pred_order)
-{
-    int i, j;
-    int parts, cnt;
-    int32_t *res;
-    uint32_t *ures;
-    uint32_t rmax, bits, rbits;
-
-    bits = 0;
-    parts = (1 << rc->porder);
-    res = &data[pred_order];
-    ures = &udata[pred_order];
-    cnt = (n >> rc->porder) - pred_order;
-    for(i=0; i<parts; i++) {
-        if(i == 1) cnt = (n >> rc->porder);
-        if(i > 0) {
-            res = &data[i*cnt];
-            ures = &udata[i*cnt];
-        }
-        rmax = 0;
-        for(j=0; j<cnt; j++) {
-            rmax = MAX(rmax, abs(res[j]));
-        }
-        rc->esc_bps[i] = log2i(rmax)+3;
-        if(rc->esc_bps[i] > 31) continue;
-        bits = (rc->esc_bps[i] * cnt) + 5;
-        rbits = rice_encode_count_exact(ures, cnt, rc->params[i]);
-        if(bits < rbits) {
-            rc->params[i] = 15;
-        }
-    }
-}
-#endif /* ENABLE_24_BIT */
-
 static uint32_t
 calc_rice_params(RiceContext *rc, int pmin, int pmax, int32_t *data, int n,
                  int pred_order)
@@ -201,10 +151,6 @@ calc_rice_params(RiceContext *rc, int pmin, int pmax, int32_t *data, int n,
             *rc = tmp_rc;
         }
     }
-
-#ifdef ENABLE_24_BIT
-    try_escape_codes(rc, data, udata, n, pred_order);
-#endif
 
     free(udata);
     return bits[opt_porder];
