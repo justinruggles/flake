@@ -62,32 +62,32 @@ static void
 write_streaminfo(FlacEncodeContext *ctx, uint8_t *streaminfo, int last)
 {
     memset(streaminfo, 0, 38);
-    bitwriter_init(&ctx->bw, streaminfo, 38);
+    bitwriter_init(ctx->bw, streaminfo, 38);
 
     // metadata header
-    bitwriter_writebits(&ctx->bw, 1, last);
-    bitwriter_writebits(&ctx->bw, 7, 0);
-    bitwriter_writebits(&ctx->bw, 24, 34);
+    bitwriter_writebits(ctx->bw, 1, last);
+    bitwriter_writebits(ctx->bw, 7, 0);
+    bitwriter_writebits(ctx->bw, 24, 34);
 
     if(ctx->params.variable_block_size) {
-        bitwriter_writebits(&ctx->bw, 16, 0);
+        bitwriter_writebits(ctx->bw, 16, 0);
     } else {
-        bitwriter_writebits(&ctx->bw, 16, ctx->params.block_size);
+        bitwriter_writebits(ctx->bw, 16, ctx->params.block_size);
     }
-    bitwriter_writebits(&ctx->bw, 16, ctx->params.block_size);
-    bitwriter_writebits(&ctx->bw, 24, 0);
-    bitwriter_writebits(&ctx->bw, 24, ctx->max_frame_size);
-    bitwriter_writebits(&ctx->bw, 20, ctx->samplerate);
-    bitwriter_writebits(&ctx->bw, 3, ctx->channels-1);
-    bitwriter_writebits(&ctx->bw, 5, ctx->bps-1);
+    bitwriter_writebits(ctx->bw, 16, ctx->params.block_size);
+    bitwriter_writebits(ctx->bw, 24, 0);
+    bitwriter_writebits(ctx->bw, 24, ctx->max_frame_size);
+    bitwriter_writebits(ctx->bw, 20, ctx->samplerate);
+    bitwriter_writebits(ctx->bw, 3, ctx->channels-1);
+    bitwriter_writebits(ctx->bw, 5, ctx->bps-1);
 
     // total samples
     if(ctx->sample_count > 0) {
-        bitwriter_writebits(&ctx->bw, 4, 0);
-        bitwriter_writebits(&ctx->bw, 32, ctx->sample_count);
+        bitwriter_writebits(ctx->bw, 4, 0);
+        bitwriter_writebits(ctx->bw, 32, ctx->sample_count);
     } else {
-        bitwriter_writebits(&ctx->bw, 4, 0);
-        bitwriter_writebits(&ctx->bw, 32, 0);
+        bitwriter_writebits(ctx->bw, 4, 0);
+        bitwriter_writebits(ctx->bw, 32, 0);
     }
 }
 
@@ -97,12 +97,12 @@ write_streaminfo(FlacEncodeContext *ctx, uint8_t *streaminfo, int last)
 static int
 write_padding(FlacEncodeContext *ctx, uint8_t *padding, int last, int padlen)
 {
-    bitwriter_init(&ctx->bw, padding, 4);
+    bitwriter_init(ctx->bw, padding, 4);
 
     // metadata header
-    bitwriter_writebits(&ctx->bw, 1, last);
-    bitwriter_writebits(&ctx->bw, 7, 1);
-    bitwriter_writebits(&ctx->bw, 24, padlen);
+    bitwriter_writebits(ctx->bw, 1, last);
+    bitwriter_writebits(ctx->bw, 7, 1);
+    bitwriter_writebits(ctx->bw, 24, padlen);
 
     return padlen + 4;
 }
@@ -120,12 +120,12 @@ write_vorbis_comment(FlacEncodeContext *ctx, uint8_t *comment, int last)
     uint8_t vlen_le[4];
 
     vendor_len = strlen(vendor_string);
-    bitwriter_init(&ctx->bw, comment, 4);
+    bitwriter_init(ctx->bw, comment, 4);
 
     // metadata header
-    bitwriter_writebits(&ctx->bw, 1, last);
-    bitwriter_writebits(&ctx->bw, 7, 4);
-    bitwriter_writebits(&ctx->bw, 24, vendor_len+8);
+    bitwriter_writebits(ctx->bw, 1, last);
+    bitwriter_writebits(ctx->bw, 7, 4);
+    bitwriter_writebits(ctx->bw, 24, vendor_len+8);
 
     // vendor string length
     // note: use me2le_32()
@@ -501,6 +501,7 @@ flake_encode_init(FlakeContext *s)
     s->max_frame_size = ctx->max_frame_size;
 
     // output header bytes
+    ctx->bw = calloc(sizeof(BitWriter), 1);
     s->header = calloc(ctx->params.padding_size + 1024, 1);
     header_len = -1;
     if(s->header != NULL) {
@@ -747,40 +748,40 @@ output_frame_header(FlacEncodeContext *ctx)
 
     frame = &ctx->frame;
 
-    bitwriter_writebits(&ctx->bw, 16, 0xFFF8);
-    bitwriter_writebits(&ctx->bw, 4, frame->bs_code[0]);
-    bitwriter_writebits(&ctx->bw, 4, ctx->sr_code[0]);
+    bitwriter_writebits(ctx->bw, 16, 0xFFF8);
+    bitwriter_writebits(ctx->bw, 4, frame->bs_code[0]);
+    bitwriter_writebits(ctx->bw, 4, ctx->sr_code[0]);
     if(frame->ch_mode == FLAC_CHMODE_NOT_STEREO) {
-        bitwriter_writebits(&ctx->bw, 4, ctx->ch_code);
+        bitwriter_writebits(ctx->bw, 4, ctx->ch_code);
     } else {
-        bitwriter_writebits(&ctx->bw, 4, frame->ch_mode);
+        bitwriter_writebits(ctx->bw, 4, frame->ch_mode);
     }
-    bitwriter_writebits(&ctx->bw, 3, ctx->bps_code);
-    bitwriter_writebits(&ctx->bw, 1, 0);
-    write_utf8(&ctx->bw, ctx->frame_count);
+    bitwriter_writebits(ctx->bw, 3, ctx->bps_code);
+    bitwriter_writebits(ctx->bw, 1, 0);
+    write_utf8(ctx->bw, ctx->frame_count);
 
     // custom block size
     if(frame->bs_code[1] >= 0) {
         if(frame->bs_code[1] < 256) {
-            bitwriter_writebits(&ctx->bw, 8, frame->bs_code[1]);
+            bitwriter_writebits(ctx->bw, 8, frame->bs_code[1]);
         } else {
-            bitwriter_writebits(&ctx->bw, 16, frame->bs_code[1]);
+            bitwriter_writebits(ctx->bw, 16, frame->bs_code[1]);
         }
     }
 
     // custom sample rate
     if(ctx->sr_code[1] > 0) {
         if(ctx->sr_code[1] < 256) {
-            bitwriter_writebits(&ctx->bw, 8, ctx->sr_code[1]);
+            bitwriter_writebits(ctx->bw, 8, ctx->sr_code[1]);
         } else {
-            bitwriter_writebits(&ctx->bw, 16, ctx->sr_code[1]);
+            bitwriter_writebits(ctx->bw, 16, ctx->sr_code[1]);
         }
     }
 
     // CRC-8 of frame header
-    bitwriter_flush(&ctx->bw);
-    crc = calc_crc8(ctx->bw.buffer, bitwriter_count(&ctx->bw));
-    bitwriter_writebits(&ctx->bw, 8, crc);
+    bitwriter_flush(ctx->bw);
+    crc = calc_crc8(ctx->bw->buffer, bitwriter_count(ctx->bw));
+    bitwriter_writebits(ctx->bw, 8, crc);
 }
 
 static void
@@ -795,23 +796,23 @@ output_residual(FlacEncodeContext *ctx, int ch)
     sub = &frame->subframes[ch];
 
     // rice-encoded block
-    bitwriter_writebits(&ctx->bw, 2, 0);
+    bitwriter_writebits(ctx->bw, 2, 0);
 
     // partition order
     porder = sub->rc.porder;
     psize = frame->blocksize >> porder;
     assert(porder >= 0);
-    bitwriter_writebits(&ctx->bw, 4, porder);
+    bitwriter_writebits(ctx->bw, 4, porder);
     res_cnt = psize - sub->order;
 
     // residual
     j = sub->order;
     for(p=0; p<(1 << porder); p++) {
         k = sub->rc.params[p];
-        bitwriter_writebits(&ctx->bw, 4, k);
+        bitwriter_writebits(ctx->bw, 4, k);
         if(p == 1) res_cnt = psize;
         for(i=0; i<res_cnt && j<frame->blocksize; i++, j++) {
-            bitwriter_write_rice_signed(&ctx->bw, k, sub->residual[j]);
+            bitwriter_write_rice_signed(ctx->bw, k, sub->residual[j]);
         }
     }
 }
@@ -822,7 +823,7 @@ output_subframe_constant(FlacEncodeContext *ctx, int ch)
     FlacSubframe *sub;
 
     sub = &ctx->frame.subframes[ch];
-    bitwriter_writebits_signed(&ctx->bw, sub->obits, sub->residual[0]);
+    bitwriter_writebits_signed(ctx->bw, sub->obits, sub->residual[0]);
 }
 
 static void
@@ -837,7 +838,7 @@ output_subframe_verbatim(FlacEncodeContext *ctx, int ch)
     n = frame->blocksize;
 
     for(i=0; i<n; i++) {
-        bitwriter_writebits_signed(&ctx->bw, sub->obits, sub->residual[i]);
+        bitwriter_writebits_signed(ctx->bw, sub->obits, sub->residual[i]);
     }
 }
 
@@ -853,7 +854,7 @@ output_subframe_fixed(FlacEncodeContext *ctx, int ch)
 
     // warm-up samples
     for(i=0; i<sub->order; i++) {
-        bitwriter_writebits_signed(&ctx->bw, sub->obits, sub->residual[i]);
+        bitwriter_writebits_signed(ctx->bw, sub->obits, sub->residual[i]);
     }
 
     // residual
@@ -872,15 +873,15 @@ output_subframe_lpc(FlacEncodeContext *ctx, int ch)
 
     // warm-up samples
     for(i=0; i<sub->order; i++) {
-        bitwriter_writebits_signed(&ctx->bw, sub->obits, sub->residual[i]);
+        bitwriter_writebits_signed(ctx->bw, sub->obits, sub->residual[i]);
     }
 
     // LPC coefficients
     cbits = ctx->lpc_precision;
-    bitwriter_writebits(&ctx->bw, 4, cbits-1);
-    bitwriter_writebits_signed(&ctx->bw, 5, sub->shift);
+    bitwriter_writebits(ctx->bw, 4, cbits-1);
+    bitwriter_writebits_signed(ctx->bw, 5, sub->shift);
     for(i=0; i<sub->order; i++) {
-        bitwriter_writebits_signed(&ctx->bw, cbits, sub->coefs[i]);
+        bitwriter_writebits_signed(ctx->bw, cbits, sub->coefs[i]);
     }
 
     // residual
@@ -899,9 +900,9 @@ output_subframes(FlacEncodeContext *ctx)
         ch = i;
 
         // subframe header
-        bitwriter_writebits(&ctx->bw, 1, 0);
-        bitwriter_writebits(&ctx->bw, 6, frame->subframes[ch].type_code);
-        bitwriter_writebits(&ctx->bw, 1, 0);
+        bitwriter_writebits(ctx->bw, 1, 0);
+        bitwriter_writebits(ctx->bw, 6, frame->subframes[ch].type_code);
+        bitwriter_writebits(ctx->bw, 1, 0);
 
         // subframe
         switch(frame->subframes[ch].type) {
@@ -921,10 +922,10 @@ static void
 output_frame_footer(FlacEncodeContext *ctx)
 {
     uint16_t crc;
-    bitwriter_flush(&ctx->bw);
-    crc = calc_crc16(ctx->bw.buffer, bitwriter_count(&ctx->bw));
-    bitwriter_writebits(&ctx->bw, 16, crc);
-    bitwriter_flush(&ctx->bw);
+    bitwriter_flush(ctx->bw);
+    crc = calc_crc16(ctx->bw->buffer, bitwriter_count(ctx->bw));
+    bitwriter_writebits(ctx->bw, 16, crc);
+    bitwriter_flush(ctx->bw);
 }
 
 int
@@ -956,29 +957,29 @@ encode_frame(FlakeContext *s, uint8_t *frame_buffer, int16_t *samples)
         }
     }
 
-    bitwriter_init(&ctx->bw, frame_buffer, ctx->max_frame_size);
+    bitwriter_init(ctx->bw, frame_buffer, ctx->max_frame_size);
     output_frame_header(ctx);
     output_subframes(ctx);
     output_frame_footer(ctx);
 
-    if(ctx->bw.eof) {
+    if(ctx->bw->eof) {
         // frame size too large, reencode in verbatim mode
         for(i=0; i<ctx->channels; i++) {
             ch = i;
             reencode_residual_verbatim(ctx, ch);
         }
-        bitwriter_init(&ctx->bw, frame_buffer, ctx->max_frame_size);
+        bitwriter_init(ctx->bw, frame_buffer, ctx->max_frame_size);
         output_frame_header(ctx);
         output_subframes(ctx);
         output_frame_footer(ctx);
 
         // if still too large, means my estimate is wrong.
-        assert(!ctx->bw.eof);
+        assert(!ctx->bw->eof);
     }
     if(frame_buffer != NULL) {
         ctx->frame_count++;
     }
-    return bitwriter_count(&ctx->bw);
+    return bitwriter_count(ctx->bw);
 }
 
 int
@@ -1008,6 +1009,7 @@ flake_encode_close(FlakeContext *s)
     ctx = (FlacEncodeContext *) s->private_ctx;
     if(ctx) {
         md5_final(s->md5digest, &ctx->md5ctx);
+        if(ctx->bw) free(ctx->bw);
         free(ctx);
     }
     if(s->header) free(s->header);

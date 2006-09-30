@@ -32,7 +32,7 @@
 /**
  * Apply Welch window function to audio block
  */
-static void
+static inline void
 apply_welch_window(const int32_t *data, int len, double *w_data)
 {
     int i, n2;

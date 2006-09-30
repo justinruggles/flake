@@ -24,7 +24,6 @@
 
 #include <inttypes.h>
 #include "flake.h"
-#include "bitio.h"
 #include "rice.h"
 #include "lpc.h"
 #include "md5.h"
@@ -45,6 +44,8 @@
 #define FLAC_CHMODE_MID_SIDE       10
 
 #define FLAC_STREAM_MARKER  0x664C6143
+
+struct BitWriter;
 
 typedef struct FlacSubframe {
     int type;
@@ -81,7 +82,7 @@ typedef struct FlacEncodeContext {
     uint32_t frame_count;
     FlacFrame frame;
     MD5Context md5ctx;
-    BitWriter bw;
+    struct BitWriter *bw;
 } FlacEncodeContext;
 
 extern int encode_frame(FlakeContext *s, uint8_t *frame_buffer, int16_t *samples);
