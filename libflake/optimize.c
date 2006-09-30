@@ -182,8 +182,8 @@ encode_residual(FlacEncodeContext *ctx, int ch)
     if(ctx->params.prediction_type == FLAKE_PREDICTION_FIXED || n <= max_order) {
         uint32_t bits[5];
         if(max_order > 4) max_order = 4;
-        opt_order = 0;
-        bits[0] = UINT32_MAX;
+        opt_order = min_order;
+        bits[opt_order] = UINT32_MAX;
         for(i=min_order; i<=max_order; i++) {
             encode_residual_fixed(res, smp, n, i);
             bits[i] = calc_rice_params_fixed(&sub->rc, min_porder, max_porder, res,
