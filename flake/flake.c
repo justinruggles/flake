@@ -54,30 +54,30 @@ print_usage(FILE *out)
 static void
 print_help(FILE *out)
 {
-    fprintf(out, "usage: flake [options] <input.wav> [output.flac]\n"
+    fprintf(out, "usage: flake [options] <input.wav> [-o output.flac]\n"
                  "options:\n"
                  "       [-h]         Print out list of commandline options\n"
                  "       [-p #]       Padding bytes to put in header (default: 4096)\n"
                  "       [-0 ... -12] Compression level (default: 5)\n"
-                 "                        0 = -b 1152 -t 0 -l 2,2 -o 0 -r 0   -s 0\n"
-                 "                        1 = -b 1152 -t 0 -l 4   -o 1 -r 2,2 -s 1\n"
-                 "                        2 = -b 1152 -t 0 -l 4   -o 1 -r 3   -s 1\n"
-                 "                        3 = -b 4608 -t 1 -l 6   -o 1 -r 3   -s 1\n"
-                 "                        4 = -b 4608 -t 1 -l 8   -o 1 -r 3   -s 1\n"
-                 "                        5 = -b 4608 -t 1 -l 8   -o 1 -r 6   -s 1\n"
-                 "                        6 = -b 4608 -t 1 -l 8   -o 2 -r 8   -s 1\n"
-                 "                        7 = -b 4608 -t 1 -l 8   -o 3 -r 8   -s 1\n"
-                 "                        8 = -b 4608 -t 1 -l 12  -o 3 -r 8   -s 1\n"
-                 "                        9 = -b 4608 -t 1 -l 12  -o 6 -r 8   -s 1\n"
-                 "                       10 = -b 4608 -t 1 -l 12  -o 5 -r 8   -s 1\n"
-                 "                       11 = -b 4608 -t 1 -l 32  -o 6 -r 8   -s 1\n"
-                 "                       12 = -b 4608 -t 1 -l 32  -o 5 -r 8   -s 1\n"
+                 "                        0 = -b 1152 -t 0 -l 2,2 -m 0 -r 0   -s 0\n"
+                 "                        1 = -b 1152 -t 0 -l 4   -m 1 -r 2,2 -s 1\n"
+                 "                        2 = -b 1152 -t 0 -l 4   -m 1 -r 3   -s 1\n"
+                 "                        3 = -b 4608 -t 1 -l 6   -m 1 -r 3   -s 1\n"
+                 "                        4 = -b 4608 -t 1 -l 8   -m 1 -r 3   -s 1\n"
+                 "                        5 = -b 4608 -t 1 -l 8   -m 1 -r 6   -s 1\n"
+                 "                        6 = -b 4608 -t 1 -l 8   -m 2 -r 8   -s 1\n"
+                 "                        7 = -b 4608 -t 1 -l 8   -m 3 -r 8   -s 1\n"
+                 "                        8 = -b 4608 -t 1 -l 12  -m 3 -r 8   -s 1\n"
+                 "                        9 = -b 4608 -t 1 -l 12  -m 6 -r 8   -s 1\n"
+                 "                       10 = -b 4608 -t 1 -l 12  -m 5 -r 8   -s 1\n"
+                 "                       11 = -b 4608 -t 1 -l 32  -m 6 -r 8   -s 1\n"
+                 "                       12 = -b 4608 -t 1 -l 32  -m 5 -r 8   -s 1\n"
                  "       [-b #]       Block size [16 - 65535] (default: 4608)\n"
                  "       [-t #]       Prediction type\n"
                  "                        0 = fixed prediction\n"
                  "                        1 = Levinson-Durbin recursion (default)\n"
                  "       [-l #[,#]]   Prediction order {max} or {min},{max} (default: 1,8)\n"
-                 "       [-o #]       Prediction order selection method\n"
+                 "       [-m #]       Prediction order selection method\n"
                  "                        0 = maximum\n"
                  "                        1 = estimate (default)\n"
                  "                        2 = 2-level\n"
@@ -126,22 +126,6 @@ strnlen(const char *s, size_t maxlen)
 #endif
 
 static int
-parse_files(CommandOptions *opts, char *arg)
-{
-    if(!opts->found_input) {
-        opts->infile = arg;
-        opts->found_input = 1;
-    } else {
-        int arglen;
-        if(opts->found_output) return 1;
-        arglen = strnlen(arg, PATH_MAX);
-        strncpy(opts->outfile, arg, arglen);
-        opts->found_output = 1;
-    }
-    return 0;
-}
-
-static int
 parse_number(char *arg, int max) {
     int i;
     int m = 0;
@@ -169,7 +153,7 @@ static int
 parse_commandline(int argc, char **argv, CommandOptions *opts)
 {
     int i;
-    static const char *param_str = "bhlopqrstv";
+    static const char *param_str = "bhlmopqrstv";
     int max_digits = 8;
 
     if(argc < 2) {
@@ -196,10 +180,12 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
         if(argv[i][0] == '-' && argv[i][1] != '\0') {
             if(argv[i][1] >= '0' && argv[i][1] <= '9') {
                 if(argv[i][2] != '\0' && argv[i][3] != '\0') {
-                    if(parse_files(opts, argv[i])) {
+                    if(opts->found_input) {
                         fprintf(stderr, "error parsing filenames.\n");
                         return 1;
                     }
+                    opts->infile = argv[i];
+                    opts->found_input = 1;
                 } else {
                     opts->compr = parse_number(&argv[i][1], max_digits);
                     if(opts->compr < 0) return 1;
@@ -208,12 +194,13 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
                 // if argument starts with '-' and is more than 1 char, treat
                 // it as a filename
                 if(argv[i][2] != '\0') {
-                    if(parse_files(opts, argv[i])) {
+                    if(opts->found_input) {
                         fprintf(stderr, "error parsing filenames.\n");
                         return 1;
-                    } else {
-                        continue;
                     }
+                    opts->infile = argv[i];
+                    opts->found_input = 1;
+                    continue;
                 }
                 // check to see if param is valid
                 if(strchr(param_str, argv[i][1]) == NULL) {
@@ -255,9 +242,14 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
                             if(opts->omin == 0) opts->omin = 1;
                         }
                         break;
-                    case 'o':
+                    case 'm':
                         opts->omethod = parse_number(argv[i], max_digits);
                         if(opts->omethod < 0) return 1;
+                        break;
+                    case 'o':
+                        if(opts->found_output) return 1;
+                        strncpy(opts->outfile, argv[i], strnlen(argv[i], PATH_MAX));
+                        opts->found_output = 1;
                         break;
                     case 'p':
                         opts->padding = parse_number(argv[i], max_digits);
@@ -298,10 +290,12 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
         } else {
             // if argument does not start with '-' parse as a filename. also,
             // if the argument is a single '-' treat it as a filename
-            if(parse_files(opts, argv[i])) {
+            if(opts->found_input) {
                 fprintf(stderr, "error parsing filenames.\n");
                 return 1;
             }
+            opts->infile = argv[i];
+            opts->found_input = 1;
         }
     }
     if(!opts->found_input) {
