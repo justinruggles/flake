@@ -274,16 +274,16 @@ flake_set_defaults(FlakeEncodeParams *params)
                                         FLAKE_PREDICTION_LEVINSON,
                                         FLAKE_PREDICTION_LEVINSON })[lvl];
 
-    params->min_prediction_order = ((int[]){  2,  0,  0,  1,  1,  1,
+    params->min_prediction_order = ((int[]){  2,  3,  2,  1,  1,  1,
                                               1,  1,  1,  1,  1,  1,
                                               1 })[lvl];
     params->max_prediction_order = ((int[]){  2,  4,  4,  6,  8,  8,
                                               8,  8, 12, 12, 12, 32,
                                              32 })[lvl];
 
-    params->min_partition_order = ((int[]){ 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    params->min_partition_order = ((int[]){ 4, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                                             0 })[lvl];
-    params->max_partition_order = ((int[]){ 0, 2, 3, 3, 3, 6, 8, 8, 8, 8, 8, 8,
+    params->max_partition_order = ((int[]){ 4, 2, 3, 3, 3, 6, 8, 8, 8, 8, 8, 8,
                                             8 })[lvl];
 
     params->padding_size = 4096;
