@@ -237,8 +237,6 @@ quantize_lpc_coefs(double *lpc_in, int order, int precision, int32_t *lpc_out,
     *shift = sh;
 }
 
-
-
 /**
  * Calculate LPC coefficients for multiple orders
  */
@@ -276,5 +274,3 @@ lpc_calc_coefs(const int32_t *samples, int blocksize, int max_order,
 
     return opt_order;
 }
-
-
