@@ -165,7 +165,7 @@ encode_residual(FlacEncodeContext *ctx, int ch)
     }
 
     // VERBATIM
-    if(n < 5) {
+    if(n < 5 || ctx->params.prediction_type == FLAKE_PREDICTION_NONE) {
         sub->type = sub->type_code = FLAC_SUBFRAME_VERBATIM;
         encode_residual_verbatim(res, smp, n);
         return sub->obits * n;

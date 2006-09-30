@@ -363,7 +363,7 @@ flake_validate_params(FlakeContext *s)
     }
     if(i == 15) subset = 1;
 
-    if(params->prediction_type < 0 || params->prediction_type > 1) {
+    if(params->prediction_type < 0 || params->prediction_type > 2) {
         return -1;
     }
 
