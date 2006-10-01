@@ -78,74 +78,11 @@ compute_autocorr(const int32_t *data, int len, int lag, double *autoc)
 }
 
 /**
- * Compute LPC coefs for FLAKE_ORDER_METHOD_EST
- * Faster LPC coeff computation by first calculating the reflection coefficients
- * using Schur recursion. That allows for estimating the optimal order before
- * running Levinson recursion.
- */
-static int
-compute_lpc_coefs_est(const double *autoc, int max_order,
-                      double lpc[][MAX_LPC_ORDER])
-{
-    int i, j, i2;
-    double r, error;
-    double gen[2][MAX_LPC_ORDER];
-    double ref[MAX_LPC_ORDER];
-    int order_est;
-    double *lpc_tmp;
-
-    // Schur recursion
-    for(i=0; i<max_order; i++) gen[0][i] = gen[1][i] = autoc[i+1];
-    error = autoc[0];
-    ref[0] = r = -gen[1][0] / error;
-    error += gen[1][0] * r;
-    for(i=1; i<max_order; i++) {
-        for(j=0; j<max_order-i; j++) {
-            gen[1][j] = gen[1][j+1] + r * gen[0][j];
-            gen[0][j] = gen[1][j+1] * r + gen[0][j];
-        }
-        ref[i] = r = -gen[1][0] / error;
-        error += gen[1][0] * r;
-    }
-
-    // Estimate optimal order using reflection coefficients
-    order_est = 1;
-    for(i=max_order-1; i>=0; i--) {
-        if(fabs(ref[i]) > 0.10) {
-            order_est = i+1;
-            break;
-        }
-    }
-
-    // Levinson recursion
-    lpc_tmp = gen[0];
-    for(i=0; i<order_est; i++) lpc_tmp[i] = 0;
-    for(i=0; i<order_est; i++) {
-        r = ref[i];
-        i2 = (i >> 1);
-        lpc_tmp[i] = r;
-        for(j=0; j<i2; j++) {
-            double tmp = lpc_tmp[j];
-            lpc_tmp[j] += r * lpc_tmp[i-1-j];
-            lpc_tmp[i-1-j] += r * tmp;
-        }
-        if(i & 1) {
-            lpc_tmp[j] += lpc_tmp[j] * r;
-        }
-        for(j=0; j<=i; j++) {
-            lpc[i][j] = -lpc_tmp[j];
-        }
-    }
-
-    return order_est;
-}
-
-/**
  * Levinson-Durbin recursion.
  * Produces LPC coefficients from autocorrelation data.
  */
 static void
-compute_lpc_coefs(const double *autoc, int max_order,
+compute_lpc_coefs(const double *autoc, int max_order, double *ref,
                   double lpc[][MAX_LPC_ORDER])
 {
     int i, j, i2;
@@ -153,15 +90,22 @@ compute_lpc_coefs(const double *autoc, int max_order,
     double lpc_tmp[MAX_LPC_ORDER];
 
     for(i=0; i<max_order; i++) lpc_tmp[i] = 0;
-    err = autoc[0];
+    err = 1.0;
+    if(autoc) {
+        err = autoc[0];
+    }
 
     for(i=0; i<max_order; i++) {
-        r = -autoc[i+1];
-        for(j=0; j<i; j++) {
-            r -= lpc_tmp[j] * autoc[i-j];
+        if(ref) {
+            r = ref[i];
+        } else {
+            r = -autoc[i+1];
+            for(j=0; j<i; j++) {
+                r -= lpc_tmp[j] * autoc[i-j];
+            }
+            r /= err;
+            err *= 1.0 - (r * r);
         }
-        r /= err;
-        err *= 1.0 - (r * r);
 
         i2 = (i >> 1);
         lpc_tmp[i] = r;
@@ -178,6 +122,51 @@ compute_lpc_coefs(const double *autoc, int max_order,
             lpc[i][j] = -lpc_tmp[j];
         }
     }
+}
+
+/**
+ * Compute LPC coefs for FLAKE_ORDER_METHOD_EST
+ * Faster LPC coeff computation by first calculating the reflection coefficients
+ * using Schur recursion. That allows for estimating the optimal order before
+ * running Levinson recursion.
+ */
+static int
+compute_lpc_coefs_est(const double *autoc, int max_order,
+                      double lpc[][MAX_LPC_ORDER])
+{
+    int i, j;
+    double error;
+    double gen[2][MAX_LPC_ORDER];
+    double ref[MAX_LPC_ORDER];
+    int order_est;
+
+    // Schur recursion
+    for(i=0; i<max_order; i++) gen[0][i] = gen[1][i] = autoc[i+1];
+    error = autoc[0];
+    ref[0] = -gen[1][0] / error;
+    error += gen[1][0] * ref[0];
+    for(i=1; i<max_order; i++) {
+        for(j=0; j<max_order-i; j++) {
+            gen[1][j] = gen[1][j+1] + ref[i-1] * gen[0][j];
+            gen[0][j] = gen[1][j+1] * ref[i-1] + gen[0][j];
+        }
+        ref[i] = -gen[1][0] / error;
+        error += gen[1][0] * ref[i];
+    }
+
+    // Estimate optimal order using reflection coefficients
+    order_est = 1;
+    for(i=max_order-1; i>=0; i--) {
+        if(fabs(ref[i]) > 0.10) {
+            order_est = i+1;
+            break;
+        }
+    }
+
+    // Levinson recursion
+    compute_lpc_coefs(NULL, order_est, ref, lpc);
+
+    return order_est;
 }
 
 /**
@@ -256,7 +245,7 @@ lpc_calc_coefs(const int32_t *samples, int blocksize, int max_order,
     if(omethod == FLAKE_ORDER_METHOD_EST) {
         opt_order = compute_lpc_coefs_est(autoc, max_order, lpc);
     } else {
-        compute_lpc_coefs(autoc, max_order, lpc);
+        compute_lpc_coefs(autoc, max_order, NULL, lpc);
     }
 
     switch(omethod) {
