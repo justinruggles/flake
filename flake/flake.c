@@ -322,6 +322,7 @@ main(int argc, char **argv)
     float kb, sec, kbps, wav_bytes;
     char *omethod_s, *stmethod_s, *ptype_s, *vbs_s;
 
+    memset(&opts, 0, sizeof(CommandOptions));
     err = parse_commandline(argc, argv, &opts);
     if(!opts.quiet) {
         fprintf(stderr, "\nFlake: FLAC audio encoder\n(c) 2006  Justin Ruggles\n\n");
