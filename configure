@@ -200,6 +200,8 @@ if test ! -z "$TMPDIR" ; then
     TMPDIR1="${TMPDIR}"
 elif test ! -z "$TEMPDIR" ; then
     TMPDIR1="${TEMPDIR}"
+elif test ! -z "$TEMP" ; then
+    TMPDIR1="${TEMP}"
 else
     TMPDIR1="/tmp"
 fi
