@@ -116,7 +116,7 @@ typedef struct CommandOptions {
 } CommandOptions;
 
 // strnlen is a GNU extention. providing implementation if needed.
-#ifndef __USE_GNU
+#ifndef HAVE_STRNLEN
 static inline size_t
 strnlen(const char *s, size_t maxlen)
 {
@@ -249,7 +249,7 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
                         break;
                     case 'o':
                         if(opts->found_output) return 1;
-                        strncpy(opts->outfile, argv[i], strnlen(argv[i], PATH_MAX));
+                        strncpy(opts->outfile, argv[i], strnlen(argv[i], PATH_MAX)+1);
                         opts->found_output = 1;
                         break;
                     case 'p':
@@ -306,7 +306,7 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
     if(!opts->found_output) {
         // if no output is specified, use input filename with .flac extension
         int ext = strnlen(opts->infile, PATH_MAX);
-        strncpy(opts->outfile, opts->infile, ext);
+        strncpy(opts->outfile, opts->infile, ext+1);
         opts->outfile[ext] = '\0';
         while(ext > 0 && opts->outfile[ext] != '.') ext--;
         if(ext >= (PATH_MAX-5)) {

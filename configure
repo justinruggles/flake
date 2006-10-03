@@ -661,6 +661,13 @@ check_exec <<EOF && have_lrintf=yes || have_lrintf=no
 int main( void ) { return (lrintf(3.999f) > 0)?0:1; }
 EOF
 
+# test for strnlen in string.h
+check_exec <<EOF && have_strnlen=yes || have_strnlen=no
+#define _ISOC9X_SOURCE  1
+#include <string.h>
+int main( void ) { return (strnlen("help", 6) == 4)?0:1; }
+EOF
+
 if enabled debug; then
     add_cflags -g
 else
@@ -703,6 +710,8 @@ if test "$BUILDSUF" != ""; then
 fi
 echo "big-endian       $bigendian"
 echo "inttypes.h       $inttypes"
+echo "lrintf()         $have_lrintf"
+echo "strnlen()        $have_strnlen"
 if test $cpu = "powerpc"; then
     echo "AltiVec enabled  $altivec"
 fi
@@ -758,6 +767,9 @@ if test "$inttypes" != "yes" ; then
 fi
 if test "$have_lrintf" = "yes" ; then
   echo "#define HAVE_LRINTF 1" >> $TMPH
+fi
+if test "$have_strnlen" = "yes" ; then
+  echo "#define HAVE_STRNLEN 1" >> $TMPH
 fi
 
 libflake_version=`grep '#define FLAKE_VERSION ' "$source_path/libflake/flake.h" | sed 's/[^0-9\.]//g'`
