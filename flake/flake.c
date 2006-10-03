@@ -93,6 +93,13 @@ print_help(FILE *out)
                  "\n");
 }
 
+typedef struct FilePair {
+    char *infile;
+    char *outfile;
+    FILE *ifp;
+    FILE *ofp;
+} FilePair;
+
 typedef struct CommandOptions {
     char *infile;
     char outfile[PATH_MAX];
@@ -305,164 +312,155 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
     return 0;
 }
 
-int
-main(int argc, char **argv)
+static void
+print_params(FlakeContext *s)
 {
-    CommandOptions opts;
-    FILE *ifp;
-    FILE *ofp;
-    WavFile wf;
+    char *omethod_s, *stmethod_s, *ptype_s, *vbs_s;
+
+    vbs_s = "ERROR";
+    switch(s->params.variable_block_size) {
+        case 0: vbs_s = "none";  break;
+        case 1: vbs_s = "method 1"; break;
+        case 2: vbs_s = "method 2"; break;
+    }
+    fprintf(stderr, "variable block size: %s\n", vbs_s);
+    ptype_s = "ERROR";
+    switch(s->params.prediction_type) {
+        case 0: ptype_s = "none (verbatim mode)";  break;
+        case 1: ptype_s = "fixed";  break;
+        case 2: ptype_s = "levinson-durbin"; break;
+    }
+    fprintf(stderr, "prediction type: %s\n", ptype_s);
+    if(s->params.prediction_type != FLAKE_PREDICTION_NONE) {
+        fprintf(stderr, "prediction order: %d,%d\n", s->params.min_prediction_order,
+                                                     s->params.max_prediction_order);
+        fprintf(stderr, "partition order: %d,%d\n", s->params.min_partition_order,
+                                                    s->params.max_partition_order);
+        omethod_s = "ERROR";
+        switch(s->params.order_method) {
+            case 0: omethod_s = "maximum";  break;
+            case 1: omethod_s = "estimate"; break;
+            case 2: omethod_s = "2-level"; break;
+            case 3: omethod_s = "4-level"; break;
+            case 4: omethod_s = "8-level"; break;
+            case 5: omethod_s = "full search";   break;
+            case 6: omethod_s = "log search";  break;
+        }
+        fprintf(stderr, "order method: %s\n", omethod_s);
+    }
+    if(s->channels == 2) {
+        stmethod_s = "ERROR";
+        switch(s->params.stereo_method) {
+            case 0: stmethod_s = "independent";  break;
+            case 1: stmethod_s = "mid-side";     break;
+        }
+        fprintf(stderr, "stereo method: %s\n", stmethod_s);
+    }
+    fprintf(stderr, "header padding: %d\n", s->params.padding_size);
+}
+
+static int
+encode_file(CommandOptions *opts, FilePair *files, int first_file)
+{
     FlakeContext s;
-    int header_size, subset;
+    WavFile wf;
+    int header_size, subset, bs_zero;
     uint8_t *frame;
     int16_t *wav;
-    int err, percent;
+    int percent;
     uint32_t nr, fs, samplecount, bytecount;
     int t0, t1;
     float kb, sec, kbps, wav_bytes;
-    char *omethod_s, *stmethod_s, *ptype_s, *vbs_s;
 
-    memset(&opts, 0, sizeof(CommandOptions));
-    err = parse_commandline(argc, argv, &opts);
-    if(!opts.quiet) {
-        fprintf(stderr, "\nFlake: FLAC audio encoder\n(c) 2006  Justin Ruggles\n\n");
-    }
-    if(err == 2) {
-        print_help(stdout);
-        return 0;
-    } else if(err) {
-        print_usage(stderr);
-        return 1;
-    }
-
-    if(!strncmp(opts.infile, "-", 2)) {
-#ifdef _WIN32
-        _setmode(_fileno(stdin), _O_BINARY);
-#endif
-        ifp = stdin;
-    } else {
-        ifp = fopen(opts.infile, "rb");
-        if(!ifp) {
-            fprintf(stderr, "error opening input file: %s\n", opts.infile);
-            return 1;
-        }
-    }
-    if(!strncmp(opts.outfile, "-", 2)) {
-#ifdef _WIN32
-        _setmode(_fileno(stdout), _O_BINARY);
-#endif
-        ofp = stdout;
-    } else {
-        ofp = fopen(opts.outfile, "wb");
-        if(!ofp) {
-            fprintf(stderr, "error opening output file: %s\n", opts.outfile);
-            return 1;
-        }
-    }
-
-    if(wavfile_init(&wf, ifp)) {
-        fprintf(stderr, "invalid wav file: %s\n", opts.infile);
+    if(wavfile_init(&wf, files->ifp)) {
+        fprintf(stderr, "invalid input file: %s\n", files->infile);
         return 1;
     }
     wf.read_format = WAV_SAMPLE_FMT_S16;
-    if(!opts.quiet) {
-        wavfile_print(stderr, &wf);
-        if(wf.samples > 0) {
-            fprintf(stderr, "samples: %d\n", wf.samples);
-        } else {
-            fprintf(stderr, "samples: unknown\n");
-        }
-    }
 
-    // initialize encoder
+    // set parameters from input audio
     s.channels = wf.channels;
     s.sample_rate = wf.sample_rate;
     s.bits_per_sample = 16;
-    if(wf.bit_width != 16 && !opts.quiet) {
-        fprintf(stderr, "warning! converting to 16-bit (not lossless)\n");
-    }
     s.samples = wf.samples;
 
-    s.params.compression = opts.compr;
+    // set parameters from commandline
+    s.params.compression = opts->compr;
     if(flake_set_defaults(&s.params)) {
         return 1;
     }
-
-    // commandline parameter overrides
-    if(opts.bsize    >= 0) s.params.block_size           = opts.bsize;
-    if(opts.omethod  >= 0) s.params.order_method         = opts.omethod;
-    if(opts.stmethod >= 0) s.params.stereo_method        = opts.stmethod;
-    if(opts.ptype    >= 0) s.params.prediction_type      = opts.ptype;
-    if(opts.omin     >= 0) s.params.min_prediction_order = opts.omin;
-    if(opts.omax     >= 0) s.params.max_prediction_order = opts.omax;
-    if(opts.pomin    >= 0) s.params.min_partition_order  = opts.pomin;
-    if(opts.pomax    >= 0) s.params.max_partition_order  = opts.pomax;
-    if(opts.padding  >= 0) s.params.padding_size         = opts.padding;
-    if(opts.vbs      >= 0) s.params.variable_block_size  = opts.vbs;
+    if(opts->bsize    >= 0) s.params.block_size           = opts->bsize;
+    if(opts->omethod  >= 0) s.params.order_method         = opts->omethod;
+    if(opts->stmethod >= 0) s.params.stereo_method        = opts->stmethod;
+    if(opts->ptype    >= 0) s.params.prediction_type      = opts->ptype;
+    if(opts->omin     >= 0) s.params.min_prediction_order = opts->omin;
+    if(opts->omax     >= 0) s.params.max_prediction_order = opts->omax;
+    if(opts->pomin    >= 0) s.params.min_partition_order  = opts->pomin;
+    if(opts->pomax    >= 0) s.params.max_partition_order  = opts->pomax;
+    if(opts->padding  >= 0) s.params.padding_size         = opts->padding;
+    if(opts->vbs      >= 0) s.params.variable_block_size  = opts->vbs;
 
     subset = flake_validate_params(&s);
     if(subset < 0) {
-        fprintf(stderr, "Error initializing encoder.\n");
+        fprintf(stderr, "Error: invalid encoding parameters.\n");
         return 1;
-    } else if(subset == 1 && !opts.quiet) {
-        fprintf(stderr,"\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n"
-                         " WARNING! The chosen encoding options are\n"
-                         " not FLAC Subset compliant. Therefore, the\n"
-                         " encoded file(s) may not work properly with\n"
-                         " some FLAC players and decoders.\n"
-                         "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n");
     }
+    bs_zero = (s.params.block_size == 0);
+
+    // initialize encoder
     header_size = flake_encode_init(&s);
     if(header_size < 0) {
         flake_encode_close(&s);
         fprintf(stderr, "Error initializing encoder.\n");
         return 1;
     }
-    fwrite(s.header, 1, header_size, ofp);
+    fwrite(s.header, 1, header_size, files->ofp);
 
-    // print encoding options info
-    if(!opts.quiet) {
-        fprintf(stderr, "\nblock size: %d\n", s.params.block_size);
-        vbs_s = "ERROR";
-        switch(s.params.variable_block_size) {
-            case 0: vbs_s = "none";  break;
-            case 1: vbs_s = "method 1"; break;
-            case 2: vbs_s = "method 2"; break;
+    // print encoding parameters
+    if(first_file && !opts->quiet) {
+        if(subset == 1) {
+            fprintf(stderr,"=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n"
+                           " WARNING! The chosen encoding options are\n"
+                           " not FLAC Subset compliant. Therefore, the\n"
+                           " encoded file(s) may not work properly with\n"
+                           " some FLAC players and decoders.\n"
+                           "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n\n");
         }
-        fprintf(stderr, "variable: %s\n", vbs_s);
-        ptype_s = "ERROR";
-        switch(s.params.prediction_type) {
-            case 0: ptype_s = "none (verbatim mode)";  break;
-            case 1: ptype_s = "fixed";  break;
-            case 2: ptype_s = "levinson-durbin"; break;
+        if(bs_zero) {
+            fprintf(stderr, "block time: %dms\n", s.params.block_time_ms);
+        } else {
+            fprintf(stderr, "block size: %d\n", s.params.block_size);
         }
-        fprintf(stderr, "prediction type: %s\n", ptype_s);
-        if(s.params.prediction_type != FLAKE_PREDICTION_NONE) {
-            fprintf(stderr, "prediction order: %d,%d\n", s.params.min_prediction_order,
-                                                         s.params.max_prediction_order);
-            fprintf(stderr, "partition order: %d,%d\n", s.params.min_partition_order,
-                                                        s.params.max_partition_order);
-            omethod_s = "ERROR";
-            switch(s.params.order_method) {
-                case 0: omethod_s = "maximum";  break;
-                case 1: omethod_s = "estimate"; break;
-                case 2: omethod_s = "2-level"; break;
-                case 3: omethod_s = "4-level"; break;
-                case 4: omethod_s = "8-level"; break;
-                case 5: omethod_s = "full search";   break;
-                case 6: omethod_s = "log search";  break;
-            }
-            fprintf(stderr, "order method: %s\n", omethod_s);
+        print_params(&s);
+    }
+
+    if(!opts->quiet) {
+        fprintf(stderr, "\n");
+        fprintf(stderr, "input file:  \"%s\"\n", files->infile);
+        fprintf(stderr, "output file: \"%s\"\n", files->outfile);
+        wavfile_print(stderr, &wf);
+        if(wf.bit_width != 16) {
+            fprintf(stderr, "WARNING! converting to 16-bit (not lossless)\n");
         }
-        if(s.channels == 2) {
-            stmethod_s = "ERROR";
-            switch(s.params.stereo_method) {
-                case 0: stmethod_s = "independent";  break;
-                case 1: stmethod_s = "mid-side";     break;
-            }
-            fprintf(stderr, "stereo method: %s\n", stmethod_s);
+        if(wf.samples > 0) {
+            int th, tm, ts, tms;
+            tms = wf.samples * 1000 / wf.sample_rate;
+            ts = tms / 1000;
+            tms = tms % 1000;
+            tm = ts / 60;
+            ts = ts % 60;
+            th = tm / 60;
+            tm = tm % 60;
+            fprintf(stderr, "samples: %d (", wf.samples);
+            if(th) fprintf(stderr, "%dh", th);
+            fprintf(stderr, "%dm", tm);
+            fprintf(stderr, "%d.%03ds)\n", ts, tms);
+        } else {
+            fprintf(stderr, "samples: unknown\n");
         }
-        fprintf(stderr, "header padding: %d\n\n", s.params.padding_size);
+        if(bs_zero) {
+            fprintf(stderr, "block size: %d\n", s.params.block_size);
+        }
     }
 
     frame = malloc(s.max_frame_size);
@@ -478,7 +476,7 @@ main(int argc, char **argv)
         if(fs < 0) {
             fprintf(stderr, "Error encoding frame\n");
         } else if(fs > 0) {
-            fwrite(frame, 1, fs, ofp);
+            fwrite(frame, 1, fs, files->ofp);
             samplecount += s.params.block_size;
             bytecount += fs;
             t1 = samplecount / s.sample_rate;
@@ -491,7 +489,7 @@ main(int argc, char **argv)
                     percent = ((samplecount * 100.5) / s.samples);
                 }
                 wav_bytes = samplecount*wf.block_align;
-                if(!opts.quiet) {
+                if(!opts->quiet) {
                     fprintf(stderr, "\rprogress: %3d%% | ratio: %1.3f | "
                                     "bitrate: %4.1f kbps ",
                             percent, (bytecount / wav_bytes), kbps);
@@ -501,24 +499,83 @@ main(int argc, char **argv)
         }
         nr = wavfile_read_samples(&wf, wav, s.params.block_size);
     }
-    if(!opts.quiet) {
+    if(!opts->quiet) {
         fprintf(stderr, "| bytes: %d \n\n", bytecount);
     }
 
     flake_encode_close(&s);
 
     // if seeking is possible, rewrite sample count and MD5 checksum
-    if(!fseek(ofp, 22, SEEK_SET)) {
+    if(!fseek(files->ofp, 22, SEEK_SET)) {
         uint32_t sc = be2me_32(samplecount);
-        fwrite(&sc, 4, 1, ofp);
-        fwrite(s.md5digest, 1, 16, ofp);
+        fwrite(&sc, 4, 1, files->ofp);
+        fwrite(s.md5digest, 1, 16, files->ofp);
     }
 
     free(wav);
     free(frame);
 
-    fclose(ifp);
-    fclose(ofp);
-
     return 0;
+}
+
+static int
+open_files(FilePair *files)
+{
+    if(!strncmp(files->infile, "-", 2)) {
+#ifdef _WIN32
+        _setmode(_fileno(stdin), _O_BINARY);
+#endif
+        files->ifp = stdin;
+    } else {
+        files->ifp = fopen(files->infile, "rb");
+        if(!files->ifp) {
+            fprintf(stderr, "error opening input file: %s\n", files->infile);
+            return 1;
+        }
+    }
+    if(!strncmp(files->outfile, "-", 2)) {
+#ifdef _WIN32
+        _setmode(_fileno(stdout), _O_BINARY);
+#endif
+        files->ofp = stdout;
+    } else {
+        files->ofp = fopen(files->outfile, "wb");
+        if(!files->ofp) {
+            fprintf(stderr, "error opening output file: %s\n", files->outfile);
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int
+main(int argc, char **argv)
+{
+    CommandOptions opts;
+    FilePair files;
+    int err;
+
+    memset(&opts, 0, sizeof(CommandOptions));
+    err = parse_commandline(argc, argv, &opts);
+    if(!opts.quiet) {
+        fprintf(stderr, "\nFlake: FLAC audio encoder\n(c) 2006  Justin Ruggles\n\n");
+    }
+    if(err == 2) {
+        print_help(stdout);
+        return 0;
+    } else if(err) {
+        print_usage(stderr);
+        return 1;
+    }
+
+    files.infile = opts.infile;
+    files.outfile = opts.outfile;
+    if(open_files(&files)) {
+        return 1;
+    }
+    err = encode_file(&opts, &files, 1);
+    fclose(files.ofp);
+    fclose(files.ifp);
+
+    return err;
 }
