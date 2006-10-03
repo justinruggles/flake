@@ -17,14 +17,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "config.h"
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <inttypes.h>
-#include <string.h>
-#include <assert.h>
-#include <math.h>
+#include "common.h"
 
 #include "flake.h"
 #include "lpc.h"

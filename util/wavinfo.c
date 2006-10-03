@@ -4,12 +4,7 @@
  * Copyright (c) 2006 Justin Ruggles
  */
 
-#include "config.h"
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <inttypes.h>
-#include <string.h>
+#include "common.h"
 
 #include "wav.h"
 

@@ -23,14 +23,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "config.h"
+#include "common.h"
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <inttypes.h>
-#include <string.h>
 #include <limits.h>
 
+/* used for binary mode piped i/o on Windows */
 #ifdef _WIN32
 #include <fcntl.h>
 #include <io.h>
@@ -114,17 +111,6 @@ typedef struct CommandOptions {
     int vbs;
     int quiet;
 } CommandOptions;
-
-// strnlen is a GNU extention. providing implementation if needed.
-#ifndef HAVE_STRNLEN
-static inline size_t
-strnlen(const char *s, size_t maxlen)
-{
-    size_t i = 0;
-    while((s[i] != '\0') && (i < maxlen)) i++;
-    return i;
-}
-#endif
 
 static int
 parse_number(char *arg, int max) {

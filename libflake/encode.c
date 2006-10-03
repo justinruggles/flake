@@ -17,13 +17,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "config.h"
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <inttypes.h>
-#include <string.h>
-#include <assert.h>
+#include "common.h"
 
 #include "encode.h"
 #include "flake.h"
@@ -702,20 +696,6 @@ channel_decorrelation(FlacEncodeContext *ctx)
         }
         frame->subframes[0].obits++;
     }
-}
-
-static inline int
-log2i(uint32_t v)
-{
-    int i;
-    int n = 0;
-    if(v & 0xffff0000){ v >>= 16; n += 16; }
-    if(v & 0xff00){ v >>= 8; n += 8; }
-    for(i=2; i<256; i<<=1) {
-        if(v >= i) n++;
-        else break;
-    }
-    return n;
 }
 
 /**

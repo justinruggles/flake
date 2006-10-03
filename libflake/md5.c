@@ -9,11 +9,7 @@
  * Still in the public domain.  Still no warranty.
  */
 
-#include "config.h"
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
+#include "common.h"
 
 #include "md5.h"
 #include "bswap.h"

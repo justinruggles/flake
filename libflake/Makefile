@@ -4,7 +4,8 @@
 include ../config.mak
 
 CFLAGS=$(OPTFLAGS) -I. -I.. -I$(SRC_PATH)/libflake \
-       -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_ISOC9X_SOURCE
+	-D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_ISOC9X_SOURCE \
+	-DHAVE_CONFIG_H
 
 OBJS= crc.o encode.o lpc.o md5.o optimize.o rice.o vbs.o \
 

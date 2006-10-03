@@ -22,19 +22,10 @@
  * WAV decoder
  */
 
-#include "config.h"
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <inttypes.h>
+#include "common.h"
 
 #include "wav.h"
 #include "bswap.h"
-
-#define MAX(a,b) ((a) > (b) ? (a) : (b))
-#define MIN(a,b) ((a) > (b) ? (b) : (a))
-#define CLIP(x,min,max) MAX(MIN((x), (max)), (min))
 
 #define RIFF_ID     0x46464952
 #define WAVE_ID     0x45564157

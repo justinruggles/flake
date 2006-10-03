@@ -22,13 +22,7 @@
  * Functions for calculating optimal partition order and Rice parameters
  */
 
-#include "config.h"
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <inttypes.h>
-#include <assert.h>
-#include <string.h>
+#include "common.h"
 
 #include "rice.h"
 
@@ -101,23 +95,6 @@ calc_sums(int pmin, int pmax, uint32_t *data, int n, int pred_order,
             sums[i][j] = sums[i+1][2*j] + sums[i+1][2*j+1];
         }
     }
-}
-
-#define MIN(a,b) ((a) < (b) ? (a) : (b))
-#define MAX(a,b) ((a) > (b) ? (a) : (b))
-
-static inline int
-log2i(uint32_t v)
-{
-    int i;
-    int n = 0;
-    if(v & 0xffff0000){ v >>= 16; n += 16; }
-    if(v & 0xff00){ v >>= 8; n += 8; }
-    for(i=2; i<256; i<<=1) {
-        if(v >= i) n++;
-        else break;
-    }
-    return n;
 }
 
 static uint32_t
