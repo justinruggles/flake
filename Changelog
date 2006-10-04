@@ -8,7 +8,6 @@ Flake TODO list
 - Import FFmpeg's FLAC decoder for verification during encoding
 - Vorbis Comment tag support
 - Embedded CUESHEET support
-- Allow wildcards in input filename for encoding multiple files at once
 
 Flake Changelog
 ---------------
@@ -20,6 +19,7 @@ version SVN : current
 - Quiet encoding mode (no console output except errors)
 - Changed output file designation to "-o output.flac"
 - Changed order method option to "-m #"
+- Added support for encoding multiple files at once
 
 version 0.10 : 11 September 2006 (Initial SVN import)
 - New configure system

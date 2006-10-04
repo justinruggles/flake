@@ -101,9 +101,8 @@ typedef struct FilePair {
 } FilePair;
 
 typedef struct CommandOptions {
-    char *infile;
-    char outfile[PATH_MAX];
-    int found_input;
+    FilePair *filelist;
+    int input_count;
     int found_output;
     int compr;
     int omethod;
@@ -149,13 +148,15 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
     int i;
     static const char *param_str = "bhlmopqrstv";
     int max_digits = 8;
+    int ifc = 0;
 
+    opts->filelist = NULL;
     if(argc < 2) {
         return 1;
     }
 
-    opts->infile = NULL;
-    opts->found_input = 0;
+    opts->filelist = calloc(argc * sizeof(FilePair), 1);
+    opts->input_count = 0;
     opts->found_output = 0;
     opts->compr = 5;
     opts->omethod = -1;
@@ -174,12 +175,8 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
         if(argv[i][0] == '-' && argv[i][1] != '\0') {
             if(argv[i][1] >= '0' && argv[i][1] <= '9') {
                 if(argv[i][2] != '\0' && argv[i][3] != '\0') {
-                    if(opts->found_input) {
-                        fprintf(stderr, "error parsing filenames.\n");
-                        return 1;
-                    }
-                    opts->infile = argv[i];
-                    opts->found_input = 1;
+                    opts->filelist[ifc].infile = argv[i];
+                    ifc++;
                 } else {
                     opts->compr = parse_number(&argv[i][1], max_digits);
                     if(opts->compr < 0) return 1;
@@ -188,12 +185,8 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
                 // if argument starts with '-' and is more than 1 char, treat
                 // it as a filename
                 if(argv[i][2] != '\0') {
-                    if(opts->found_input) {
-                        fprintf(stderr, "error parsing filenames.\n");
-                        return 1;
-                    }
-                    opts->infile = argv[i];
-                    opts->found_input = 1;
+                    opts->filelist[ifc].infile = argv[i];
+                    ifc++;
                     continue;
                 }
                 // check to see if param is valid
@@ -241,9 +234,14 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
                         if(opts->omethod < 0) return 1;
                         break;
                     case 'o':
-                        if(opts->found_output) return 1;
-                        strncpy(opts->outfile, argv[i], strnlen(argv[i], PATH_MAX)+1);
-                        opts->found_output = 1;
+                        if(opts->found_output) {
+                            return 1;
+                        } else {
+                            int olen = strnlen(argv[i], PATH_MAX) + 1;
+                            opts->filelist[0].outfile = calloc(1, olen+5);
+                            strncpy(opts->filelist[0].outfile, argv[i], olen);
+                            opts->found_output = 1;
+                        }
                         break;
                     case 'p':
                         opts->padding = parse_number(argv[i], max_digits);
@@ -284,31 +282,34 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
         } else {
             // if argument does not start with '-' parse as a filename. also,
             // if the argument is a single '-' treat it as a filename
-            if(opts->found_input) {
-                fprintf(stderr, "error parsing filenames.\n");
-                return 1;
-            }
-            opts->infile = argv[i];
-            opts->found_input = 1;
+            opts->filelist[ifc].infile = argv[i];
+            ifc++;
         }
     }
-    if(!opts->found_input) {
+    if(!ifc) {
         fprintf(stderr, "error parsing filenames.\n");
+        return 1;
+    }
+    if(opts->found_output && ifc > 1) {
+        fprintf(stderr, "cannot specify output file when using multiple input files\n");
         return 1;
     }
     if(!opts->found_output) {
         // if no output is specified, use input filename with .flac extension
-        int ext = strnlen(opts->infile, PATH_MAX);
-        strncpy(opts->outfile, opts->infile, ext+1);
-        opts->outfile[ext] = '\0';
-        while(ext > 0 && opts->outfile[ext] != '.') ext--;
-        if(ext >= (PATH_MAX-5)) {
-            fprintf(stderr, "input filename too long\n");
-            return 1;
+        for(i=0; i<ifc; i++) {
+            int ext = strnlen(opts->filelist[i].infile, PATH_MAX);
+            opts->filelist[i].outfile = calloc(1, ext+6);
+            strncpy(opts->filelist[i].outfile, opts->filelist[i].infile, ext+1);
+            opts->filelist[i].outfile[ext] = '\0';
+            while(ext > 0 && opts->filelist[i].outfile[ext] != '.') ext--;
+            if(ext >= (PATH_MAX-5)) {
+                fprintf(stderr, "input filename too long\n");
+                return 1;
+            }
+            strncpy(&opts->filelist[i].outfile[ext], ".flac", 6);
         }
-        strncpy(&opts->outfile[ext], ".flac", 6);
-        opts->found_output = 1;
     }
+    opts->input_count = ifc;
     return 0;
 }
 
@@ -548,12 +549,24 @@ open_files(FilePair *files)
     return 0;
 }
 
+static void
+filelist_cleanup(CommandOptions *opts)
+{
+    int i;
+
+    if(opts->filelist) {
+        for(i=0; i<opts->input_count; i++) {
+            if(opts->filelist[i].outfile) free(opts->filelist[i].outfile);
+        }
+        free(opts->filelist);
+    }
+}
+
 int
 main(int argc, char **argv)
 {
     CommandOptions opts;
-    FilePair files;
-    int err;
+    int i, err;
 
     memset(&opts, 0, sizeof(CommandOptions));
     err = parse_commandline(argc, argv, &opts);
@@ -562,20 +575,26 @@ main(int argc, char **argv)
     }
     if(err == 2) {
         print_help(stdout);
+        filelist_cleanup(&opts);
         return 0;
     } else if(err) {
         print_usage(stderr);
+        filelist_cleanup(&opts);
         return 1;
     }
 
-    files.infile = opts.infile;
-    files.outfile = opts.outfile;
-    if(open_files(&files)) {
-        return 1;
+    for(i=0; i<opts.input_count; i++) {
+        if(open_files(&opts.filelist[i])) {
+            err = 1;
+            break;
+        }
+        err = encode_file(&opts, &opts.filelist[i], (i==0));
+        fclose(opts.filelist[i].ofp);
+        fclose(opts.filelist[i].ifp);
+        if(err) break;
     }
-    err = encode_file(&opts, &files, 1);
-    fclose(files.ofp);
-    fclose(files.ifp);
+
+    filelist_cleanup(&opts);
 
     return err;
 }
