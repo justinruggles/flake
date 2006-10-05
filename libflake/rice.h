@@ -25,9 +25,7 @@
 #ifndef RICE_H
 #define RICE_H
 
-#include "config.h"
-
-#include <inttypes.h>
+#include "common.h"
 
 #define MAX_RICE_PARAM          14
 #define MAX_PARTITION_ORDER     8

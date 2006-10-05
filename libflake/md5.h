@@ -12,9 +12,7 @@
 #ifndef MD5_H
 #define MD5_H
 
-#include "config.h"
-
-#include <inttypes.h>
+#include "common.h"
 
 typedef struct {
     uint32_t lo, hi;

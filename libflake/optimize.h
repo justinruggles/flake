@@ -20,9 +20,8 @@
 #ifndef OPTIMIZE_H
 #define OPTIMIZE_H
 
-#include "config.h"
+#include "common.h"
 
-#include <inttypes.h>
 #include "encode.h"
 
 extern int encode_residual(FlacEncodeContext *ctx, int ch);

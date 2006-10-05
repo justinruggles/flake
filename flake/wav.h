@@ -25,8 +25,7 @@
 #ifndef WAV_H
 #define WAV_H
 
-#include <stdio.h>
-#include <inttypes.h>
+#include "common.h"
 
 #define WAVE_FORMAT_PCM         0x0001
 #define WAVE_FORMAT_IEEEFLOAT   0x0003

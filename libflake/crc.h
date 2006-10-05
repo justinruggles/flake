@@ -20,9 +20,7 @@
 #ifndef CRC_H
 #define CRC_H
 
-#include "config.h"
-
-#include <inttypes.h>
+#include "common.h"
 
 extern void crc_init(void);
 

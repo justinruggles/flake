@@ -20,10 +20,7 @@
 #ifndef LPC_H
 #define LPC_H
 
-#include "config.h"
-
-#include <stdlib.h>
-#include <inttypes.h>
+#include "common.h"
 
 #define MAX_LPC_ORDER 32
 

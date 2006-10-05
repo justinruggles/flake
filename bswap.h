@@ -6,7 +6,7 @@
 #ifndef BSWAP_H
 #define BSWAP_H
 
-#include "config.h"
+#include "common.h"
 
 static inline uint16_t bswap_16(uint16_t x){
     return (x>>8) | (x<<8);

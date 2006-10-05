@@ -20,10 +20,7 @@
 #ifndef VBS_H
 #define VBS_H
 
-#include "config.h"
-
-#include <stdlib.h>
-#include <inttypes.h>
+#include "common.h"
 
 extern int encode_frame_vbs(FlakeContext *s, uint8_t *frame_buffer, int16_t *samples);
 

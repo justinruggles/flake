@@ -25,12 +25,9 @@
 #ifndef BITIO_H
 #define BITIO_H
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <inttypes.h>
-#include <string.h>
-#include <assert.h>
+#include "common.h"
 
+#include <assert.h>
 #include "bswap.h"
 
 typedef struct BitWriter {
