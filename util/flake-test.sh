@@ -6,7 +6,7 @@ flac="flac";
 flake="../flake/flake";
 wavinfo="./wavinfo";
 
-enc="$flake $1 flake-";
+enc="$flake $1 -o flake-";
 dec="$flac -t flake-";
 
 wavsize=$($wavinfo $1 | awk '/Data Size/ {print $3}');
