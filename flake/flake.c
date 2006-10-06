@@ -44,7 +44,7 @@
 static void
 print_usage(FILE *out)
 {
-    fprintf(out, "usage: flake [options] <input.wav> [output.flac]\n"
+    fprintf(out, "usage: flake [options] <input.wav> [-o output.flac]\n"
                  "type 'flake -h' for more details.\n\n");
 }
 
