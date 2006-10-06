@@ -426,6 +426,13 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
                            " encoded file(s) may not work properly with\n"
                            " some FLAC players and decoders.\n"
                            "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n\n");
+        } else if(s.params.max_prediction_order > 12 && s.sample_rate <= 48000) {
+            fprintf(stderr,"=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n"
+                           " WARNING! Encoding with a prediction order\n"
+                           " greater than 12 can cause compatibility\n"
+                           " issues. The encoded file(s) may not play\n"
+                           " correctly with some FLAC players.\n"
+                           "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n\n");
         }
         if(bs_zero) {
             fprintf(stderr, "block time: %dms\n", s.params.block_time_ms);
