@@ -355,7 +355,9 @@ flake_validate_params(FlakeContext *s)
         if(bs == flac_blocksizes[i])
             break;
     }
-    if(i == 15) subset = 1;
+    if(i == 15 || (s->sample_rate <= 48000 && bs > 4608)) {
+        subset = 1;
+    }
 
     if(params->prediction_type < 0 || params->prediction_type > 2) {
         return -1;
@@ -381,6 +383,9 @@ flake_validate_params(FlakeContext *s)
         if(params->max_prediction_order < 1 ||
            params->max_prediction_order > 32) {
             return -1;
+        }
+        if(s->sample_rate <= 48000 && params->max_prediction_order > 12) {
+            subset = 1;
         }
     }
 
