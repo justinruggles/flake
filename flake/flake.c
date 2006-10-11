@@ -444,7 +444,8 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
             fprintf(stderr, "WARNING! converting to 16-bit (not lossless)\n");
         }
         if(wf.samples > 0) {
-            int th, tm, ts, tms;
+            int64_t tms;
+            int th, tm, ts;
             tms = wf.samples * 1000 / wf.sample_rate;
             ts = tms / 1000;
             tms = tms % 1000;
@@ -452,10 +453,10 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
             ts = ts % 60;
             th = tm / 60;
             tm = tm % 60;
-            fprintf(stderr, "samples: %d (", wf.samples);
+            fprintf(stderr, "samples: %u (", wf.samples);
             if(th) fprintf(stderr, "%dh", th);
             fprintf(stderr, "%dm", tm);
-            fprintf(stderr, "%d.%03ds)\n", ts, tms);
+            fprintf(stderr, "%d.%03ds)\n", ts, (int)tms);
         } else {
             fprintf(stderr, "samples: unknown\n");
         }
