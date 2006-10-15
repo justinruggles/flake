@@ -231,8 +231,8 @@ flake_set_defaults(FlakeEncodeParams *params)
         case 1:
             params->block_time_ms = 27;
             params->prediction_type = FLAKE_PREDICTION_FIXED;
-            params->min_prediction_order = 3;
-            params->max_prediction_order = 4;
+            params->min_prediction_order = 2;
+            params->max_prediction_order = 3;
             params->min_partition_order = 2;
             params->max_partition_order = 2;
             break;
