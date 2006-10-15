@@ -204,85 +204,96 @@ flake_set_defaults(FlakeEncodeParams *params)
         return -1;
     }
 
-    // maximum compression mode
-    if(lvl == 99) {
-        params->order_method = FLAKE_ORDER_METHOD_SEARCH;
-        params->stereo_method = FLAKE_STEREO_METHOD_ESTIMATE;
-        params->block_size = 0;
-        params->block_time_ms = 186;
-        params->prediction_type = FLAKE_PREDICTION_LEVINSON;
-        params->min_prediction_order = 1;
-        params->max_prediction_order = 32;
-        params->min_partition_order = 0;
-        params->max_partition_order = 8;
-        params->padding_size = 0;
-        params->variable_block_size = 2;
-        return 0;
-    }
-
-    params->order_method = ((int[]){ FLAKE_ORDER_METHOD_MAX,
-                                     FLAKE_ORDER_METHOD_EST,
-                                     FLAKE_ORDER_METHOD_EST,
-                                     FLAKE_ORDER_METHOD_EST,
-                                     FLAKE_ORDER_METHOD_EST,
-                                     FLAKE_ORDER_METHOD_EST,
-                                     FLAKE_ORDER_METHOD_2LEVEL,
-                                     FLAKE_ORDER_METHOD_4LEVEL,
-                                     FLAKE_ORDER_METHOD_4LEVEL,
-                                     FLAKE_ORDER_METHOD_LOG,
-                                     FLAKE_ORDER_METHOD_SEARCH,
-                                     FLAKE_ORDER_METHOD_LOG,
-                                     FLAKE_ORDER_METHOD_SEARCH})[lvl];
-
-    params->stereo_method = ((int[]){ FLAKE_STEREO_METHOD_INDEPENDENT,
-                                      FLAKE_STEREO_METHOD_ESTIMATE,
-                                      FLAKE_STEREO_METHOD_ESTIMATE,
-                                      FLAKE_STEREO_METHOD_ESTIMATE,
-                                      FLAKE_STEREO_METHOD_ESTIMATE,
-                                      FLAKE_STEREO_METHOD_ESTIMATE,
-                                      FLAKE_STEREO_METHOD_ESTIMATE,
-                                      FLAKE_STEREO_METHOD_ESTIMATE,
-                                      FLAKE_STEREO_METHOD_ESTIMATE,
-                                      FLAKE_STEREO_METHOD_ESTIMATE,
-                                      FLAKE_STEREO_METHOD_ESTIMATE,
-                                      FLAKE_STEREO_METHOD_ESTIMATE,
-                                      FLAKE_STEREO_METHOD_ESTIMATE })[lvl];
-
+    // default to level 5 params
+    params->order_method = FLAKE_ORDER_METHOD_EST;
+    params->stereo_method = FLAKE_STEREO_METHOD_ESTIMATE;
     params->block_size = 0;
-    params->block_time_ms = ((int[]){  27,  27,  27, 105,
-                                      105, 105, 105, 105,
-                                      105, 105, 105, 105,
-                                      105 })[lvl];
-
-    params->prediction_type = ((int[]){ FLAKE_PREDICTION_FIXED,
-                                        FLAKE_PREDICTION_FIXED,
-                                        FLAKE_PREDICTION_FIXED,
-                                        FLAKE_PREDICTION_LEVINSON,
-                                        FLAKE_PREDICTION_LEVINSON,
-                                        FLAKE_PREDICTION_LEVINSON,
-                                        FLAKE_PREDICTION_LEVINSON,
-                                        FLAKE_PREDICTION_LEVINSON,
-                                        FLAKE_PREDICTION_LEVINSON,
-                                        FLAKE_PREDICTION_LEVINSON,
-                                        FLAKE_PREDICTION_LEVINSON,
-                                        FLAKE_PREDICTION_LEVINSON,
-                                        FLAKE_PREDICTION_LEVINSON })[lvl];
-
-    params->min_prediction_order = ((int[]){  2,  3,  2,  1,  1,  1,
-                                              1,  1,  1,  1,  1,  1,
-                                              1 })[lvl];
-    params->max_prediction_order = ((int[]){  2,  4,  4,  6,  8,  8,
-                                              8,  8, 12, 12, 12, 32,
-                                             32 })[lvl];
-
-    params->min_partition_order = ((int[]){ 4, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                                            0 })[lvl];
-    params->max_partition_order = ((int[]){ 4, 2, 3, 3, 3, 6, 8, 8, 8, 8, 8, 8,
-                                            8 })[lvl];
-
+    params->block_time_ms = 105;
+    params->prediction_type = FLAKE_PREDICTION_LEVINSON;
+    params->min_prediction_order = 1;
+    params->max_prediction_order = 8;
+    params->min_partition_order = 0;
+    params->max_partition_order = 6;
     params->padding_size = 4096;
-
     params->variable_block_size = 0;
+
+    // differences from level 5
+    switch(lvl) {
+        case 0:
+            params->stereo_method = FLAKE_STEREO_METHOD_INDEPENDENT;
+            params->block_time_ms = 27;
+            params->prediction_type = FLAKE_PREDICTION_FIXED;
+            params->min_prediction_order = 2;
+            params->max_prediction_order = 2;
+            params->min_partition_order = 4;
+            params->max_partition_order = 4;
+            break;
+        case 1:
+            params->block_time_ms = 27;
+            params->prediction_type = FLAKE_PREDICTION_FIXED;
+            params->min_prediction_order = 3;
+            params->max_prediction_order = 4;
+            params->min_partition_order = 2;
+            params->max_partition_order = 2;
+            break;
+        case 2:
+            params->block_time_ms = 27;
+            params->prediction_type = FLAKE_PREDICTION_FIXED;
+            params->min_prediction_order = 2;
+            params->max_prediction_order = 4;
+            params->min_partition_order = 0;
+            params->max_partition_order = 3;
+            break;
+        case 3:
+            params->max_prediction_order = 6;
+            params->max_partition_order = 3;
+            break;
+        case 4:
+            params->max_partition_order = 3;
+            break;
+        case 5:
+            break;
+        case 6:
+            params->order_method = FLAKE_ORDER_METHOD_2LEVEL;
+            params->max_partition_order = 8;
+            break;
+        case 7:
+            params->order_method = FLAKE_ORDER_METHOD_4LEVEL;
+            params->max_partition_order = 8;
+            break;
+        case 8:
+            params->order_method = FLAKE_ORDER_METHOD_4LEVEL;
+            params->max_prediction_order = 12;
+            params->max_partition_order = 8;
+            break;
+        case 9:
+            params->order_method = FLAKE_ORDER_METHOD_LOG;
+            params->max_prediction_order = 12;
+            params->max_partition_order = 8;
+            break;
+        case 10:
+            params->order_method = FLAKE_ORDER_METHOD_SEARCH;
+            params->max_prediction_order = 12;
+            params->max_partition_order = 8;
+            break;
+        case 11:
+            params->order_method = FLAKE_ORDER_METHOD_LOG;
+            params->max_prediction_order = 32;
+            params->max_partition_order = 8;
+            break;
+        case 12:
+            params->order_method = FLAKE_ORDER_METHOD_SEARCH;
+            params->max_prediction_order = 32;
+            params->max_partition_order = 8;
+            break;
+        case 99:
+            params->order_method = FLAKE_ORDER_METHOD_SEARCH;
+            params->block_time_ms = 186;
+            params->max_prediction_order = 32;
+            params->max_partition_order = 8;
+            params->variable_block_size = 2;
+            break;
+    }
 
     return 0;
 }
