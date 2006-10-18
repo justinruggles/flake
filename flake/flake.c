@@ -446,7 +446,7 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
         if(wf.samples > 0) {
             int64_t tms;
             int th, tm, ts;
-            tms = wf.samples * 1000 / wf.sample_rate;
+            tms = (int64_t)(wf.samples * 1000.0 / wf.sample_rate);
             ts = tms / 1000;
             tms = tms % 1000;
             tm = ts / 60;
