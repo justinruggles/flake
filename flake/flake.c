@@ -309,6 +309,17 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
             strncpy(&opts->filelist[i].outfile[ext], ".flac", 6);
         }
     }
+
+    // disallow infile & outfile with same name except with piping
+    for(i=0; i<ifc; i++) {
+        if(strncmp(opts->filelist[i].infile, "-", 2) && strncmp(opts->filelist[i].outfile, "-", 2)) {
+            if(!strcmp(opts->filelist[i].infile, opts->filelist[i].outfile)) {
+                fprintf(stderr, "output filename cannot match input filename\n");
+                return 1;
+            }
+        }
+    }
+
     opts->input_count = ifc;
     return 0;
 }
