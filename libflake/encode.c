@@ -973,7 +973,11 @@ encode_frame(FlakeContext *s, uint8_t *frame_buffer, int16_t *samples)
         assert(!ctx->bw->eof);
     }
     if(frame_buffer != NULL) {
-        ctx->frame_count++;
+        if(ctx->params.variable_block_size) {
+            ctx->frame_count += s->params.block_size;
+        } else {
+            ctx->frame_count++;
+        }
     }
     return bitwriter_count(ctx->bw);
 }
