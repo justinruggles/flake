@@ -500,16 +500,23 @@ wavfile_read_samples(WavFile *wf, void *output, int num_samples)
 {
     int nr, i, j, bps, nsmp, v;
     int convert = 1;
+    int read_size;
     uint8_t *buffer;
 
     if(wf == NULL || wf->fp == NULL || output == NULL) return -1;
     if(wf->block_align <= 0) return -1;
+
+    read_size = wf->block_align * num_samples;
+    if((wf->filepos + read_size) >= (wf->data_start + wf->data_size)) {
+        read_size = (wf->data_start + wf->data_size) - wf->filepos;
+        num_samples = read_size / wf->block_align;
+    }
     if(num_samples < 0) return -1;
     if(num_samples == 0) return 0;
 
     convert = (wf->read_format != wf->source_format);
     if(convert) {
-        buffer = calloc(wf->block_align * num_samples, 1);
+        buffer = calloc(read_size, 1);
     } else {
         buffer = output;
     }
