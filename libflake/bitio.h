@@ -1,6 +1,6 @@
 /**
  * Bitwise File Writer
- * Copyright (c) 2006 Justin Ruggles
+ * Copyright (c) 2006-2007 Justin Ruggles
  *
  * derived from ffmpeg/libavcodec/bitstream.h
  * Common bit i/o utils
