@@ -82,32 +82,30 @@ bitwriter_flush(BitWriter *bw)
 static inline void
 bitwriter_writebits(BitWriter *bw, int bits, uint32_t val)
 {
+    uint32_t bb=0;
     assert(bits == 32 || val < (1U << bits));
 
-    if(bits == 0) return;
-    if(bw->eof || (bw->buf_ptr+3) >= bw->buf_end) {
+    if(bits == 0 || bw->eof) return;
+    if((bw->buf_ptr+3) >= bw->buf_end) {
         bw->eof = 1;
+        return;
+    }
+    if(bits < bw->bit_left) {
+        bw->bit_buf = (bw->bit_buf << bits) | val;
+        bw->bit_left -= bits;
     } else {
-        if(bits < bw->bit_left) {
-            bw->bit_buf = (bw->bit_buf << bits) | val;
-            bw->bit_left -= bits;
-        } else if(bw->bit_left < 32) {
-            bw->bit_buf <<= bw->bit_left;
-            bw->bit_buf |= val >> (bits - bw->bit_left);
-            if(bw->buffer != NULL) {
-                *(uint32_t *)bw->buf_ptr = be2me_32(bw->bit_buf);
-            }
-            bw->buf_ptr += 4;
-            bw->bit_left += (32 - bits);
-            bw->bit_buf = val;
-        } else {
+        if(bw->bit_left == 32) {
             assert(bits == 32);
-            bw->bit_buf = val;
-            if(bw->buffer != NULL) {
-                *(uint32_t *)bw->buf_ptr = be2me_32(bw->bit_buf);
-            }
-            bw->buf_ptr += 4;
+            bb = val;
+        } else {
+            bb = (bw->bit_buf << bw->bit_left) | (val >> (bits - bw->bit_left));
+            bw->bit_left += (32 - bits);
         }
+        if(bw->buffer != NULL) {
+            *(uint32_t *)bw->buf_ptr = be2me_32(bb);
+        }
+        bw->buf_ptr += 4;
+        bw->bit_buf = val;
     }
 }
 
