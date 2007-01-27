@@ -91,7 +91,7 @@ bitwriter_writebits(BitWriter *bw, int bits, uint32_t val)
         if(bits < bw->bit_left) {
             bw->bit_buf = (bw->bit_buf << bits) | val;
             bw->bit_left -= bits;
-        } else {
+        } else if(bw->bit_left < 32) {
             bw->bit_buf <<= bw->bit_left;
             bw->bit_buf |= val >> (bits - bw->bit_left);
             if(bw->buffer != NULL) {
@@ -100,6 +100,13 @@ bitwriter_writebits(BitWriter *bw, int bits, uint32_t val)
             bw->buf_ptr += 4;
             bw->bit_left += (32 - bits);
             bw->bit_buf = val;
+        } else {
+            assert(bits == 32);
+            bw->bit_buf = val;
+            if(bw->buffer != NULL) {
+                *(uint32_t *)bw->buf_ptr = be2me_32(bw->bit_buf);
+            }
+            bw->buf_ptr += 4;
         }
     }
 }
