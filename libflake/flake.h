@@ -45,7 +45,7 @@ typedef struct FlakeEncodeParams {
     // standard values are 0 to 8
     // 0 is lower compression, faster encoding
     // 8 is higher compression, slower encoding
-    // extended values 9 to 12 are slower and/or use
+    // extended values 9 to 13 are slower and/or use
     // higher prediction orders
     int compression;
 

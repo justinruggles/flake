@@ -200,7 +200,7 @@ flake_set_defaults(FlakeEncodeParams *params)
         return -1;
     }
     lvl = params->compression;
-    if((lvl < 0 || lvl > 12) && (lvl != 99)) {
+    if((lvl < 0 || lvl > 13) && (lvl != 99)) {
         return -1;
     }
 
@@ -286,6 +286,13 @@ flake_set_defaults(FlakeEncodeParams *params)
             params->max_prediction_order = 32;
             params->max_partition_order = 8;
             break;
+        case 13:
+            params->order_method = FLAKE_ORDER_METHOD_LOG;
+            params->block_time_ms = 186;
+            params->max_prediction_order = 32;
+            params->max_partition_order = 8;
+            params->variable_block_size = 1;
+            break;
         case 99:
             params->order_method = FLAKE_ORDER_METHOD_SEARCH;
             params->block_time_ms = 186;
@@ -338,7 +345,7 @@ flake_validate_params(FlakeContext *s)
         subset = 1;
     }
 
-    if((params->compression < 0 || params->compression > 12) &&
+    if((params->compression < 0 || params->compression > 13) &&
        (params->compression != 99)) {
         return -1;
     }
