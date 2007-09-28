@@ -208,7 +208,7 @@ flake_set_defaults(FlakeEncodeParams *params)
     params->order_method = FLAKE_ORDER_METHOD_EST;
     params->stereo_method = FLAKE_STEREO_METHOD_ESTIMATE;
     params->block_size = 0;
-    params->block_time_ms = 105;
+    params->block_time_ms = 93;
     params->prediction_type = FLAKE_PREDICTION_LEVINSON;
     params->min_prediction_order = 1;
     params->max_prediction_order = 8;
