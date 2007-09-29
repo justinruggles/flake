@@ -58,7 +58,7 @@ typedef struct FlakeEncodeParams {
     // prediction order selection method
     // set by user prior to calling flake_encode_init
     // if set to less than 0, it is chosen based on compression.
-    // valid values are 0 to 5
+    // valid values are 0 to 6
     // 0 = use maximum order only
     // 1 = use estimation
     // 2 = 2-level
@@ -132,7 +132,8 @@ typedef struct FlakeEncodeParams {
     // whether to use variable block sizes
     // set by user prior to calling flake_encode_init
     // 0 = fixed block size
-    // 1 = variable block size
+    // 1 = variable block size, method 1
+    // 2 = variable block size, method 2
     int variable_block_size;
 
 } FlakeEncodeParams;
