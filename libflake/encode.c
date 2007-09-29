@@ -498,16 +498,9 @@ flake_encode_init(FlakeContext *s)
 
     ctx->params = s->params;
 
-    // select LPC precision based on block size
-    if(     ctx->params.block_size <=   192) ctx->lpc_precision =  7;
-    else if(ctx->params.block_size <=   384) ctx->lpc_precision =  8;
-    else if(ctx->params.block_size <=   576) ctx->lpc_precision =  9;
-    else if(ctx->params.block_size <=  1152) ctx->lpc_precision = 10;
-    else if(ctx->params.block_size <=  2304) ctx->lpc_precision = 11;
-    else if(ctx->params.block_size <=  4608) ctx->lpc_precision = 12;
-    else if(ctx->params.block_size <=  8192) ctx->lpc_precision = 13;
-    else if(ctx->params.block_size <= 16384) ctx->lpc_precision = 14;
-    else                                     ctx->lpc_precision = 15;
+    // right now 15-bit precision seems to generally work better than adaptive.
+    // TODO: try adapting based on prediction order, not blocksize
+    ctx->lpc_precision = 15;
 
     // set maximum encoded frame size (if larger, re-encodes in verbatim mode)
     if(ctx->channels == 2) {
