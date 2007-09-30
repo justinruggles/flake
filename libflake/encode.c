@@ -64,7 +64,7 @@ write_streaminfo(FlacEncodeContext *ctx, uint8_t *streaminfo, int last)
     bitwriter_writebits(ctx->bw, 24, 34);
 
     if(ctx->params.variable_block_size) {
-        bitwriter_writebits(ctx->bw, 16, 0);
+        bitwriter_writebits(ctx->bw, 16, 16);
     } else {
         bitwriter_writebits(ctx->bw, 16, ctx->params.block_size);
     }
