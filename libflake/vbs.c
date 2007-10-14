@@ -23,7 +23,7 @@
 #include "vbs.h"
 #include "encode.h"
 
-#define SPLIT_THRESHOLD 100
+#define SPLIT_THRESHOLD 50
 
 /**
  * Split single frame into smaller frames using predictability comparison.
