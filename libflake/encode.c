@@ -288,7 +288,6 @@ flake_set_defaults(FlakeEncodeParams *params)
 int
 flake_validate_params(FlakeContext *s)
 {
-    int i;
     int subset = 0;
     int bs;
     FlakeEncodeParams *params;
@@ -305,24 +304,13 @@ flake_validate_params(FlakeContext *s)
     if(s->sample_rate < 1 || s->sample_rate > 655350) {
         return -1;
     }
-    for(i=4; i<12; i++) {
-        if(s->sample_rate == flac_samplerates[i]) {
-            break;
-        }
-    }
-    if(i == 12) {
-        subset = 1;
-    }
 
     if(s->bits_per_sample < 4 || s->bits_per_sample > 32) {
         return -1;
     }
-    for(i=1; i<8; i++) {
-        if(s->bits_per_sample == flac_bitdepths[i])
-            break;
-    }
-    if(i == 8) {
-        subset = 1;
+    if(s->bits_per_sample < 8 || s->bits_per_sample > 24 ||
+            s->bits_per_sample % 4 != 0) {
+       subset = 1;
     }
 
     if((params->compression < 0 || params->compression > 13) &&
@@ -342,11 +330,7 @@ flake_validate_params(FlakeContext *s)
     if(bs < FLAC_MIN_BLOCKSIZE || bs > FLAC_MAX_BLOCKSIZE) {
         return -1;
     }
-    for(i=0; i<15; i++) {
-        if(bs == flac_blocksizes[i])
-            break;
-    }
-    if(i == 15 || (s->sample_rate <= 48000 && bs > 4608)) {
+    if(s->sample_rate <= 48000 && bs > 4608) {
         subset = 1;
     }
 
@@ -396,9 +380,6 @@ flake_validate_params(FlakeContext *s)
 
     if(params->variable_block_size < 0 || params->variable_block_size > 1) {
         return -1;
-    }
-    if(params->variable_block_size > 0) {
-        subset = 1;
     }
 
     return subset;
