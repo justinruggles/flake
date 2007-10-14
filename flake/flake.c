@@ -434,7 +434,7 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
                            " some FLAC players and decoders.\n"
                            "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n\n");
         }
-            fprintf(stderr, "block size: %d\n", s.params.block_size);
+        fprintf(stderr, "block size: %d\n", s.params.block_size);
         print_params(&s);
     }
 
