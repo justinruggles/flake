@@ -61,6 +61,8 @@ bitwriter_count(BitWriter *bw)
 static inline void
 bitwriter_flush(BitWriter *bw)
 {
+    if(bw->eof)
+        return;
     bw->bit_buf <<= bw->bit_left;
     while(bw->bit_left < 32 && !bw->eof) {
         if(bw->buf_ptr >= bw->buf_end) {
