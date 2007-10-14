@@ -55,8 +55,7 @@ bitwriter_init(BitWriter *bw, void *buf, int len)
 static inline uint32_t
 bitwriter_count(BitWriter *bw)
 {
-    // TODO: simplify
-    return ((((bw->buf_ptr - bw->buffer) << 3) + 32 - bw->bit_left) + 7) >> 3;
+    return (bw->buf_ptr - bw->buffer) + ((39 - bw->bit_left) >> 3);
 }
 
 static inline void
