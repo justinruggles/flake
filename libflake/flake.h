@@ -121,8 +121,7 @@ typedef struct FlakeEncodeParams {
     // whether to use variable block sizes
     // set by user prior to calling flake_encode_init
     // 0 = fixed block size
-    // 1 = variable block size, method 1
-    // 2 = variable block size, method 2
+    // 1 = variable block size
     int variable_block_size;
 
 } FlakeEncodeParams;

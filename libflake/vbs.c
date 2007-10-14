@@ -82,79 +82,6 @@ split_frame_v1(int16_t *samples, int channels, int block_size,
     }
 }
 
-static void
-split_frame_v2(FlakeContext *s, int16_t *samples, int *frames, int sizes[8])
-{
-    int fsizes[4][8];
-    int layout[8];
-    int i, j, n, ch;
-    FlacEncodeContext *ctx = (FlacEncodeContext *) s->private_ctx;
-    ch = ctx->channels;
-
-    // encode for each level to get sizes
-    for(i=0; i<4; i++) {
-        int levels, bs;
-        levels = (1<<i);
-        s->params.block_size /= levels;
-        bs = s->params.block_size;
-        for(j=0; j<levels; j++) {
-            int fs = encode_frame(s, NULL, 0, &samples[bs*j*ch]);
-            if(fs < 0) {
-                *frames = 1;
-                s->params.block_size *= levels;
-                sizes[0] = s->params.block_size;
-                return;
-            }
-            fsizes[i][j] = fs;
-        }
-        s->params.block_size *= levels;
-    }
-
-    // initialize layout
-    for(i=0; i<8; i++) layout[i] = 1;
-    // level 3 merge
-    if(fsizes[2][0] < (fsizes[3][0]+fsizes[3][1])) {
-        layout[1] = 0;
-    }
-    if(fsizes[2][1] < (fsizes[3][2]+fsizes[3][3])) {
-        layout[3] = 0;
-    }
-    if(fsizes[2][2] < (fsizes[3][4]+fsizes[3][5])) {
-        layout[5] = 0;
-    }
-    if(fsizes[2][3] < (fsizes[3][6]+fsizes[3][7])) {
-        layout[7] = 0;
-    }
-    // level 2 merge
-    if(layout[1] == 0 && layout[3] == 0) {
-        if(fsizes[1][0] < (fsizes[2][0]+fsizes[2][1])) {
-            layout[2] = 0;
-        }
-    }
-    if(layout[5] == 0 && layout[7] == 0) {
-        if(fsizes[1][1] < (fsizes[2][2]+fsizes[2][3])) {
-            layout[6] = 0;
-        }
-    }
-    // level 1 merge
-    if(layout[2] == 0 && layout[6] == 0) {
-        if(fsizes[0][0] < (fsizes[1][0]+fsizes[1][1])) {
-            layout[4] = 0;
-        }
-    }
-
-    // generate frame count and frame sizes from layout
-    n = s->params.block_size >> 3;
-    frames[0] = 0;
-    memset(sizes, 0, 8 * sizeof(int));
-    for(i=0; i<8; i++) {
-        if(layout[i]) {
-            frames[0]++;
-        }
-        sizes[frames[0]-1] += n;
-    }
-}
-
 int
 encode_frame_vbs(FlakeContext *s, int16_t *samples)
 {
@@ -167,14 +94,8 @@ encode_frame_vbs(FlakeContext *s, int16_t *samples)
     ctx = (FlacEncodeContext *) s->private_ctx;
     fc0 = ctx->frame_count;
 
-    switch(ctx->params.variable_block_size) {
-        case 1: split_frame_v1(samples, s->channels, s->params.block_size, &frames, sizes);
-                break;
-        case 2: split_frame_v2(s, samples, &frames, sizes);
-                break;
-        default: frames = 1;
-                break;
-    }
+    split_frame_v1(samples, s->channels, s->params.block_size, &frames, sizes);
+
     if(frames > 1) {
         int i, fpos, spos, bs;
         fpos = 0;

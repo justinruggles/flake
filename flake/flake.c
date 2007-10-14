@@ -322,15 +322,9 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
 static void
 print_params(FlakeContext *s)
 {
-    char *omethod_s, *stmethod_s, *ptype_s, *vbs_s;
+    char *omethod_s, *stmethod_s, *ptype_s;
 
-    vbs_s = "ERROR";
-    switch(s->params.variable_block_size) {
-        case 0: vbs_s = "none";  break;
-        case 1: vbs_s = "method 1"; break;
-        case 2: vbs_s = "method 2"; break;
-    }
-    fprintf(stderr, "variable block size: %s\n", vbs_s);
+    fprintf(stderr, "variable block size: %s\n", s->params.variable_block_size?"yes":"no");
     ptype_s = "ERROR";
     switch(s->params.prediction_type) {
         case 0: ptype_s = "none (verbatim mode)";  break;

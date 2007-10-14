@@ -278,7 +278,7 @@ flake_set_defaults(FlakeEncodeParams *params)
             params->block_size = 8192;
             params->max_prediction_order = 32;
             params->max_partition_order = 8;
-            params->variable_block_size = 2;
+            params->variable_block_size = 1;
             break;
     }
 
@@ -394,7 +394,7 @@ flake_validate_params(FlakeContext *s)
         return -1;
     }
 
-    if(params->variable_block_size < 0 || params->variable_block_size > 2) {
+    if(params->variable_block_size < 0 || params->variable_block_size > 1) {
         return -1;
     }
     if(params->variable_block_size > 0) {
