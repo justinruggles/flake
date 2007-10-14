@@ -93,11 +93,6 @@ typedef struct FlakeEncodeParams {
     // if set to less than 0, defaults to 4096
     int padding_size;
 
-    // maximum encoded frame size
-    // this is set by flake_encode_init based on input audio format
-    // it can be used by the user to allocate an output buffer
-    int max_frame_size;
-
     // minimum prediction order
     // set by user prior to calling flake_encode_init
     // if set to less than 0, it is chosen based on compression.
@@ -161,11 +156,6 @@ typedef struct FlakeContext {
 
     FlakeEncodeParams params;
 
-    // maximum frame size in bytes
-    // set by flake_encode_init
-    // this can be used to allocate memory for output
-    int max_frame_size;
-
     // MD5 digest
     // set by flake_encode_close;
     unsigned char md5digest[16];
@@ -194,8 +184,9 @@ extern int flake_validate_params(FlakeContext *s);
 
 extern int flake_encode_init(FlakeContext *s);
 
-extern int flake_encode_frame(FlakeContext *s, unsigned char *frame_buffer,
-                              short *samples);
+extern void *flake_get_buffer(FlakeContext *s);
+
+extern int flake_encode_frame(FlakeContext *s, short *samples);
 
 extern void flake_encode_close(FlakeContext *s);
 

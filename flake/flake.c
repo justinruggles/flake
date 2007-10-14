@@ -375,7 +375,8 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
     uint8_t *frame;
     int16_t *wav;
     int percent;
-    uint32_t nr, fs, samplecount, bytecount;
+    int fs;
+    uint32_t nr, samplecount, bytecount;
     int t0, t1;
     float kb, sec, kbps, wav_bytes;
 
@@ -471,7 +472,7 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
         }
     }
 
-    frame = malloc(s.max_frame_size);
+    frame = flake_get_buffer(&s);
     wav = malloc(s.params.block_size * wf.channels * sizeof(int16_t));
 
     samplecount = t0 = percent = 0;
@@ -480,9 +481,9 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
     nr = wavfile_read_samples(&wf, wav, s.params.block_size);
     while(nr > 0) {
         s.params.block_size = nr;
-        fs = flake_encode_frame(&s, frame, wav);
+        fs = flake_encode_frame(&s, wav);
         if(fs < 0) {
-            fprintf(stderr, "Error encoding frame\n");
+            fprintf(stderr, "\nError encoding frame\n");
         } else if(fs > 0) {
             fwrite(frame, 1, fs, files->ofp);
             samplecount += s.params.block_size;
@@ -521,7 +522,6 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
     }
 
     free(wav);
-    free(frame);
 
     return 0;
 }

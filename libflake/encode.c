@@ -508,7 +508,10 @@ flake_encode_init(FlakeContext *s)
     } else {
         ctx->max_frame_size = 16 + ((ctx->params.block_size * ctx->channels * ctx->bps + 7) >> 3);
     }
-    s->max_frame_size = ctx->max_frame_size;
+
+    // initialize frame buffer
+    ctx->frame_buffer_size = ctx->max_frame_size;
+    ctx->frame_buffer = calloc(ctx->max_frame_size, 1);
 
     // output header bytes
     ctx->bw = calloc(sizeof(BitWriter), 1);
@@ -525,6 +528,19 @@ flake_encode_init(FlakeContext *s)
     md5_init(&ctx->md5ctx);
 
     return header_len;
+}
+
+void *
+flake_get_buffer(FlakeContext *s)
+{
+    FlacEncodeContext *ctx;
+
+    if(!s)
+        return NULL;
+    ctx = (FlacEncodeContext *) s->private_ctx;
+    if(!ctx)
+        return NULL;
+    return ctx->frame_buffer;
 }
 
 /**
@@ -585,15 +601,6 @@ init_frame(FlacEncodeContext *ctx)
     }
 
     return 0;
-}
-
-/**
- * Copy channel-interleaved input samples into separate subframes
- */
-static void
-update_md5_checksum(FlacEncodeContext *ctx, int16_t *samples)
-{
-    md5_accumulate(&ctx->md5ctx, samples, ctx->channels, ctx->params.block_size);
 }
 
 /**
@@ -925,13 +932,15 @@ output_frame_footer(FlacEncodeContext *ctx)
 {
     uint16_t crc;
     bitwriter_flush(ctx->bw);
+    if(ctx->bw->eof)
+        return;
     crc = calc_crc16(ctx->bw->buffer, bitwriter_count(ctx->bw));
     bitwriter_writebits(ctx->bw, 16, crc);
     bitwriter_flush(ctx->bw);
 }
 
 int
-encode_frame(FlakeContext *s, uint8_t *frame_buffer, int16_t *samples)
+encode_frame(FlakeContext *s, uint8_t *frame_buffer, int buf_size, int16_t *samples)
 {
     int i, ch;
     FlacEncodeContext *ctx;
@@ -945,10 +954,6 @@ encode_frame(FlakeContext *s, uint8_t *frame_buffer, int16_t *samples)
     }
     s->params.block_size = ctx->params.block_size;
 
-    if(frame_buffer != NULL) {
-        update_md5_checksum(ctx, samples);
-    }
-
     copy_samples(ctx, samples);
 
     channel_decorrelation(ctx);
@@ -959,7 +964,7 @@ encode_frame(FlakeContext *s, uint8_t *frame_buffer, int16_t *samples)
         }
     }
 
-    bitwriter_init(ctx->bw, frame_buffer, ctx->max_frame_size);
+    bitwriter_init(ctx->bw, frame_buffer, buf_size);
     output_frame_header(ctx);
     output_subframes(ctx);
     output_frame_footer(ctx);
@@ -970,13 +975,14 @@ encode_frame(FlakeContext *s, uint8_t *frame_buffer, int16_t *samples)
             ch = i;
             reencode_residual_verbatim(ctx, ch);
         }
-        bitwriter_init(ctx->bw, frame_buffer, ctx->max_frame_size);
+        bitwriter_init(ctx->bw, frame_buffer, buf_size);
         output_frame_header(ctx);
         output_subframes(ctx);
         output_frame_footer(ctx);
 
         // if still too large, means my estimate is wrong.
-        assert(!ctx->bw->eof);
+        if(ctx->bw->eof)
+            return -1;
     }
     if(frame_buffer != NULL) {
         if(ctx->params.variable_block_size) {
@@ -989,7 +995,7 @@ encode_frame(FlakeContext *s, uint8_t *frame_buffer, int16_t *samples)
 }
 
 int
-flake_encode_frame(FlakeContext *s, uint8_t *frame_buffer, int16_t *samples)
+flake_encode_frame(FlakeContext *s, int16_t *samples)
 {
     int fs;
     FlacEncodeContext *ctx;
@@ -998,10 +1004,12 @@ flake_encode_frame(FlakeContext *s, uint8_t *frame_buffer, int16_t *samples)
     fs = -1;
     if((ctx->params.variable_block_size > 0) &&
        !(s->params.block_size & 7) && s->params.block_size >= 128) {
-        fs = encode_frame_vbs(s, frame_buffer, samples);
-    } else {
-        fs = encode_frame(s, frame_buffer, samples);
+        fs = encode_frame_vbs(s, samples);
     }
+    if(fs < 0)
+        fs = encode_frame(s, ctx->frame_buffer, ctx->frame_buffer_size, samples);
+    if(fs > 0)
+        md5_accumulate(&ctx->md5ctx, samples, ctx->channels, s->params.block_size);
     return fs;
 }
 
@@ -1016,6 +1024,7 @@ flake_encode_close(FlakeContext *s)
     if(ctx) {
         md5_final(s->md5digest, &ctx->md5ctx);
         if(ctx->bw) free(ctx->bw);
+        if(ctx->frame_buffer) free(ctx->frame_buffer);
         free(ctx);
     }
     if(s->header) free(s->header);

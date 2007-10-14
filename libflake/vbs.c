@@ -98,7 +98,14 @@ split_frame_v2(FlakeContext *s, int16_t *samples, int *frames, int sizes[8])
         s->params.block_size /= levels;
         bs = s->params.block_size;
         for(j=0; j<levels; j++) {
-            fsizes[i][j] = encode_frame(s, NULL, &samples[bs*j*ch]);
+            int fs = encode_frame(s, NULL, 0, &samples[bs*j*ch]);
+            if(fs < 0) {
+                *frames = 1;
+                s->params.block_size *= levels;
+                sizes[0] = s->params.block_size;
+                return;
+            }
+            fsizes[i][j] = fs;
         }
         s->params.block_size *= levels;
     }
@@ -149,14 +156,16 @@ split_frame_v2(FlakeContext *s, int16_t *samples, int *frames, int sizes[8])
 }
 
 int
-encode_frame_vbs(FlakeContext *s, uint8_t *frame_buffer, int16_t *samples)
+encode_frame_vbs(FlakeContext *s, int16_t *samples)
 {
-    int fs;
+    int fs = -1;
     int frames;
     int sizes[8];
     FlacEncodeContext *ctx;
+    int fc0;
 
     ctx = (FlacEncodeContext *) s->private_ctx;
+    fc0 = ctx->frame_count;
 
     switch(ctx->params.variable_block_size) {
         case 1: split_frame_v1(samples, s->channels, s->params.block_size, &frames, sizes);
@@ -173,8 +182,12 @@ encode_frame_vbs(FlakeContext *s, uint8_t *frame_buffer, int16_t *samples)
         bs = s->params.block_size;
         for(i=0; i<frames; i++) {
             s->params.block_size = sizes[i];
-            fs = encode_frame(s, &frame_buffer[fpos], &samples[spos*ctx->channels]);
-            if(fs < 0) return -1;
+            fs = encode_frame(s, &ctx->frame_buffer[fpos], ctx->frame_buffer_size-fpos, &samples[spos*ctx->channels]);
+            if(fs < 0) {
+                s->params.block_size = bs;
+                ctx->frame_count = fc0;
+                return -1;
+            }
             fpos += fs;
             spos += sizes[i];
         }
@@ -182,6 +195,5 @@ encode_frame_vbs(FlakeContext *s, uint8_t *frame_buffer, int16_t *samples)
         assert(spos == bs);
         return fpos;
     }
-    fs = encode_frame(s, frame_buffer, samples);
     return fs;
 }

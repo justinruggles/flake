@@ -83,8 +83,10 @@ typedef struct FlacEncodeContext {
     FlacFrame frame;
     MD5Context md5ctx;
     struct BitWriter *bw;
+    uint8_t *frame_buffer;
+    int frame_buffer_size;
 } FlacEncodeContext;
 
-extern int encode_frame(FlakeContext *s, uint8_t *frame_buffer, int16_t *samples);
+extern int encode_frame(FlakeContext *s, uint8_t *frame_buffer, int buf_size, int16_t *samples);
 
 #endif /* FLAC_H */
