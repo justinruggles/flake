@@ -82,12 +82,6 @@ typedef struct FlakeEncodeParams {
     // can also be changed by user before encoding a frame
     int block_size;
 
-    // block time in milliseconds
-    // set by the user prior to calling flake_encode_init
-    // used to calculate block_size based on sample rate
-    // can also be changed by user before encoding a frame
-    int block_time_ms;
-
     // padding size in bytes
     // set by the user prior to calling flake_encode_init
     // if set to less than 0, defaults to 4096

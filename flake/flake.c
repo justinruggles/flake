@@ -434,11 +434,7 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
                            " some FLAC players and decoders.\n"
                            "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n\n");
         }
-        if(bs_zero) {
-            fprintf(stderr, "block time: %dms\n", s.params.block_time_ms);
-        } else {
             fprintf(stderr, "block size: %d\n", s.params.block_size);
-        }
         print_params(&s);
     }
 
@@ -467,9 +463,7 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
         } else {
             fprintf(stderr, "samples: unknown\n");
         }
-        if(bs_zero) {
-            fprintf(stderr, "block size: %d\n", s.params.block_size);
-        }
+        fprintf(stderr, "\n");
     }
 
     frame = flake_get_buffer(&s);

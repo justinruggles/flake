@@ -172,25 +172,6 @@ write_headers(FlacEncodeContext *ctx, uint8_t *header)
     return header_size;
 }
 
-/**
- * Set blocksize based on samplerate
- * Chooses the closest predefined blocksize >= time_ms milliseconds
- */
-static int
-select_blocksize(int samplerate, int time_ms)
-{
-    int i, target, blocksize;
-
-    blocksize = flac_blocksizes[1];
-    target = (samplerate * time_ms) / 1000;
-    for(i=0; i<16; i++) {
-        if(target >= flac_blocksizes[i] && flac_blocksizes[i] > blocksize) {
-            blocksize = flac_blocksizes[i];
-        }
-    }
-    return blocksize;
-}
-
 int
 flake_set_defaults(FlakeEncodeParams *params)
 {
@@ -207,8 +188,7 @@ flake_set_defaults(FlakeEncodeParams *params)
     // default to level 5 params
     params->order_method = FLAKE_ORDER_METHOD_EST;
     params->stereo_method = FLAKE_STEREO_METHOD_ESTIMATE;
-    params->block_size = 0;
-    params->block_time_ms = 93;
+    params->block_size = 4096;
     params->prediction_type = FLAKE_PREDICTION_LEVINSON;
     params->min_prediction_order = 1;
     params->max_prediction_order = 8;
@@ -221,7 +201,7 @@ flake_set_defaults(FlakeEncodeParams *params)
     switch(lvl) {
         case 0:
             params->stereo_method = FLAKE_STEREO_METHOD_INDEPENDENT;
-            params->block_time_ms = 27;
+            params->block_size = 1152;
             params->prediction_type = FLAKE_PREDICTION_FIXED;
             params->min_prediction_order = 2;
             params->max_prediction_order = 2;
@@ -229,7 +209,7 @@ flake_set_defaults(FlakeEncodeParams *params)
             params->max_partition_order = 4;
             break;
         case 1:
-            params->block_time_ms = 27;
+            params->block_size = 1152;
             params->prediction_type = FLAKE_PREDICTION_FIXED;
             params->min_prediction_order = 2;
             params->max_prediction_order = 3;
@@ -237,7 +217,7 @@ flake_set_defaults(FlakeEncodeParams *params)
             params->max_partition_order = 2;
             break;
         case 2:
-            params->block_time_ms = 27;
+            params->block_size = 1152;
             params->prediction_type = FLAKE_PREDICTION_FIXED;
             params->min_prediction_order = 2;
             params->max_prediction_order = 4;
@@ -288,14 +268,14 @@ flake_set_defaults(FlakeEncodeParams *params)
             break;
         case 13:
             params->order_method = FLAKE_ORDER_METHOD_LOG;
-            params->block_time_ms = 186;
+            params->block_size = 8192;
             params->max_prediction_order = 32;
             params->max_partition_order = 8;
             params->variable_block_size = 1;
             break;
         case 99:
             params->order_method = FLAKE_ORDER_METHOD_SEARCH;
-            params->block_time_ms = 186;
+            params->block_size = 8192;
             params->max_prediction_order = 32;
             params->max_partition_order = 8;
             params->variable_block_size = 2;
@@ -358,14 +338,7 @@ flake_validate_params(FlakeContext *s)
         return -1;
     }
 
-    if(params->block_time_ms < 0) {
-        return -1;
-    }
-
     bs = params->block_size;
-    if(bs == 0) {
-        bs = select_blocksize(s->sample_rate, params->block_time_ms);
-    }
     if(bs < FLAC_MIN_BLOCKSIZE || bs > FLAC_MAX_BLOCKSIZE) {
         return -1;
     }
@@ -492,10 +465,6 @@ flake_encode_init(FlakeContext *s)
 
     ctx->sample_count = s->samples;
 
-    if(s->params.block_size == 0) {
-        s->params.block_size = select_blocksize(ctx->samplerate, s->params.block_time_ms);
-    }
-
     ctx->params = s->params;
 
     // right now 15-bit precision seems to generally work better than adaptive.
@@ -554,12 +523,6 @@ init_frame(FlacEncodeContext *ctx)
 
     frame = &ctx->frame;
 
-    if(ctx->params.block_time_ms < 0) {
-        return -1;
-    }
-    if(ctx->params.block_size == 0) {
-        ctx->params.block_size = select_blocksize(ctx->samplerate, ctx->params.block_time_ms);
-    }
     if(ctx->params.block_size < 1 ||
        ctx->params.block_size > FLAC_MAX_BLOCKSIZE) {
         return -1;
