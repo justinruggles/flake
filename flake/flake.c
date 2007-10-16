@@ -206,7 +206,6 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
                         break;
                     case 'l':
                         if(strchr(argv[i], ',') == NULL) {
-                            opts->omin = 0;
                             opts->omax = parse_number(argv[i], max_digits);
                             if(opts->omax < 0) return 1;
                         } else {
@@ -216,12 +215,6 @@ parse_commandline(int argc, char **argv, CommandOptions *opts)
                             if(opts->omin < 0) return 1;
                             opts->omax = parse_number(&po[1], max_digits);
                             if(opts->omax < 0) return 1;
-                        }
-                        // constrain bounds based on prediction type
-                        if(opts->ptype == FLAKE_PREDICTION_FIXED) {
-                            if(opts->omax > 4) opts->omax = 4;
-                        } else if(opts->ptype == FLAKE_PREDICTION_LEVINSON) {
-                            if(opts->omin == 0) opts->omin = 1;
                         }
                         break;
                     case 'm':
@@ -395,8 +388,21 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
     if(opts->omethod  >= 0) s.params.order_method         = opts->omethod;
     if(opts->stmethod >= 0) s.params.stereo_method        = opts->stmethod;
     if(opts->ptype    >= 0) s.params.prediction_type      = opts->ptype;
-    if(opts->omin     >= 0) s.params.min_prediction_order = opts->omin;
-    if(opts->omax     >= 0) s.params.max_prediction_order = opts->omax;
+    if(opts->omin >= 0 || opts->omax >= 0) {
+        // commandline arguments are such that you can either specify both
+        // minimum and maximum or just maximum.  if just maximum is specified,
+        // the default minimum depends on the prediction type.
+        assert(opts->omax >= 0);
+        s.params.max_prediction_order = opts->omax;
+        if(opts->omin >= 0) {
+            s.params.min_prediction_order = opts->omin;
+        } else {
+            if(s.params.prediction_type == FLAKE_PREDICTION_LEVINSON)
+                s.params.min_prediction_order = 1;
+            else
+                s.params.min_prediction_order = 0;
+        }
+    }
     if(opts->pomin    >= 0) s.params.min_partition_order  = opts->pomin;
     if(opts->pomax    >= 0) s.params.max_partition_order  = opts->pomax;
     if(opts->padding  >= 0) s.params.padding_size         = opts->padding;
