@@ -984,7 +984,6 @@ flake_encode_close(FlakeContext *s)
     if(s->private_ctx == NULL) return;
     ctx = (FlacEncodeContext *) s->private_ctx;
     if(ctx) {
-        md5_final(s->md5digest, &ctx->md5ctx);
         if(ctx->bw) free(ctx->bw);
         if(ctx->frame_buffer) free(ctx->frame_buffer);
         free(ctx);
@@ -1003,4 +1002,19 @@ flake_get_max_frame_size(FlakeContext *s)
     if(!ctx)
         return -1;
     return ctx->max_frame_size;
+}
+
+void
+flake_get_md5sum(FlakeContext *s, unsigned char *md5sum)
+{
+    FlacEncodeContext *ctx;
+    MD5Context md5_bak;
+    if(!s || !md5sum)
+        return;
+    ctx = s->private_ctx;
+    if(!ctx)
+        return;
+    md5_bak = ctx->md5ctx;
+    md5_final(md5sum, &ctx->md5ctx);
+    ctx->md5ctx = md5_bak;
 }

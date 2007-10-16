@@ -505,12 +505,11 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
         fprintf(stderr, "| bytes: %d \n\n", bytecount);
     }
 
-    flake_encode_close(&s);
-
     // if seeking is possible, rewrite sample count and MD5 checksum
     if(!fseek(files->ofp, 12, SEEK_SET)) {
         uint32_t sc = be2me_32(samplecount);
         int mfs = flake_get_max_frame_size(&s);
+        uint8_t md5sum[16];
         if(mfs >= 0) {
             fputc((mfs >> 16) & 0xFF, files->ofp);
             fputc((mfs >>  8) & 0xFF, files->ofp);
@@ -518,9 +517,11 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
         }
         fseek(files->ofp, 22, SEEK_SET);
         fwrite(&sc, 4, 1, files->ofp);
-        fwrite(s.md5digest, 1, 16, files->ofp);
+        flake_get_md5sum(&s, md5sum);
+        fwrite(md5sum, 1, 16, files->ofp);
     }
 
+    flake_encode_close(&s);
     free(wav);
 
     return 0;

@@ -148,10 +148,6 @@ typedef struct FlakeContext {
 
     FlakeEncodeParams params;
 
-    // MD5 digest
-    // set by flake_encode_close;
-    unsigned char md5digest[16];
-
     // header bytes
     // allocated by flake_encode_init and freed by flake_encode_close
     unsigned char *header;
@@ -183,5 +179,7 @@ extern int flake_encode_frame(FlakeContext *s, short *samples, int block_size);
 extern void flake_encode_close(FlakeContext *s);
 
 extern int flake_get_max_frame_size(FlakeContext *s);
+
+extern void flake_get_md5sum(FlakeContext *s, unsigned char *md5sum);
 
 #endif /* FLAKE_H */
