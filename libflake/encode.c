@@ -979,3 +979,15 @@ flake_encode_close(FlakeContext *s)
     if(s->header) free(s->header);
     s->private_ctx = NULL;
 }
+
+int
+flake_get_max_frame_size(FlakeContext *s)
+{
+    FlacEncodeContext *ctx;
+    if(!s)
+        return -1;
+    ctx = s->private_ctx;
+    if(!ctx)
+        return -1;
+    return ctx->max_frame_size;
+}

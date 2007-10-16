@@ -183,4 +183,6 @@ extern int flake_encode_frame(FlakeContext *s, short *samples);
 
 extern void flake_encode_close(FlakeContext *s);
 
+extern int flake_get_max_frame_size(FlakeContext *s);
+
 #endif /* FLAKE_H */
