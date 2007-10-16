@@ -382,6 +382,14 @@ flake_validate_params(FlakeContext *s)
         return -1;
     }
 
+    // don't allow block size of 16 in variable block size mode. this is a bug
+    // in the spec which has been fixed in FLAC 1.2.0, but is not backwards
+    // compatible.  this constraint will be removed when Flake is updated to
+    // the new spec version.
+    if(params->variable_block_size > 0 && bs == 16) {
+        return -1;
+    }
+
     return subset;
 }
 
