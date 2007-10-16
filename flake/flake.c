@@ -474,13 +474,12 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
     bytecount = header_size;
     nr = wavfile_read_samples(&wf, wav, s.params.block_size);
     while(nr > 0) {
-        s.params.block_size = nr;
-        fs = flake_encode_frame(&s, wav);
+        fs = flake_encode_frame(&s, wav, nr);
         if(fs < 0) {
             fprintf(stderr, "\nError encoding frame\n");
         } else if(fs > 0) {
             fwrite(frame, 1, fs, files->ofp);
-            samplecount += s.params.block_size;
+            samplecount += nr;
             bytecount += fs;
             t1 = samplecount / s.sample_rate;
             if(t1 > t0) {

@@ -79,7 +79,6 @@ typedef struct FlakeEncodeParams {
     // block size in samples
     // set by the user prior to calling flake_encode_init
     // if set to 0, a block size is chosen based on block_time_ms
-    // can also be changed by user before encoding a frame
     int block_size;
 
     // padding size in bytes
@@ -179,7 +178,7 @@ extern int flake_encode_init(FlakeContext *s);
 
 extern void *flake_get_buffer(FlakeContext *s);
 
-extern int flake_encode_frame(FlakeContext *s, short *samples);
+extern int flake_encode_frame(FlakeContext *s, short *samples, int block_size);
 
 extern void flake_encode_close(FlakeContext *s);
 

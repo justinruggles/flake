@@ -21,7 +21,8 @@
 #define VBS_H
 
 #include "common.h"
+#include "encode.h"
 
-extern int encode_frame_vbs(FlakeContext *s, int16_t *samples);
+extern int encode_frame_vbs(FlacEncodeContext *ctx, int16_t *samples, int block_size);
 
 #endif /* VBS_H */

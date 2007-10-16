@@ -83,37 +83,31 @@ split_frame_v1(int16_t *samples, int channels, int block_size,
 }
 
 int
-encode_frame_vbs(FlakeContext *s, int16_t *samples)
+encode_frame_vbs(FlacEncodeContext *ctx, int16_t *samples, int block_size)
 {
     int fs = -1;
     int frames;
     int sizes[8];
-    FlacEncodeContext *ctx;
     int fc0;
 
-    ctx = (FlacEncodeContext *) s->private_ctx;
     fc0 = ctx->frame_count;
 
-    split_frame_v1(samples, s->channels, s->params.block_size, &frames, sizes);
+    split_frame_v1(samples, ctx->channels, block_size, &frames, sizes);
 
     if(frames > 1) {
-        int i, fpos, spos, bs;
+        int i, fpos, spos;
         fpos = 0;
         spos = 0;
-        bs = s->params.block_size;
         for(i=0; i<frames; i++) {
-            s->params.block_size = sizes[i];
-            fs = encode_frame(s, &ctx->frame_buffer[fpos], ctx->frame_buffer_size-fpos, &samples[spos*ctx->channels]);
+            fs = encode_frame(ctx, &ctx->frame_buffer[fpos], ctx->frame_buffer_size-fpos, &samples[spos*ctx->channels], sizes[i]);
             if(fs < 0) {
-                s->params.block_size = bs;
                 ctx->frame_count = fc0;
                 return -1;
             }
             fpos += fs;
             spos += sizes[i];
         }
-        s->params.block_size = bs;
-        assert(spos == bs);
+        assert(spos == block_size);
         return fpos;
     }
     return fs;

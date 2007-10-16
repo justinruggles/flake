@@ -480,6 +480,7 @@ flake_encode_init(FlakeContext *s)
     }
 
     ctx->frame_count = 0;
+    ctx->last_frame = 0;
 
     // initialize CRC & MD5
     crc_init();
@@ -505,22 +506,21 @@ flake_get_buffer(FlakeContext *s)
  * Initialize the current frame before encoding
  */
 static int
-init_frame(FlacEncodeContext *ctx)
+init_frame(FlacEncodeContext *ctx, int block_size)
 {
     int i, ch;
     FlacFrame *frame;
 
     frame = &ctx->frame;
 
-    if(ctx->params.block_size < 1 ||
-       ctx->params.block_size > FLAC_MAX_BLOCKSIZE) {
+    if(block_size < 1 || block_size > FLAC_MAX_BLOCKSIZE) {
         return -1;
     }
 
     // get block size codes
     i = 15;
     for(i=0; i<15; i++) {
-        if(ctx->params.block_size == flac_blocksizes[i]) {
+        if(block_size == flac_blocksizes[i]) {
             frame->blocksize = flac_blocksizes[i];
             frame->bs_code[0] = i;
             frame->bs_code[1] = -1;
@@ -528,7 +528,7 @@ init_frame(FlacEncodeContext *ctx)
         }
     }
     if(i == 15) {
-        frame->blocksize = ctx->params.block_size;
+        frame->blocksize = block_size;
         if(frame->blocksize <= 256) {
             frame->bs_code[0] = 6;
             frame->bs_code[1] = frame->blocksize-1;
@@ -890,19 +890,16 @@ output_frame_footer(FlacEncodeContext *ctx)
 }
 
 int
-encode_frame(FlakeContext *s, uint8_t *frame_buffer, int buf_size, int16_t *samples)
+encode_frame(FlacEncodeContext *ctx, uint8_t *frame_buffer, int buf_size,
+             int16_t *samples, int block_size)
 {
     int i, ch;
-    FlacEncodeContext *ctx;
 
-    ctx = (FlacEncodeContext *) s->private_ctx;
     if(ctx == NULL) return -1;
 
-    ctx->params.block_size = s->params.block_size;
-    if(init_frame(ctx)) {
+    if(init_frame(ctx, block_size)) {
         return -1;
     }
-    s->params.block_size = ctx->params.block_size;
 
     copy_samples(ctx, samples);
 
@@ -941,7 +938,7 @@ encode_frame(FlakeContext *s, uint8_t *frame_buffer, int buf_size, int16_t *samp
 
     if(frame_buffer != NULL) {
         if(ctx->params.variable_block_size) {
-            ctx->frame_count += s->params.block_size;
+            ctx->frame_count += ctx->frame.blocksize;
         } else {
             ctx->frame_count++;
         }
@@ -950,21 +947,31 @@ encode_frame(FlakeContext *s, uint8_t *frame_buffer, int buf_size, int16_t *samp
 }
 
 int
-flake_encode_frame(FlakeContext *s, int16_t *samples)
+flake_encode_frame(FlakeContext *s, int16_t *samples, int block_size)
 {
     int fs;
     FlacEncodeContext *ctx;
 
     ctx = (FlacEncodeContext *) s->private_ctx;
+
+    if(block_size < 1 || block_size > ctx->params.block_size)
+        return -1;
+    if(ctx->last_frame)
+        return -1;
+    if(ctx->params.variable_block_size == 0 && block_size != ctx->params.block_size)
+        ctx->last_frame = 1;
+
     fs = -1;
     if((ctx->params.variable_block_size > 0) &&
-       !(s->params.block_size & 7) && s->params.block_size >= 128) {
-        fs = encode_frame_vbs(s, samples);
+       !(block_size & 7) && block_size >= 128) {
+        fs = encode_frame_vbs(ctx, samples, block_size);
     }
-    if(fs < 0)
-        fs = encode_frame(s, ctx->frame_buffer, ctx->frame_buffer_size, samples);
+    if(fs < 0) {
+        fs = encode_frame(ctx, ctx->frame_buffer, ctx->frame_buffer_size, samples,
+                          block_size);
+    }
     if(fs > 0)
-        md5_accumulate(&ctx->md5ctx, samples, ctx->channels, s->params.block_size);
+        md5_accumulate(&ctx->md5ctx, samples, ctx->channels, block_size);
     return fs;
 }
 
