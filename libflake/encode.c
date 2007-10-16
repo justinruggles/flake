@@ -460,8 +460,8 @@ flake_encode_init(FlakeContext *s)
     }
 
     // initialize frame buffer
-    ctx->frame_buffer_size = ctx->max_frame_size;
-    ctx->frame_buffer = calloc(ctx->max_frame_size, 1);
+    ctx->frame_buffer_size = ctx->max_frame_size * 3 / 2;
+    ctx->frame_buffer = calloc(ctx->frame_buffer_size, 1);
 
     // output header bytes
     ctx->bw = calloc(sizeof(BitWriter), 1);
@@ -913,7 +913,7 @@ encode_frame(FlakeContext *s, uint8_t *frame_buffer, int buf_size, int16_t *samp
     output_subframes(ctx);
     output_frame_footer(ctx);
 
-    if(ctx->bw->eof) {
+    if(bitwriter_count(ctx->bw) > ctx->max_frame_size) {
         // frame size too large, reencode in verbatim mode
         for(i=0; i<ctx->channels; i++) {
             ch = i;
