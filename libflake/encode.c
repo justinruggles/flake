@@ -181,7 +181,7 @@ flake_set_defaults(FlakeEncodeParams *params)
         return -1;
     }
     lvl = params->compression;
-    if((lvl < 0 || lvl > 13) && (lvl != 99)) {
+    if(lvl < 0 || lvl > 12) {
         return -1;
     }
 
@@ -193,7 +193,7 @@ flake_set_defaults(FlakeEncodeParams *params)
     params->min_prediction_order = 1;
     params->max_prediction_order = 8;
     params->min_partition_order = 0;
-    params->max_partition_order = 6;
+    params->max_partition_order = 5;
     params->padding_size = 8192;
     params->variable_block_size = 0;
 
@@ -205,18 +205,10 @@ flake_set_defaults(FlakeEncodeParams *params)
             params->prediction_type = FLAKE_PREDICTION_FIXED;
             params->min_prediction_order = 2;
             params->max_prediction_order = 2;
-            params->min_partition_order = 4;
-            params->max_partition_order = 4;
+            params->min_partition_order = 0;
+            params->max_partition_order = 3;
             break;
         case 1:
-            params->block_size = 1152;
-            params->prediction_type = FLAKE_PREDICTION_FIXED;
-            params->min_prediction_order = 2;
-            params->max_prediction_order = 3;
-            params->min_partition_order = 2;
-            params->max_partition_order = 2;
-            break;
-        case 2:
             params->block_size = 1152;
             params->prediction_type = FLAKE_PREDICTION_FIXED;
             params->min_prediction_order = 2;
@@ -224,58 +216,59 @@ flake_set_defaults(FlakeEncodeParams *params)
             params->min_partition_order = 0;
             params->max_partition_order = 3;
             break;
-        case 3:
-            params->max_prediction_order = 6;
+        case 2:
+            params->block_size = 1152;
+            params->prediction_type = FLAKE_PREDICTION_FIXED;
+            params->min_prediction_order = 0;
+            params->max_prediction_order = 4;
+            params->min_partition_order = 0;
             params->max_partition_order = 3;
             break;
+        case 3:
+            params->stereo_method = FLAKE_STEREO_METHOD_INDEPENDENT;
+            params->max_prediction_order = 6;
+            params->max_partition_order = 4;
+            break;
         case 4:
-            params->max_partition_order = 3;
+            params->max_partition_order = 4;
             break;
         case 5:
             break;
         case 6:
             params->order_method = FLAKE_ORDER_METHOD_2LEVEL;
-            params->max_partition_order = 8;
+            params->max_partition_order = 6;
             break;
         case 7:
             params->order_method = FLAKE_ORDER_METHOD_4LEVEL;
-            params->max_partition_order = 8;
+            params->max_partition_order = 6;
             break;
         case 8:
-            params->order_method = FLAKE_ORDER_METHOD_4LEVEL;
+            params->order_method = FLAKE_ORDER_METHOD_LOG;
             params->max_prediction_order = 12;
-            params->max_partition_order = 8;
+            params->max_partition_order = 6;
             break;
         case 9:
             params->order_method = FLAKE_ORDER_METHOD_LOG;
             params->max_prediction_order = 12;
             params->max_partition_order = 8;
+            params->variable_block_size = 1;
             break;
         case 10:
             params->order_method = FLAKE_ORDER_METHOD_SEARCH;
             params->max_prediction_order = 12;
             params->max_partition_order = 8;
+            params->variable_block_size = 1;
             break;
         case 11:
-            params->order_method = FLAKE_ORDER_METHOD_LOG;
-            params->max_prediction_order = 32;
-            params->max_partition_order = 8;
-            break;
-        case 12:
-            params->order_method = FLAKE_ORDER_METHOD_SEARCH;
-            params->max_prediction_order = 32;
-            params->max_partition_order = 8;
-            break;
-        case 13:
-            params->order_method = FLAKE_ORDER_METHOD_LOG;
             params->block_size = 8192;
+            params->order_method = FLAKE_ORDER_METHOD_LOG;
             params->max_prediction_order = 32;
             params->max_partition_order = 8;
             params->variable_block_size = 1;
             break;
-        case 99:
-            params->order_method = FLAKE_ORDER_METHOD_SEARCH;
+        case 12:
             params->block_size = 8192;
+            params->order_method = FLAKE_ORDER_METHOD_SEARCH;
             params->max_prediction_order = 32;
             params->max_partition_order = 8;
             params->variable_block_size = 1;
@@ -313,8 +306,7 @@ flake_validate_params(FlakeContext *s)
        subset = 1;
     }
 
-    if((params->compression < 0 || params->compression > 13) &&
-       (params->compression != 99)) {
+    if(params->compression < 0 || params->compression > 12) {
         return -1;
     }
 

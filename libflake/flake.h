@@ -48,11 +48,14 @@ typedef struct FlakeEncodeParams {
 
     // compression quality
     // set by user prior to calling flake_encode_init
-    // standard values are 0 to 8
+    // Values 0 to 8 are libFLAC compatibility modes
     // 0 is lower compression, faster encoding
     // 8 is higher compression, slower encoding
-    // extended values 9 to 13 are slower and/or use
-    // higher prediction orders
+    // extended values 9 to 12 are specific to Flake
+    // 9 and 10 are within the FLAC Subset and use variable block size
+    // 11 and 12 use parameters such as higher block sizes and prediction
+    // orders which are outside of the FLAC Subset, so should not be used for
+    // streaming
     int compression;
 
     // prediction order selection method
