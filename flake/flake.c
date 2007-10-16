@@ -64,7 +64,7 @@ print_help(FILE *out)
                  "                       11 = -b 4096 -t 2 -l 32  -m 6 -r 8   -s 1\n"
                  "                       12 = -b 4096 -t 2 -l 32  -m 5 -r 8   -s 1\n"
                  "                       13 = -b 8192 -t 2 -l 32  -m 6 -r 8   -s 1 -v 1\n"
-                 "       [-b #]       Block size [16 - 65535] (default: 4608)\n"
+                 "       [-b #]       Block size [16 - 65535] (default: 4096)\n"
                  "       [-t #]       Prediction type\n"
                  "                        0 = no prediction / verbatim\n"
                  "                        1 = fixed prediction\n"
