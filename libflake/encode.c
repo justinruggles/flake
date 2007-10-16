@@ -509,13 +509,6 @@ init_frame(FlacEncodeContext *ctx)
         return -1;
     }
 
-    // set maximum encoded frame size (if larger, re-encodes in verbatim mode)
-    if(ctx->channels == 2) {
-        ctx->max_frame_size = 16 + ((ctx->params.block_size * (ctx->bps+ctx->bps+1) + 7) >> 3);
-    } else {
-        ctx->max_frame_size = 16 + ((ctx->params.block_size * ctx->channels * ctx->bps + 7) >> 3);
-    }
-
     // get block size codes
     i = 15;
     if(!ctx->params.variable_block_size) {
@@ -537,6 +530,13 @@ init_frame(FlacEncodeContext *ctx)
             frame->bs_code[0] = 7;
             frame->bs_code[1] = frame->blocksize-1;
         }
+    }
+
+    // set frame size cutoff. if larger, re-encodes in verbatim mode
+    if(ctx->channels == 2) {
+        frame->verbatim_size = 16 + ((frame->blocksize * (ctx->bps+ctx->bps+1) + 7) >> 3);
+    } else {
+        frame->verbatim_size = 16 + ((frame->blocksize * ctx->channels * ctx->bps + 7) >> 3);
     }
 
     // initialize output bps for each channel
@@ -913,7 +913,7 @@ encode_frame(FlakeContext *s, uint8_t *frame_buffer, int buf_size, int16_t *samp
     output_subframes(ctx);
     output_frame_footer(ctx);
 
-    if(ctx->bw->eof || bitwriter_count(ctx->bw) > ctx->max_frame_size) {
+    if(ctx->bw->eof || bitwriter_count(ctx->bw) > ctx->frame.verbatim_size) {
         // frame size too large, reencode in verbatim mode
         for(i=0; i<ctx->channels; i++) {
             ch = i;
@@ -929,6 +929,10 @@ encode_frame(FlakeContext *s, uint8_t *frame_buffer, int buf_size, int16_t *samp
         if(ctx->bw->eof)
             return -1;
     }
+
+    // update maximum frame size
+    ctx->max_frame_size = MAX(ctx->max_frame_size, bitwriter_count(ctx->bw));
+
     if(frame_buffer != NULL) {
         if(ctx->params.variable_block_size) {
             ctx->frame_count += s->params.block_size;

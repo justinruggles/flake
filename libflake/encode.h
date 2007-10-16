@@ -61,6 +61,7 @@ typedef struct FlacSubframe {
 
 typedef struct FlacFrame {
     int blocksize;
+    int verbatim_size;
     int bs_code[2];
     int ch_mode;
     int ch_order[2];
