@@ -90,6 +90,9 @@ encode_frame_vbs(FlacEncodeContext *ctx, int16_t *samples, int block_size)
     int sizes[8];
     int fc0;
 
+    if(!ctx || !samples || block_size < 128 || block_size % 8)
+        return -1;
+
     fc0 = ctx->frame_count;
 
     split_frame_v1(samples, ctx->channels, block_size, &frames, sizes);

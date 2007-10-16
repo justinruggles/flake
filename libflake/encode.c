@@ -895,7 +895,8 @@ encode_frame(FlacEncodeContext *ctx, uint8_t *frame_buffer, int buf_size,
 {
     int i, ch;
 
-    if(ctx == NULL) return -1;
+    if(!ctx || !samples || buf_size <= 0)
+        return -1;
 
     if(init_frame(ctx, block_size)) {
         return -1;
@@ -952,6 +953,8 @@ flake_encode_frame(FlakeContext *s, int16_t *samples, int block_size)
     int fs;
     FlacEncodeContext *ctx;
 
+    if(!s || !samples || !s->private_ctx)
+        return -1;
     ctx = (FlacEncodeContext *) s->private_ctx;
 
     if(block_size < 1 || block_size > ctx->params.block_size)
