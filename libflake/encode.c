@@ -924,7 +924,8 @@ encode_frame(FlakeContext *s, uint8_t *frame_buffer, int buf_size, int16_t *samp
         output_subframes(ctx);
         output_frame_footer(ctx);
 
-        // if still too large, means my estimate is wrong.
+        // if still too large, means my estimate is wrong
+        // or the sum of vbs frames is too large
         if(ctx->bw->eof)
             return -1;
     }
