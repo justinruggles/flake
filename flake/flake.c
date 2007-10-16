@@ -357,7 +357,7 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
 {
     FlakeContext s;
     WavFile wf;
-    int header_size, subset, bs_zero;
+    int header_size, subset;
     uint8_t *frame;
     int16_t *wav;
     int percent;
@@ -412,7 +412,6 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
         fprintf(stderr, "Error: invalid encoding parameters.\n");
         return 1;
     }
-    bs_zero = (s.params.block_size == 0);
 
     // initialize encoder
     header_size = flake_encode_init(&s);
