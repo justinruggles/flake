@@ -23,6 +23,10 @@
 #include "common.h"
 #include "encode.h"
 
+#define VBS_MAX_FRAMES 8
+
+#define VBS_MIN_BLOCK_SIZE (VBS_MAX_FRAMES * FLAC_MIN_BLOCKSIZE)
+
 extern int encode_frame_vbs(FlacEncodeContext *ctx, int16_t *samples, int block_size);
 
 #endif /* VBS_H */

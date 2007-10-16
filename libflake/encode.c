@@ -966,7 +966,7 @@ flake_encode_frame(FlakeContext *s, int16_t *samples, int block_size)
 
     fs = -1;
     if((ctx->params.variable_block_size > 0) &&
-       !(block_size & 7) && block_size >= 128) {
+       !(block_size % VBS_MAX_FRAMES) && block_size >= VBS_MIN_BLOCK_SIZE) {
         fs = encode_frame_vbs(ctx, samples, block_size);
     }
     if(fs < 0) {

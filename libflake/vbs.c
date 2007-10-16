@@ -35,16 +35,16 @@
  */
 static void
 split_frame_v1(int16_t *samples, int channels, int block_size,
-               int *frames, int sizes[8])
+               int *frames, int sizes[VBS_MAX_FRAMES])
 {
     int i, ch, j;
-    int n = block_size >> 3;
-    int64_t res[8];
-    int layout[8];
+    int n = block_size / VBS_MAX_FRAMES;
+    int64_t res[VBS_MAX_FRAMES];
+    int layout[VBS_MAX_FRAMES];
     int16_t *sptr, *sptr0, *sptr1, *sptr2;
 
     // calculate absolute sum of 2nd order residual
-    for(i=0; i<8; i++) {
+    for(i=0; i<VBS_MAX_FRAMES; i++) {
         sptr = &samples[i*n*channels];
         res[i] = 0;
         for(ch=0; ch<channels; ch++) {
@@ -63,18 +63,18 @@ split_frame_v1(int16_t *samples, int channels, int block_size,
     }
 
     // determine frame layout
-    memset(layout, 0, 8 * sizeof(int));
+    memset(layout, 0, VBS_MAX_FRAMES * sizeof(int));
     layout[0] = 1;
-    for(i=0; i<7; i++) {
-        if(abs(res[i]-res[i+1])*200 / res[i] > SPLIT_THRESHOLD) {
-            layout[i+1] = 1;
+    for(i=1; i<VBS_MAX_FRAMES; i++) {
+        if(abs(res[i-1]-res[i])*200 / res[i-1] > SPLIT_THRESHOLD) {
+            layout[i] = 1;
         }
     }
 
     // generate frame count and frame sizes from layout
     frames[0] = 0;
-    memset(sizes, 0, 8 * sizeof(int));
-    for(i=0; i<8; i++) {
+    memset(sizes, 0, VBS_MAX_FRAMES * sizeof(int));
+    for(i=0; i<VBS_MAX_FRAMES; i++) {
         if(layout[i]) {
             frames[0]++;
         }
@@ -87,10 +87,10 @@ encode_frame_vbs(FlacEncodeContext *ctx, int16_t *samples, int block_size)
 {
     int fs = -1;
     int frames;
-    int sizes[8];
+    int sizes[VBS_MAX_FRAMES];
     int fc0;
 
-    if(!ctx || !samples || block_size < 128 || block_size % 8)
+    if(!ctx || !samples || block_size < VBS_MIN_BLOCK_SIZE || block_size % VBS_MAX_FRAMES)
         return -1;
 
     fc0 = ctx->frame_count;
