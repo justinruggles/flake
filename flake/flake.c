@@ -577,7 +577,7 @@ main(int argc, char **argv)
     memset(&opts, 0, sizeof(CommandOptions));
     err = parse_commandline(argc, argv, &opts);
     if(!opts.quiet) {
-        fprintf(stderr, "\nFlake: FLAC audio encoder\n(c) 2006  Justin Ruggles\n\n");
+        fprintf(stderr, "\nFlake: FLAC audio encoder\n(c) 2006-2007 Justin Ruggles\n\n");
     }
     if(err == 2) {
         print_help(stdout);
