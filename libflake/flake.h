@@ -83,7 +83,7 @@ typedef struct FlakeEncodeParams {
 
     // padding size in bytes
     // set by the user prior to calling flake_encode_init
-    // if set to less than 0, defaults to 4096
+    // if set to less than 0, defaults to 8192
     int padding_size;
 
     // minimum prediction order

@@ -188,13 +188,13 @@ flake_set_defaults(FlakeEncodeParams *params)
     // default to level 5 params
     params->order_method = FLAKE_ORDER_METHOD_EST;
     params->stereo_method = FLAKE_STEREO_METHOD_ESTIMATE;
-    params->block_size = 4096;
+    params->block_size =  4096;
     params->prediction_type = FLAKE_PREDICTION_LEVINSON;
     params->min_prediction_order = 1;
     params->max_prediction_order = 8;
     params->min_partition_order = 0;
     params->max_partition_order = 6;
-    params->padding_size = 4096;
+    params->padding_size = 8192;
     params->variable_block_size = 0;
 
     // differences from level 5

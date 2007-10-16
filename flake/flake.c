@@ -48,7 +48,7 @@ print_help(FILE *out)
     fprintf(out, "usage: flake [options] <input.wav> [-o output.flac]\n"
                  "options:\n"
                  "       [-h]         Print out list of commandline options\n"
-                 "       [-p #]       Padding bytes to put in header (default: 4096)\n"
+                 "       [-p #]       Padding bytes to put in header (default: 8192)\n"
                  "       [-0 ... -13] Compression level (default: 5)\n"
                  "                        0 = -b 1152 -t 1 -l 2,2 -m 0 -r 4,4 -s 0\n"
                  "                        1 = -b 1152 -t 1 -l 3,4 -m 1 -r 2,2 -s 1\n"
