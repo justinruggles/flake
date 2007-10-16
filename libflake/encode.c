@@ -511,14 +511,14 @@ init_frame(FlacEncodeContext *ctx)
 
     // get block size codes
     i = 15;
-        for(i=0; i<15; i++) {
-            if(ctx->params.block_size == flac_blocksizes[i]) {
-                frame->blocksize = flac_blocksizes[i];
-                frame->bs_code[0] = i;
-                frame->bs_code[1] = -1;
-                break;
-            }
+    for(i=0; i<15; i++) {
+        if(ctx->params.block_size == flac_blocksizes[i]) {
+            frame->blocksize = flac_blocksizes[i];
+            frame->bs_code[0] = i;
+            frame->bs_code[1] = -1;
+            break;
         }
+    }
     if(i == 15) {
         frame->blocksize = ctx->params.block_size;
         if(frame->blocksize <= 256) {
