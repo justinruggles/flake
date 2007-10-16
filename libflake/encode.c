@@ -913,7 +913,7 @@ encode_frame(FlakeContext *s, uint8_t *frame_buffer, int buf_size, int16_t *samp
     output_subframes(ctx);
     output_frame_footer(ctx);
 
-    if(bitwriter_count(ctx->bw) > ctx->max_frame_size) {
+    if(ctx->bw->eof || bitwriter_count(ctx->bw) > ctx->max_frame_size) {
         // frame size too large, reencode in verbatim mode
         for(i=0; i<ctx->channels; i++) {
             ch = i;
