@@ -14,6 +14,8 @@ Flake TODO list
 - Embedded album art
 - Redesign the metadata API
 - Add a test suite or integrate libFLAC's test suite
+- Better warning and error messages
+- More documentation
 
 Flake Changelog
 ---------------
