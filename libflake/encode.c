@@ -63,7 +63,7 @@ write_streaminfo(FlacEncodeContext *ctx, uint8_t *streaminfo, int last)
     bitwriter_writebits(ctx->bw, 7, 0);
     bitwriter_writebits(ctx->bw, 24, 34);
 
-    if(ctx->params.variable_block_size) {
+    if(ctx->params.variable_block_size || ctx->params.allow_vbs) {
         bitwriter_writebits(ctx->bw, 16, 16);
     } else {
         bitwriter_writebits(ctx->bw, 16, ctx->params.block_size);
@@ -196,6 +196,7 @@ flake_set_defaults(FlakeEncodeParams *params)
     params->max_partition_order = 5;
     params->padding_size = 8192;
     params->variable_block_size = 0;
+    params->allow_vbs = 0;
 
     // differences from level 5
     switch(lvl) {
@@ -378,7 +379,7 @@ flake_validate_params(FlakeContext *s)
     // in the spec which has been fixed in FLAC 1.2.0, but is not backwards
     // compatible.  this constraint will be removed when Flake is updated to
     // the new spec version.
-    if(params->variable_block_size > 0 && bs == 16) {
+    if(bs == 16 && (params->variable_block_size > 0 || params->allow_vbs)) {
         return -1;
     }
 
@@ -930,7 +931,7 @@ encode_frame(FlacEncodeContext *ctx, uint8_t *frame_buffer, int buf_size,
     ctx->max_frame_size = MAX(ctx->max_frame_size, bitwriter_count(ctx->bw));
 
     if(frame_buffer != NULL) {
-        if(ctx->params.variable_block_size) {
+        if(ctx->params.variable_block_size || ctx->params.allow_vbs) {
             ctx->frame_count += ctx->frame.blocksize;
         } else {
             ctx->frame_count++;
@@ -953,7 +954,7 @@ flake_encode_frame(FlakeContext *s, int16_t *samples, int block_size)
         return -1;
     if(ctx->last_frame)
         return -1;
-    if(ctx->params.variable_block_size == 0 && block_size != ctx->params.block_size)
+    if(!ctx->params.allow_vbs && block_size != ctx->params.block_size)
         ctx->last_frame = 1;
 
     fs = -1;

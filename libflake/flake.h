@@ -121,10 +121,17 @@ typedef struct FlakeEncodeParams {
     int max_partition_order;
 
     // whether to use variable block sizes
+    // if set to 1, libflake will automatically split each frame into smaller
+    // frames in order to improve compression
     // set by user prior to calling flake_encode_init
     // 0 = fixed block size
     // 1 = variable block size
     int variable_block_size;
+
+    // whether to let the user send frames with varying block size to the encoder
+    // this will allow a user to experiment with their own variable block size
+    // algorithms if they choose to do so.
+    int allow_vbs;
 
 } FlakeEncodeParams;
 
