@@ -47,7 +47,6 @@ typedef enum {
 typedef struct FlakeEncodeParams {
 
     // compression quality
-    // set by user prior to calling flake_encode_init
     // Values 0 to 8 are libFLAC compatibility modes
     // 0 is lower compression, faster encoding
     // 8 is higher compression, slower encoding
@@ -59,7 +58,6 @@ typedef struct FlakeEncodeParams {
     int compression;
 
     // prediction order selection method
-    // set by user prior to calling flake_encode_init
     // if set to less than 0, it is chosen based on compression.
     // valid values are 0 to 6
     // 0 = use maximum order only
@@ -72,7 +70,6 @@ typedef struct FlakeEncodeParams {
     int order_method;
 
     // stereo decorrelation method
-    // set by user prior to calling flake_encode_init
     // if set to less than 0, it is chosen based on compression.
     // valid values are 0 to 2
     // 0 = independent L+R channels
@@ -80,42 +77,35 @@ typedef struct FlakeEncodeParams {
     int stereo_method;
 
     // block size in samples
-    // set by the user prior to calling flake_encode_init
     // if set to 0, a block size is chosen based on block_time_ms
     int block_size;
 
     // padding size in bytes
-    // set by the user prior to calling flake_encode_init
     // if set to less than 0, defaults to 8192
     int padding_size;
 
     // minimum prediction order
-    // set by user prior to calling flake_encode_init
     // if set to less than 0, it is chosen based on compression.
     // valid values are 0 to 4 for fixed prediction and 1 to 32 for non-fixed
     int min_prediction_order;
 
     // maximum prediction order
-    // set by user prior to calling flake_encode_init
     // if set to less than 0, it is chosen based on compression.
     // valid values are 0 to 4 for fixed prediction and 1 to 32 for non-fixed
     int max_prediction_order;
 
     // type of linear prediction
-    // set by user prior to calling flake_encode_init
     // if set to less than 0, it is chosen based on compression.
     // 0 = fixed prediction
     // 1 = Levinson-Durbin recursion
     int prediction_type;
 
     // minimum partition order
-    // set by user prior to calling flake_encode_init
     // if set to less than 0, it is chosen based on compression.
     // valid values are 0 to 8
     int min_partition_order;
 
     // maximum partition order
-    // set by user prior to calling flake_encode_init
     // if set to less than 0, it is chosen based on compression.
     // valid values are 0 to 8
     int max_partition_order;
@@ -123,7 +113,6 @@ typedef struct FlakeEncodeParams {
     // whether to use variable block sizes
     // if set to 1, libflake will automatically split each frame into smaller
     // frames in order to improve compression
-    // set by user prior to calling flake_encode_init
     // 0 = fixed block size
     // 1 = variable block size
     int variable_block_size;
@@ -156,6 +145,9 @@ typedef struct FlakeContext {
     // if 0, stream length is unknown
     unsigned int samples;
 
+    // encoding parameters
+    // all fields must be set by user (or by flake_set_defaults) prior to
+    // calling flake_encode_init
     FlakeEncodeParams params;
 
     // header bytes
