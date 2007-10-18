@@ -2,16 +2,26 @@ Flake TODO list
 ---------------
 - Apply feature updates from FFmpeg
 - Shared lib/DLL support
+- Better build system
 - 24-bit/32-bit lossless
+- RICE2 encoding for 24-bit
 - Raw audio input
 - AIFF input
+- Overhaul the audio input module
 - Import FFmpeg's FLAC decoder for verification during encoding
 - Vorbis Comment tag support
 - Embedded CUESHEET support
+- Embedded album art
+- Redesign the metadata API
+- Add a test suite or integrate libFLAC's test suite
 
 Flake Changelog
 ---------------
 version SVN : current
+- API and compression level parameter changes
+- Variable block size mode tweaking
+
+version 0.11 : 5 August 2007
 - Significant speed improvements
 - Added log search
 - Added variable block size encoding
