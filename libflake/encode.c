@@ -83,6 +83,7 @@ write_streaminfo(FlacEncodeContext *ctx, uint8_t *streaminfo, int last)
         bitwriter_writebits(ctx->bw, 4, 0);
         bitwriter_writebits(ctx->bw, 32, 0);
     }
+    bitwriter_flush(ctx->bw);
 }
 
 /**
@@ -97,6 +98,7 @@ write_padding(FlacEncodeContext *ctx, uint8_t *padding, int last, int padlen)
     bitwriter_writebits(ctx->bw, 1, last);
     bitwriter_writebits(ctx->bw, 7, 1);
     bitwriter_writebits(ctx->bw, 24, padlen);
+    bitwriter_flush(ctx->bw);
 
     return padlen + 4;
 }
@@ -120,6 +122,7 @@ write_vorbis_comment(FlacEncodeContext *ctx, uint8_t *comment, int last)
     bitwriter_writebits(ctx->bw, 1, last);
     bitwriter_writebits(ctx->bw, 7, 4);
     bitwriter_writebits(ctx->bw, 24, vendor_len+8);
+    bitwriter_flush(ctx->bw);
 
     // vendor string length
     // note: use me2le_32()
