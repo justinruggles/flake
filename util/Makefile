@@ -3,11 +3,11 @@
 #
 include ../config.mak
 
-CFLAGS=$(OPTFLAGS) -I. -I.. -I$(SRC_PATH)/flake \
+CFLAGS=$(OPTFLAGS) -I. -I.. -I$(SRC_PATH)/flake -I$(SRC_PATH)/libflake \
 	-D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_ISOC9X_SOURCE \
 	-DHAVE_CONFIG_H
 
-LDFLAGS+= -g
+LDFLAGS+= -g -L$(SRC_PATH)/libflake
 
 PROGS=wavinfo$(EXESUF)
 
@@ -18,6 +18,9 @@ all: $(PROGS)
 
 wavinfo$(EXESUF): $(OBJS)
 	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(EXTRALIBS)
+
+api_example$(EXESUF): api_example.o
+	$(CC) $(LDFLAGS) -o $@ api_example.o -lflake $(EXTRALIBS)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
@@ -34,7 +37,8 @@ depend: .depend
 clean:
 	rm -f *.o *~ \
 	*.d *.a *.lib *.def *.exp \
-	   $(PROGS)
+	$(PROGS) \
+	api_example
 
 distclean: clean
 	rm -f .depend ../config.*
