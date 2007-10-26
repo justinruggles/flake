@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # change location of binaries if necessary
 wavinfo="./wavinfo";
@@ -13,5 +13,5 @@ echo "$1";
 echo "playing time: ${playtime}s";
 echo "original audio size: $wavsize";
 
-flac-test.sh $1
-flake-test.sh $1
+./flac-test.sh $1
+./flake-test.sh $1

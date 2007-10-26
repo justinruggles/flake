@@ -1,11 +1,11 @@
-#!/bin/sh
+#!/bin/bash
 # requirements: flac, time, awk, stat, bc
 
 # change location of binaries if necessary
 flac="flac";
 wavinfo="./wavinfo";
 
-enc="$flac -f $1 --no-seektable -o flac-";
+enc="$flac -f $1 -P 0--no-seektable -o flac-";
 dec="$flac -t flac-";
 
 wavsize=$($wavinfo $1 | awk '/Data Size/ {print $3}');
@@ -17,14 +17,16 @@ playtime=$($wavinfo $1 | awk '/Playing Time/ {print $3}');
 echo "";
 echo "flac:";
 echo "";
-echo "level   enc time    bytes    ratio   kbps    dec time";
-echo "-----  ---------  --------   -----  ------  ---------";
+echo "level   enc time  speed      bytes    ratio   kbps    dec time  speed";
+echo "-----  ---------  -----  ----------   -----  ------  ---------  -----";
 for i in $(seq 0 8) ; do
     i0=$(printf "%02d" $i);
     time=$((time -p ${enc}$i0.flac -$i) 2>&1 | awk '/user/ {print $2}');
+    espeed=$(echo -e "scale=0\n$playtime/$time" | bc);
     csize=$(stat -c %s flac-$i0.flac);
     ratio=$(echo -e "scale=3\n$csize/$wavsize" | bc);
     kbps=$(echo -e "scale=1\n$csize*8/($playtime*1000)" | bc);
     dtime=$((time -p ${dec}$i0.flac) 2>&1 | awk '/user/ {print $2}');
-    printf "%3d    %8ss  %8s   %5s  %6s  %8ss\n" $i $time $csize 0$ratio $kbps $dtime;
+    dspeed=$(echo -e "scale=0\n$playtime/$dtime" | bc);
+    printf "%3d    %8ss  %4sx  %10s   %5s  %6s  %8ss  %4sx\n" $i $time $espeed $csize 0$ratio $kbps $dtime $dspeed;
 done;
