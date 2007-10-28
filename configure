@@ -651,13 +651,6 @@ else
     fi
 fi
 
-# test for lrintf in math.h
-check_exec <<EOF && have_lrintf=yes || have_lrintf=no
-#define _ISOC9X_SOURCE  1
-#include <math.h>
-int main( void ) { return (lrintf(3.999f) > 0)?0:1; }
-EOF
-
 # test for strnlen in string.h
 check_exec <<EOF && have_strnlen=yes || have_strnlen=no
 #define _ISOC9X_SOURCE  1
@@ -706,7 +699,6 @@ if test "$BUILDSUF" != ""; then
     echo "build suffix     $BUILDSUF"
 fi
 echo "big-endian       $bigendian"
-echo "lrintf()         $have_lrintf"
 echo "strnlen()        $have_strnlen"
 if test $cpu = "powerpc"; then
     echo "AltiVec enabled  $altivec"
@@ -757,9 +749,6 @@ echo "#define TUNECPU $TUNECPU" >> $TMPH
 if test "$bigendian" = "yes" ; then
   echo "WORDS_BIGENDIAN=yes" >> config.mak
   echo "#define WORDS_BIGENDIAN 1" >> $TMPH
-fi
-if test "$have_lrintf" = "yes" ; then
-  echo "#define HAVE_LRINTF 1" >> $TMPH
 fi
 if test "$have_strnlen" = "yes" ; then
   echo "#define HAVE_STRNLEN 1" >> $TMPH
