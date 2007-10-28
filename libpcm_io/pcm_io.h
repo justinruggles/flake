@@ -18,7 +18,7 @@
  */
 
 /**
- * @file pcm.h
+ * @file pcm_io.h
  * raw PCM decoder header
  */
 
