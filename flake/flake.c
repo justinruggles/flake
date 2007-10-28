@@ -363,7 +363,6 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
     int percent;
     int fs;
     uint32_t nr, samplecount, bytecount;
-    int t0, t1;
     float kb, sec, kbps, wav_bytes;
 
     if(pcmfile_init(&wf, files->ifp, PCM_SAMPLE_FMT_S16, PCM_FORMAT_UNKNOWN)) {
@@ -467,7 +466,7 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
     frame = flake_get_buffer(&s);
     wav = malloc(s.params.block_size * wf.channels * sizeof(int16_t));
 
-    samplecount = t0 = percent = 0;
+    samplecount = percent = 0;
     wav_bytes = 0;
     bytecount = header_size;
     nr = pcmfile_read_samples(&wf, wav, s.params.block_size);
@@ -478,9 +477,8 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
         } else if(fs > 0) {
             fwrite(frame, 1, fs, files->ofp);
             samplecount = MAX(samplecount, samplecount+nr);
+            if(!opts->quiet) {
             bytecount += fs;
-            t1 = samplecount / s.sample_rate;
-            if(t1 > t0) {
                 kb = ((bytecount * 8.0) / 1000.0);
                 sec = ((float)samplecount) / ((float)s.sample_rate);
                 if(samplecount > 0) kbps = kb / sec;
@@ -495,7 +493,6 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
                             percent, (bytecount / wav_bytes), kbps);
                 }
             }
-            t0 = t1;
         }
         nr = pcmfile_read_samples(&wf, wav, s.params.block_size);
     }
