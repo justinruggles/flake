@@ -48,6 +48,7 @@ print_help(FILE *out)
     fprintf(out, "usage: flake [options] <input.wav> [-o output.flac]\n"
                  "options:\n"
                  "       [-h]         Print out list of commandline options\n"
+                 "       [-q]         Quiet mode: no console output\n"
                  "       [-p #]       Padding bytes to put in header (default: 8192)\n"
                  "       [-0 ... -12] Compression level (default: 5)\n"
                  "                        0 = -b 1152 -t 1 -l 2,2 -m 0 -r 3 -s 0\n"
