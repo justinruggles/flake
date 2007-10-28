@@ -15,6 +15,7 @@ Flake TODO list
 - Add a test suite or integrate libFLAC's test suite
 - Better warning and error messages
 - More documentation
+- Multi-character commandline switches
 
 Flake Changelog
 ---------------
