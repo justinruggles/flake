@@ -765,10 +765,10 @@ output_residual(FlacEncodeContext *ctx, int ch)
     for(p=0; p<(1 << porder); p++) {
         k = sub->rc.params[p];
         bitwriter_writebits(ctx->bw, 4, k);
-        if(p == 1) res_cnt = psize;
         for(i=0; i<res_cnt && j<frame->blocksize; i++, j++) {
             bitwriter_write_rice_signed(ctx->bw, k, sub->residual[j]);
         }
+        res_cnt = psize;
     }
 }
 
