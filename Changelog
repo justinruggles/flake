@@ -7,7 +7,6 @@ Flake TODO list
 - RICE2 encoding for 24-bit
 - Raw audio input
 - AIFF input
-- Overhaul the audio input module
 - Import FFmpeg's FLAC decoder for verification during encoding
 - Vorbis Comment tag support
 - Embedded CUESHEET support
@@ -22,6 +21,7 @@ Flake Changelog
 version SVN : current
 - API and compression level parameter changes
 - Variable block size mode tweaking
+- Added a new raw PCM I/O library, replacing the Flake WAVE reader
 
 version 0.11 : 5 August 2007
 - Significant speed improvements
