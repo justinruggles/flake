@@ -28,6 +28,8 @@
 #include "lpc.h"
 #include "md5.h"
 
+#define FLAKE_VERSION "SVN"
+
 #define FLAC_MAX_CH  8
 #define FLAC_MIN_BLOCKSIZE  16
 #define FLAC_MAX_BLOCKSIZE  65535

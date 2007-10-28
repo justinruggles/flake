@@ -20,9 +20,6 @@
 #ifndef FLAKE_H
 #define FLAKE_H
 
-#define FLAKE_VERSION SVN
-#define FLAKE_IDENT   "Flake SVN"
-
 typedef enum {
     FLAKE_ORDER_METHOD_MAX,
     FLAKE_ORDER_METHOD_EST,
@@ -183,5 +180,7 @@ extern void flake_encode_close(FlakeContext *s);
 extern int flake_get_max_frame_size(FlakeContext *s);
 
 extern void flake_get_md5sum(FlakeContext *s, unsigned char *md5sum);
+
+extern const char *flake_get_version(void);
 
 #endif /* FLAKE_H */

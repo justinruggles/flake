@@ -103,8 +103,6 @@ write_padding(FlacEncodeContext *ctx, uint8_t *padding, int last, int padlen)
     return padlen + 4;
 }
 
-static const char *vendor_string = FLAKE_IDENT;
-
 /**
  * Write vorbis comment metadata block to byte array.
  * Just writes the vendor string for now.
@@ -112,10 +110,11 @@ static const char *vendor_string = FLAKE_IDENT;
 static int
 write_vorbis_comment(FlacEncodeContext *ctx, uint8_t *comment, int last)
 {
+    const char *vendor_string = flake_get_version();
     int vendor_len;
     uint8_t vlen_le[4];
 
-    vendor_len = strlen(vendor_string);
+    vendor_len = 6 + strlen(vendor_string);
     bitwriter_init(ctx->bw, comment, 4);
 
     // metadata header
@@ -132,7 +131,8 @@ write_vorbis_comment(FlacEncodeContext *ctx, uint8_t *comment, int last)
     vlen_le[3] = (vendor_len >> 24) & 0xFF;
     memcpy(&comment[4], vlen_le, 4);
 
-    memcpy(&comment[8], vendor_string, vendor_len);
+    memcpy(&comment[8], "Flake ", 6);
+    memcpy(&comment[14], vendor_string, vendor_len-6);
 
     memset(&comment[vendor_len+8], 0, 4);
 
@@ -1016,4 +1016,16 @@ flake_get_md5sum(FlakeContext *s, unsigned char *md5sum)
     md5_bak = ctx->md5ctx;
     md5_final(md5sum, &ctx->md5ctx);
     ctx->md5ctx = md5_bak;
+}
+
+const char *
+flake_get_version(void)
+{
+#ifdef SVN_VERSION
+    static const char *const str = FLAKE_VERSION "-r" SVN_VERSION;
+#else
+    static const char *const str = FLAKE_VERSION;
+#endif
+
+    return str;
 }
