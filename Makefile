@@ -20,9 +20,11 @@ lib:
 	$(MAKE) -C libflake all
 
 progs:
+	$(MAKE) -C libpcm_io all
 	$(MAKE) -C flake all
 
 utils:
+	$(MAKE) -C libpcm_io all
 	$(MAKE) -C util all
 
 .PHONY: install
@@ -53,17 +55,20 @@ dep:	depend
 
 depend:
 	$(MAKE) -C libflake depend
+	$(MAKE) -C libpcm_io depend
 	$(MAKE) -C flake    depend
 	$(MAKE) -C util     depend
 
 clean:
 	$(MAKE) -C libflake clean
+	$(MAKE) -C libpcm_io clean
 	$(MAKE) -C flake    clean
 	$(MAKE) -C util     clean
 	rm -f *.o *.d *~
 
 distclean: clean
 	$(MAKE) -C libflake distclean
+	$(MAKE) -C libpcm_io distclean
 	$(MAKE) -C flake    distclean
 	$(MAKE) -C util     distclean
 	rm -f .depend config.*
