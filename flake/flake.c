@@ -478,7 +478,7 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
             fwrite(frame, 1, fs, files->ofp);
             samplecount = MAX(samplecount, samplecount+nr);
             if(!opts->quiet) {
-            bytecount += fs;
+                bytecount += fs;
                 kb = ((bytecount * 8.0) / 1000.0);
                 sec = ((float)samplecount) / ((float)s.sample_rate);
                 if(samplecount > 0) kbps = kb / sec;
