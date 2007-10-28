@@ -6,6 +6,10 @@
 #ifndef BSWAP_H
 #define BSWAP_H
 
+#ifdef HAVE_BYTESWAP_H
+#include <byteswap.h>
+#else
+
 #include <inttypes.h>
 
 static inline uint16_t bswap_16(uint16_t x){
@@ -28,6 +32,8 @@ static inline uint64_t bswap_64(uint64_t x)
     r.l[1] = bswap_32(w.l[0]);
     return r.ll;
 }
+
+#endif /* HAVE_BYTESWAP_H */
 
 // be2me ... BigEndian to MachineEndian
 // le2me ... LittleEndian to MachineEndian
