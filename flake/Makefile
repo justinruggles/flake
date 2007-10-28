@@ -4,25 +4,26 @@
 include ../config.mak
 
 CFLAGS=$(OPTFLAGS) -I. -I.. -I$(SRC_PATH)/libflake \
+	-I$(SRC_PATH)/libpcm_io \
 	-D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_ISOC9X_SOURCE \
 	-DHAVE_CONFIG_H
 
 LDFLAGS+= -g
 
-DEP_LIBS=$(SRC_PATH)/libflake/$(LIBPREF)flake$(LIBSUF)
+DEP_LIBS=$(SRC_PATH)/libflake/$(LIBPREF)flake$(LIBSUF) $(SRC_PATH)/libpcm_io/$(LIBPREF)pcm_io$(LIBSUF)
 
 PROGS_G=flake_g$(EXESUF)
 PROGS=flake$(EXESUF)
 
-OBJS = flake.o wav.o
+OBJS = flake.o
 SRCS = $(OBJS:.o=.c)
-FLAKE_LIBDIRS = -L$(SRC_PATH)/libflake
-FLAKE_LIBS = -lflake$(BUILDSUF)
+FLAKE_LIBDIRS = -L$(SRC_PATH)/libflake -L$(SRC_PATH)/libpcm_io
+FLAKE_LIBS = -lflake$(BUILDSUF) -lpcm_io$(BUILDSUF)
 
 all: $(PROGS_G) $(PROGS)
 
-flake_g$(EXESUF): flake.o wav.o $(DEP_LIBS)
-	$(CC) $(FLAKE_LIBDIRS) $(LDFLAGS) -o $@ flake.o wav.o $(FLAKE_LIBS) $(EXTRALIBS)
+flake_g$(EXESUF): $(OBJS) $(DEP_LIBS)
+	$(CC) $(FLAKE_LIBDIRS) $(LDFLAGS) -o $@ $(OBJS) $(FLAKE_LIBS) $(EXTRALIBS)
 	cp -p flake_g$(EXESUF) flake$(EXESUF)
 	$(STRIP) flake$(EXESUF)
 

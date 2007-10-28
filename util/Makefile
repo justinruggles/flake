@@ -3,21 +3,22 @@
 #
 include ../config.mak
 
-CFLAGS=$(OPTFLAGS) -I. -I.. -I$(SRC_PATH)/flake -I$(SRC_PATH)/libflake \
+CFLAGS=$(OPTFLAGS) -I. -I.. -I$(SRC_PATH)/libflake \
+	-I$(SRC_PATH)/libpcm_io \
 	-D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_ISOC9X_SOURCE \
 	-DHAVE_CONFIG_H
 
-LDFLAGS+= -g -L$(SRC_PATH)/libflake
+LDFLAGS+= -g -L$(SRC_PATH)/libflake -L$(SRC_PATH)/libpcm_io
 
 PROGS=wavinfo$(EXESUF)
 
-OBJS = wavinfo.o ../flake/wav.o
+OBJS = wavinfo.o
 SRCS = $(OBJS:.o=.c)
 
 all: $(PROGS)
 
 wavinfo$(EXESUF): $(OBJS)
-	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(EXTRALIBS)
+	$(CC) $(LDFLAGS) -o $@ $(OBJS) -lpcm_io $(EXTRALIBS)
 
 api_example$(EXESUF): api_example.o
 	$(CC) $(LDFLAGS) -o $@ api_example.o -lflake $(EXTRALIBS)

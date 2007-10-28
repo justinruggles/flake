@@ -28,7 +28,7 @@
 #endif
 
 #include "bswap.h"
-#include "wav.h"
+#include "pcm_io.h"
 #include "flake.h"
 
 #ifndef PATH_MAX
@@ -356,7 +356,7 @@ static int
 encode_file(CommandOptions *opts, FilePair *files, int first_file)
 {
     FlakeContext s;
-    WavFile wf;
+    PcmFile wf;
     int header_size, subset;
     uint8_t *frame;
     int16_t *wav;
@@ -366,17 +366,17 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
     int t0, t1;
     float kb, sec, kbps, wav_bytes;
 
-    if(wavfile_init(&wf, files->ifp)) {
+    if(pcmfile_init(&wf, files->ifp, PCM_SAMPLE_FMT_S16, PCM_FORMAT_UNKNOWN)) {
         fprintf(stderr, "invalid input file: %s\n", files->infile);
         return 1;
     }
-    wf.read_format = WAV_SAMPLE_FMT_S16;
 
     // set parameters from input audio
     s.channels = wf.channels;
     s.sample_rate = wf.sample_rate;
     s.bits_per_sample = 16;
-    s.samples = wf.samples;
+    // TODO: FLAC supports values up to 36-bits for number of samples, but libflake only uses a 32-bit value
+    s.samples = MIN(wf.samples, UINT32_MAX);
 
     // set parameters from commandline
     s.params.compression = opts->compr;
@@ -440,7 +440,7 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
         fprintf(stderr, "\n");
         fprintf(stderr, "input file:  \"%s\"\n", files->infile);
         fprintf(stderr, "output file: \"%s\"\n", files->outfile);
-        wavfile_print(stderr, &wf);
+        pcmfile_print(&wf, stderr);
         if(wf.bit_width != 16) {
             fprintf(stderr, "WARNING! converting to 16-bit (not lossless)\n");
         }
@@ -454,7 +454,7 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
             ts = ts % 60;
             th = tm / 60;
             tm = tm % 60;
-            fprintf(stderr, "samples: %u (", wf.samples);
+            fprintf(stderr, "samples: %llu (", wf.samples);
             if(th) fprintf(stderr, "%dh", th);
             fprintf(stderr, "%dm", tm);
             fprintf(stderr, "%d.%03ds)\n", ts, (int)tms);
@@ -470,14 +470,14 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
     samplecount = t0 = percent = 0;
     wav_bytes = 0;
     bytecount = header_size;
-    nr = wavfile_read_samples(&wf, wav, s.params.block_size);
+    nr = pcmfile_read_samples(&wf, wav, s.params.block_size);
     while(nr > 0) {
         fs = flake_encode_frame(&s, wav, nr);
         if(fs < 0) {
             fprintf(stderr, "\nError encoding frame\n");
         } else if(fs > 0) {
             fwrite(frame, 1, fs, files->ofp);
-            samplecount += nr;
+            samplecount = MAX(samplecount, samplecount+nr);
             bytecount += fs;
             t1 = samplecount / s.sample_rate;
             if(t1 > t0) {
@@ -497,7 +497,7 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
             }
             t0 = t1;
         }
-        nr = wavfile_read_samples(&wf, wav, s.params.block_size);
+        nr = pcmfile_read_samples(&wf, wav, s.params.block_size);
     }
     if(!opts->quiet) {
         fprintf(stderr, "| bytes: %d \n\n", bytecount);
@@ -519,6 +519,7 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
         fwrite(md5sum, 1, 16, files->ofp);
     }
 
+    pcmfile_close(&wf);
     flake_encode_close(&s);
     free(wav);
 
