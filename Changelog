@@ -1,21 +1,27 @@
-Flake TODO list
+General TODO list
 ---------------
-- Apply feature updates from FFmpeg
-- Shared lib/DLL support
 - Better build system
-- 24-bit/32-bit lossless
-- RICE2 encoding for 24-bit
-- Raw audio input
-- AIFF input
 - Import FFmpeg's FLAC decoder for verification during encoding
 - Vorbis Comment tag support
 - Embedded CUESHEET support
 - Embedded album art
-- Redesign the metadata API
 - Add a test suite or integrate libFLAC's test suite
-- Better warning and error messages
 - More documentation
+
+Flake TODO list
+---------------
+- Commandline switches for raw audio input
+- AIFF input
 - Multi-character commandline switches
+
+libFlake TODO list
+------------------
+- Shared lib/DLL support
+- Redesign the metadata API
+- Better warning and error messages
+- 24-bit/32-bit lossless
+- RICE2 encoding for 24-bit
+
 
 Flake Changelog
 ---------------
