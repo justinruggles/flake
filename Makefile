@@ -54,23 +54,23 @@ uninstall-headers:
 dep:	depend
 
 depend:
-	$(MAKE) -C libflake depend
+	$(MAKE) -C libflake  depend
 	$(MAKE) -C libpcm_io depend
-	$(MAKE) -C flake    depend
-	$(MAKE) -C util     depend
+	$(MAKE) -C flake     depend
+	$(MAKE) -C util      depend
 
 clean:
-	$(MAKE) -C libflake clean
+	$(MAKE) -C libflake  clean
 	$(MAKE) -C libpcm_io clean
-	$(MAKE) -C flake    clean
-	$(MAKE) -C util     clean
+	$(MAKE) -C flake     clean
+	$(MAKE) -C util      clean
 	rm -f *.o *.d *~
 
 distclean: clean
-	$(MAKE) -C libflake distclean
+	$(MAKE) -C libflake  distclean
 	$(MAKE) -C libpcm_io distclean
-	$(MAKE) -C flake    distclean
-	$(MAKE) -C util     distclean
+	$(MAKE) -C flake     distclean
+	$(MAKE) -C util      distclean
 	rm -f .depend config.*
 
 # tar release (use 'make -k tar' on a checkouted tree)
