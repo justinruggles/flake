@@ -11,7 +11,7 @@ LDFLAGS+= -g -L$(SRC_PATH)/libflake
 
 PROGS=wavinfo$(EXESUF)
 
-OBJS = wavinfo.o $(SRC_PATH)/flake/wav.o
+OBJS = wavinfo.o ../flake/wav.o
 SRCS = $(OBJS:.o=.c)
 
 all: $(PROGS)
