@@ -50,7 +50,7 @@ encode_residual_fixed(int32_t res[], int32_t smp[], int n, int order)
             res[0] = smp[0];
             res[1] = smp[1];
             for(i=2; i<n; i++) {
-                res[i] = smp[i] - 2*smp[i-1] + smp[i-2];
+                res[i] = smp[i] - (smp[i-1] << 1) + smp[i-2];
             }
             return;
         case 3:
@@ -67,7 +67,7 @@ encode_residual_fixed(int32_t res[], int32_t smp[], int n, int order)
             res[2] = smp[2];
             res[3] = smp[3];
             for(i=4; i<n; i++) {
-                res[i] = smp[i] - 4*smp[i-1] + 6*smp[i-2] - 4*smp[i-3] + smp[i-4];
+                res[i] = smp[i] - (smp[i-1] << 2) + 6*smp[i-2] - (smp[i-3] << 2) + smp[i-4];
             }
             return;
         default: return;
