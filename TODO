@@ -1,6 +1,5 @@
 General TODO list
 ---------------
-- Better build system
 - Import FFmpeg's FLAC decoder for verification during encoding
 - Vorbis Comment tag support
 - Embedded CUESHEET support
@@ -16,7 +15,6 @@ Flake TODO list
 
 libFlake TODO list
 ------------------
-- Shared lib/DLL support
 - Redesign the metadata API
 - Better warning and error messages
 - 24-bit/32-bit lossless

@@ -4,6 +4,10 @@ version SVN : current
 - API and compression level parameter changes
 - Variable block size mode tweaking
 - Added a new raw PCM I/O library, replacing the Flake WAVE reader
+- Changed the build system to CMake. Allows for building a shared library.
+- Added function to get version string: flake_get_version()
+- Added SVN revision to the version string. Also added the version string to 
+  the commandline output
 
 version 0.11 : 5 August 2007
 - Significant speed improvements
