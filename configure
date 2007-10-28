@@ -293,7 +293,6 @@ dostrip="yes"
 installstrip="-s"
 extralibs="-lm"
 bigendian="no"
-inttypes="yes"
 LIBOBJFLAGS=""
 PROJLDFLAGS=-Wl,--warn-common
 LDCONFIG="ldconfig"
@@ -652,10 +651,6 @@ else
     fi
 fi
 
-# ---
-# *inttypes.h* test
-check_header inttypes.h || inttypes=no
-
 # test for lrintf in math.h
 check_exec <<EOF && have_lrintf=yes || have_lrintf=no
 #define _ISOC9X_SOURCE  1
@@ -711,7 +706,6 @@ if test "$BUILDSUF" != ""; then
     echo "build suffix     $BUILDSUF"
 fi
 echo "big-endian       $bigendian"
-echo "inttypes.h       $inttypes"
 echo "lrintf()         $have_lrintf"
 echo "strnlen()        $have_strnlen"
 if test $cpu = "powerpc"; then
@@ -763,9 +757,6 @@ echo "#define TUNECPU $TUNECPU" >> $TMPH
 if test "$bigendian" = "yes" ; then
   echo "WORDS_BIGENDIAN=yes" >> config.mak
   echo "#define WORDS_BIGENDIAN 1" >> $TMPH
-fi
-if test "$inttypes" != "yes" ; then
-  echo "#define EMULATE_INTTYPES 1" >> $TMPH
 fi
 if test "$have_lrintf" = "yes" ; then
   echo "#define HAVE_LRINTF 1" >> $TMPH
