@@ -52,7 +52,7 @@ bitwriter_init(BitWriter *bw, void *buf, int len)
     bw->eof = 0;
 }
 
-static inline uint32_t
+static inline int
 bitwriter_count(BitWriter *bw)
 {
     return (bw->buf_ptr - bw->buffer) + ((39 - bw->bit_left) >> 3);
