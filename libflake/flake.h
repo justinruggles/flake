@@ -20,6 +20,21 @@
 #ifndef FLAKE_H
 #define FLAKE_H
 
+/* shared library API export */
+#if defined(_WIN32) && !defined(_XBOX)
+ #if defined(FLAKE_BUILD_LIBRARY)
+  #define FLAKE_API __declspec(dllexport)
+ #else
+  #define FLAKE_API __declspec(dllimport)
+ #endif
+#else
+ #if defined(FLAKE_BUILD_LIBRARY) && defined(HAVE_GCC_VISIBILITY)
+  #define FLAKE_API __attribute__((visibility("default")))
+ #else
+  #define FLAKE_API extern
+ #endif
+#endif
+
 typedef enum {
     FLAKE_ORDER_METHOD_MAX,
     FLAKE_ORDER_METHOD_EST,
@@ -161,23 +176,23 @@ typedef struct FlakeContext {
  * Sets encoding defaults based on compression level
  * params->compression must be set prior to calling
  */
-extern int flake_set_defaults(FlakeEncodeParams *params);
+FLAKE_API int flake_set_defaults(FlakeEncodeParams *params);
 
 /**
  * Validates encoding parameters
  * @return -1 if error. 0 if ok. 1 if ok but non-Subset.
  */
-extern int flake_validate_params(const FlakeContext *s);
+FLAKE_API int flake_validate_params(const FlakeContext *s);
 
-extern int flake_encode_init(FlakeContext *s);
+FLAKE_API int flake_encode_init(FlakeContext *s);
 
-extern void *flake_get_buffer(const FlakeContext *s);
+FLAKE_API void *flake_get_buffer(const FlakeContext *s);
 
-extern int flake_encode_frame(FlakeContext *s, const short *samples, int block_size);
+FLAKE_API int flake_encode_frame(FlakeContext *s, const short *samples, int block_size);
 
-extern void flake_encode_close(FlakeContext *s);
+FLAKE_API void flake_encode_close(FlakeContext *s);
 
-extern const char *flake_get_version(void);
+FLAKE_API const char *flake_get_version(void);
 
 /**
  * FLAC Streaminfo Metadata
@@ -194,8 +209,8 @@ typedef struct FlakeStreaminfo {
     unsigned char md5sum[16];
 } FlakeStreaminfo;
 
-extern int flake_metadata_get_streaminfo(const FlakeContext *s, FlakeStreaminfo *strminfo);
+FLAKE_API int flake_metadata_get_streaminfo(const FlakeContext *s, FlakeStreaminfo *strminfo);
 
-extern void flake_metadata_write_streaminfo(const FlakeStreaminfo *strminfo, uint8_t *data);
+FLAKE_API void flake_metadata_write_streaminfo(const FlakeStreaminfo *strminfo, uint8_t *data);
 
 #endif /* FLAKE_H */
