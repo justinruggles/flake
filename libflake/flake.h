@@ -167,7 +167,7 @@ extern int flake_set_defaults(FlakeEncodeParams *params);
  * Validates encoding parameters
  * @return -1 if error. 0 if ok. 1 if ok but non-Subset.
  */
-extern int flake_validate_params(FlakeContext *s);
+extern int flake_validate_params(const FlakeContext *s);
 
 extern int flake_encode_init(FlakeContext *s);
 
@@ -177,10 +177,25 @@ extern int flake_encode_frame(FlakeContext *s, short *samples, int block_size);
 
 extern void flake_encode_close(FlakeContext *s);
 
-extern int flake_get_max_frame_size(FlakeContext *s);
-
-extern void flake_get_md5sum(FlakeContext *s, unsigned char *md5sum);
-
 extern const char *flake_get_version(void);
+
+/**
+ * FLAC Streaminfo Metadata
+ */
+typedef struct FlakeStreaminfo {
+    unsigned int min_block_size;
+    unsigned int max_block_size;
+    unsigned int min_frame_size;
+    unsigned int max_frame_size;
+    unsigned int sample_rate;
+    unsigned int channels;
+    unsigned int bits_per_sample;
+    unsigned int samples;
+    unsigned char md5sum[16];
+} FlakeStreaminfo;
+
+extern int flake_metadata_get_streaminfo(const FlakeContext *s, FlakeStreaminfo *strminfo);
+
+extern void flake_metadata_write_streaminfo(const FlakeStreaminfo *strminfo, uint8_t *data);
 
 #endif /* FLAKE_H */

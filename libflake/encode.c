@@ -55,35 +55,21 @@ static const int flac_blocksizes[15] = {
 static void
 write_streaminfo(FlacEncodeContext *ctx, uint8_t *streaminfo, int last)
 {
+    FlakeStreaminfo strminfo;
+    BitWriter bw;
     memset(streaminfo, 0, 38);
-    bitwriter_init(ctx->bw, streaminfo, 38);
 
     // metadata header
-    bitwriter_writebits(ctx->bw, 1, last);
-    bitwriter_writebits(ctx->bw, 7, 0);
-    bitwriter_writebits(ctx->bw, 24, 34);
+    bitwriter_init(&bw, streaminfo, 4);
+    bitwriter_writebits(&bw, 1, last);
+    bitwriter_writebits(&bw, 7, 0);
+    bitwriter_writebits(&bw, 24, 34);
+    bitwriter_flush(&bw);
 
-    if(ctx->params.variable_block_size || ctx->params.allow_vbs) {
-        bitwriter_writebits(ctx->bw, 16, 16);
-    } else {
-        bitwriter_writebits(ctx->bw, 16, ctx->params.block_size);
-    }
-    bitwriter_writebits(ctx->bw, 16, ctx->params.block_size);
-    bitwriter_writebits(ctx->bw, 24, 0);
-    bitwriter_writebits(ctx->bw, 24, ctx->max_frame_size);
-    bitwriter_writebits(ctx->bw, 20, ctx->samplerate);
-    bitwriter_writebits(ctx->bw, 3, ctx->channels-1);
-    bitwriter_writebits(ctx->bw, 5, ctx->bps-1);
-
-    // total samples
-    if(ctx->sample_count > 0) {
-        bitwriter_writebits(ctx->bw, 4, 0);
-        bitwriter_writebits(ctx->bw, 32, ctx->sample_count);
-    } else {
-        bitwriter_writebits(ctx->bw, 4, 0);
-        bitwriter_writebits(ctx->bw, 32, 0);
-    }
-    bitwriter_flush(ctx->bw);
+    // streaminfo metadata
+    if(flake_metadata_get_streaminfo(ctx->parent, &strminfo))
+        return;
+    flake_metadata_write_streaminfo(&strminfo, &streaminfo[4]);
 }
 
 /**
@@ -283,11 +269,11 @@ flake_set_defaults(FlakeEncodeParams *params)
 }
 
 int
-flake_validate_params(FlakeContext *s)
+flake_validate_params(const FlakeContext *s)
 {
     int subset = 0;
     int bs;
-    FlakeEncodeParams *params;
+    const FlakeEncodeParams *params;
 
     if(s == NULL) {
         return -1;
@@ -405,6 +391,7 @@ flake_encode_init(FlakeContext *s)
     // allocate memory
     ctx = calloc(1, sizeof(FlacEncodeContext));
     s->private_ctx = ctx;
+    ctx->parent = s;
 
     if(flake_validate_params(s) < 0) {
         return -1;
@@ -989,33 +976,6 @@ flake_encode_close(FlakeContext *s)
     }
     if(s->header) free(s->header);
     s->private_ctx = NULL;
-}
-
-int
-flake_get_max_frame_size(FlakeContext *s)
-{
-    FlacEncodeContext *ctx;
-    if(!s)
-        return -1;
-    ctx = s->private_ctx;
-    if(!ctx)
-        return -1;
-    return ctx->max_frame_size;
-}
-
-void
-flake_get_md5sum(FlakeContext *s, unsigned char *md5sum)
-{
-    FlacEncodeContext *ctx;
-    MD5Context md5_bak;
-    if(!s || !md5sum)
-        return;
-    ctx = s->private_ctx;
-    if(!ctx)
-        return;
-    md5_bak = ctx->md5ctx;
-    md5_final(md5sum, &ctx->md5ctx);
-    ctx->md5ctx = md5_bak;
 }
 
 const char *

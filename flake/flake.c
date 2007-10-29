@@ -501,20 +501,14 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
         fprintf(stderr, "| bytes: %d \n\n", bytecount);
     }
 
-    // if seeking is possible, rewrite sample count and MD5 checksum
-    if(!fseek(files->ofp, 12, SEEK_SET)) {
-        uint32_t sc = be2me_32(samplecount);
-        int mfs = flake_get_max_frame_size(&s);
-        uint8_t md5sum[16];
-        if(mfs >= 0) {
-            fputc((mfs >> 16) & 0xFF, files->ofp);
-            fputc((mfs >>  8) & 0xFF, files->ofp);
-            fputc( mfs        & 0xFF, files->ofp);
+    // if seeking is possible, rewrite streaminfo metadata header
+    if(!fseek(files->ofp, 8, SEEK_SET)) {
+        FlakeStreaminfo strminfo;
+        if(!flake_metadata_get_streaminfo(&s, &strminfo)) {
+            uint8_t strminfo_data[34];
+            flake_metadata_write_streaminfo(&strminfo, strminfo_data);
+            fwrite(strminfo_data, 1, 34, files->ofp);
         }
-        fseek(files->ofp, 22, SEEK_SET);
-        fwrite(&sc, 4, 1, files->ofp);
-        flake_get_md5sum(&s, md5sum);
-        fwrite(md5sum, 1, 16, files->ofp);
     }
 
     pcmfile_close(&wf);
