@@ -171,9 +171,9 @@ extern int flake_validate_params(const FlakeContext *s);
 
 extern int flake_encode_init(FlakeContext *s);
 
-extern void *flake_get_buffer(FlakeContext *s);
+extern void *flake_get_buffer(const FlakeContext *s);
 
-extern int flake_encode_frame(FlakeContext *s, short *samples, int block_size);
+extern int flake_encode_frame(FlakeContext *s, const short *samples, int block_size);
 
 extern void flake_encode_close(FlakeContext *s);
 
