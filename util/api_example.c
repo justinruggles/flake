@@ -228,10 +228,13 @@ main(int argc, char **argv)
     fprintf(stderr, "\n");
 
     // if seeking is possible, rewrite MD5 checksum in header
-    if(!fseek(output_file, 26, SEEK_SET)) {
-        uint8_t md5sum[16];
-        flake_get_md5sum(&s, md5sum);
-        fwrite(md5sum, 1, 16, output_file);
+    if(!fseek(files->ofp, 8, SEEK_SET)) {
+        FlakeStreaminfo strminfo;
+        if(!flake_metadata_get_streaminfo(&s, &strminfo)) {
+            uint8_t strminfo_data[34];
+            flake_metadata_write_streaminfo(&strminfo, strminfo_data);
+            fwrite(strminfo_data, 1, 34, files->ofp);
+        }
     }
 
     // close encoder, free input buffer, close files, and exit
