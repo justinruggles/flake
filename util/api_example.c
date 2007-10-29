@@ -19,11 +19,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/**
+ * How to compile this example program:
+ * This assumes the default install targets.
+ * gcc -o api_example api_example.c -lflake -lm
+ */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <inttypes.h>
 
-#include "flake.h"
+#include <flake/flake.h>
 
 FILE *input_file = NULL;
 FILE *output_file = NULL;
