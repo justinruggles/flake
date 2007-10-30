@@ -211,7 +211,7 @@ typedef struct FlakeStreaminfo {
 
 FLAKE_API int flake_metadata_get_streaminfo(const FlakeContext *s, FlakeStreaminfo *strminfo);
 
-FLAKE_API void flake_metadata_write_streaminfo(const FlakeStreaminfo *strminfo, uint8_t *data);
+FLAKE_API void flake_metadata_write_streaminfo(const FlakeStreaminfo *strminfo, unsigned char *data);
 
 typedef struct FlakeVorbisComment {
     char *vendor_string;
