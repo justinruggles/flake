@@ -49,6 +49,17 @@ static const int flac_blocksizes[15] = {
 };
 
 
+static void
+write_metadata_header(int last, int type, int size, uint8_t *buf)
+{
+    BitWriter bw;
+    bitwriter_init(&bw, buf, 4);
+    bitwriter_writebits(&bw,  1, last);
+    bitwriter_writebits(&bw,  7, type);
+    bitwriter_writebits(&bw, 24, size);
+    bitwriter_flush(&bw);
+}
+
 /**
  * Write streaminfo metadata block to byte array
  */
@@ -56,17 +67,9 @@ static void
 write_streaminfo(FlacEncodeContext *ctx, uint8_t *streaminfo, int last)
 {
     FlakeStreaminfo strminfo;
-    BitWriter bw;
-    memset(streaminfo, 0, 38);
 
-    // metadata header
-    bitwriter_init(&bw, streaminfo, 4);
-    bitwriter_writebits(&bw, 1, last);
-    bitwriter_writebits(&bw, 7, 0);
-    bitwriter_writebits(&bw, 24, 34);
-    bitwriter_flush(&bw);
+    write_metadata_header(last, 0, 34, streaminfo);
 
-    // streaminfo metadata
     if(flake_metadata_get_streaminfo(ctx->parent, &strminfo))
         return;
     flake_metadata_write_streaminfo(&strminfo, &streaminfo[4]);
@@ -76,16 +79,9 @@ write_streaminfo(FlacEncodeContext *ctx, uint8_t *streaminfo, int last)
  * Write padding metadata block to byte array.
  */
 static int
-write_padding(FlacEncodeContext *ctx, uint8_t *padding, int last, int padlen)
+write_padding(uint8_t *padding, int last, int padlen)
 {
-    bitwriter_init(ctx->bw, padding, 4);
-
-    // metadata header
-    bitwriter_writebits(ctx->bw, 1, last);
-    bitwriter_writebits(ctx->bw, 7, 1);
-    bitwriter_writebits(ctx->bw, 24, padlen);
-    bitwriter_flush(ctx->bw);
-
+    write_metadata_header(last, 1, padlen, padding);
     return padlen + 4;
 }
 
@@ -96,7 +92,6 @@ write_padding(FlacEncodeContext *ctx, uint8_t *padding, int last, int padlen)
 static int
 write_vorbis_comment(uint8_t *comment, int last)
 {
-    BitWriter bw;
     int vc_size;
     FlakeVorbisComment vc;
 
@@ -107,21 +102,13 @@ write_vorbis_comment(uint8_t *comment, int last)
         vc_size = 8;
 
     // metadata header
-    bitwriter_init(&bw, comment, 4);
-    bitwriter_writebits(&bw, 1, last);
-    bitwriter_writebits(&bw, 7, 4);
-    bitwriter_writebits(&bw, 24, vc_size);
-    bitwriter_flush(&bw);
+    write_metadata_header(last, 4, vc_size, comment);
 
     // write entry
     if(vc_size > 8) {
         if(flake_metadata_write_vorbiscomment(&vc, &comment[4])) {
             vc_size = 8;
-            bitwriter_init(&bw, comment, 4);
-            bitwriter_writebits(&bw, 1, last);
-            bitwriter_writebits(&bw, 7, 4);
-            bitwriter_writebits(&bw, 24, vc_size);
-            bitwriter_flush(&bw);
+            write_metadata_header(last, 4, vc_size, comment);
             memset(&comment[4], 0, 8);
         }
     } else {
@@ -161,7 +148,7 @@ write_headers(FlacEncodeContext *ctx, uint8_t *header)
     // padding
     if(ctx->params.padding_size > 0) {
         last = 1;
-        header_size += write_padding(ctx, &header[header_size], last,
+        header_size += write_padding(&header[header_size], last,
                                      ctx->params.padding_size);
     }
 
