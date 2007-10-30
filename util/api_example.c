@@ -230,9 +230,9 @@ main(int argc, char **argv)
     // if seeking is possible, rewrite MD5 checksum in header
     if(!fseek(output_file, 8, SEEK_SET)) {
         FlakeStreaminfo strminfo;
-        if(!flake_metadata_get_streaminfo(&s, &strminfo)) {
+        if(!flake_get_streaminfo(&s, &strminfo)) {
             uint8_t strminfo_data[34];
-            flake_metadata_write_streaminfo(&strminfo, strminfo_data);
+            flake_write_streaminfo(&strminfo, strminfo_data);
             fwrite(strminfo_data, 1, 34, output_file);
         }
     }

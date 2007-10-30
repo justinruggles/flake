@@ -30,7 +30,7 @@
 #include "md5.h"
 
 int
-flake_metadata_get_streaminfo(const FlakeContext *s, FlakeStreaminfo *strminfo)
+flake_get_streaminfo(const FlakeContext *s, FlakeStreaminfo *strminfo)
 {
     FlacEncodeContext *ctx;
     MD5Context md5_bak;
@@ -65,7 +65,7 @@ flake_metadata_get_streaminfo(const FlakeContext *s, FlakeStreaminfo *strminfo)
 }
 
 void
-flake_metadata_write_streaminfo(const FlakeStreaminfo *strminfo, uint8_t *data)
+flake_write_streaminfo(const FlakeStreaminfo *strminfo, uint8_t *data)
 {
     BitWriter bw;
     memset(data, 0, 34);
@@ -87,7 +87,7 @@ static int got_vendor_string = 0;
 static char vendor_string[32];
 
 void
-flake_metadata_init_vorbiscomment(FlakeVorbisComment *vc)
+flake_init_vorbiscomment(FlakeVorbisComment *vc)
 {
     if(!got_vendor_string) {
         const char *version_string = flake_get_version();
@@ -151,7 +151,7 @@ validate_vorbiscomment(const FlakeVorbisComment *vc)
 }
 
 int
-flake_metadata_add_vorbiscomment_entry(FlakeVorbisComment *vc, char *entry)
+flake_add_vorbiscomment_entry(FlakeVorbisComment *vc, char *entry)
 {
     int invalid = validate_vorbiscomment_entry(entry);
     if(!invalid) {
@@ -161,7 +161,7 @@ flake_metadata_add_vorbiscomment_entry(FlakeVorbisComment *vc, char *entry)
 }
 
 int
-flake_metadata_get_vorbiscomment_size(const FlakeVorbisComment *vc)
+flake_get_vorbiscomment_size(const FlakeVorbisComment *vc)
 {
     unsigned int i;
     uint64_t size = 0;
@@ -193,13 +193,13 @@ write_u32_le(uint8_t *buf, uint32_t val)
 }
 
 int
-flake_metadata_write_vorbiscomment(const FlakeVorbisComment *vc, uint8_t *data)
+flake_write_vorbiscomment(const FlakeVorbisComment *vc, uint8_t *data)
 {
     uint32_t length;
     unsigned int i;
     uint8_t *ptr = data;
 
-   if(flake_metadata_get_vorbiscomment_size(vc) < 0)
+   if(flake_get_vorbiscomment_size(vc) < 0)
        return -1;
 
    // write vendor string

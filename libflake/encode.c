@@ -70,9 +70,9 @@ write_streaminfo(FlacEncodeContext *ctx, uint8_t *streaminfo, int last)
 
     write_metadata_header(last, 0, 34, streaminfo);
 
-    if(flake_metadata_get_streaminfo(ctx->parent, &strminfo))
+    if(flake_get_streaminfo(ctx->parent, &strminfo))
         return;
-    flake_metadata_write_streaminfo(&strminfo, &streaminfo[4]);
+    flake_write_streaminfo(&strminfo, &streaminfo[4]);
 }
 
 /**
@@ -96,8 +96,8 @@ write_vorbis_comment(uint8_t *comment, int last)
     FlakeVorbisComment vc;
 
     // init and get size
-    flake_metadata_init_vorbiscomment(&vc);
-    vc_size = flake_metadata_get_vorbiscomment_size(&vc);
+    flake_init_vorbiscomment(&vc);
+    vc_size = flake_get_vorbiscomment_size(&vc);
     if(vc_size < 0)
         vc_size = 8;
 
@@ -106,7 +106,7 @@ write_vorbis_comment(uint8_t *comment, int last)
 
     // write entry
     if(vc_size > 8) {
-        if(flake_metadata_write_vorbiscomment(&vc, &comment[4])) {
+        if(flake_write_vorbiscomment(&vc, &comment[4])) {
             vc_size = 8;
             write_metadata_header(last, 4, vc_size, comment);
             memset(&comment[4], 0, 8);
