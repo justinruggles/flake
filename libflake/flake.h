@@ -213,4 +213,18 @@ FLAKE_API int flake_metadata_get_streaminfo(const FlakeContext *s, FlakeStreamin
 
 FLAKE_API void flake_metadata_write_streaminfo(const FlakeStreaminfo *strminfo, uint8_t *data);
 
+typedef struct FlakeVorbisComment {
+    char *vendor_string;
+    unsigned int num_entries;
+    char *entries[1024];
+} FlakeVorbisComment;
+
+FLAKE_API void flake_metadata_init_vorbiscomment(FlakeVorbisComment *vc);
+
+FLAKE_API int flake_metadata_add_vorbiscomment_entry(FlakeVorbisComment *vc, char *entry);
+
+FLAKE_API int flake_metadata_get_vorbiscomment_size(const FlakeVorbisComment *vc);
+
+FLAKE_API int flake_metadata_write_vorbiscomment(const FlakeVorbisComment *vc, unsigned char *data);
+
 #endif /* FLAKE_H */

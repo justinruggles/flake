@@ -94,35 +94,42 @@ write_padding(FlacEncodeContext *ctx, uint8_t *padding, int last, int padlen)
  * Just writes the vendor string for now.
  */
 static int
-write_vorbis_comment(FlacEncodeContext *ctx, uint8_t *comment, int last)
+write_vorbis_comment(uint8_t *comment, int last)
 {
-    const char *vendor_string = flake_get_version();
-    int vendor_len;
-    uint8_t vlen_le[4];
+    BitWriter bw;
+    int vc_size;
+    FlakeVorbisComment vc;
 
-    vendor_len = 6 + strlen(vendor_string);
-    bitwriter_init(ctx->bw, comment, 4);
+    // init and get size
+    flake_metadata_init_vorbiscomment(&vc);
+    vc_size = flake_metadata_get_vorbiscomment_size(&vc);
+    if(vc_size < 0)
+        vc_size = 8;
 
     // metadata header
-    bitwriter_writebits(ctx->bw, 1, last);
-    bitwriter_writebits(ctx->bw, 7, 4);
-    bitwriter_writebits(ctx->bw, 24, vendor_len+8);
-    bitwriter_flush(ctx->bw);
+    bitwriter_init(&bw, comment, 4);
+    bitwriter_writebits(&bw, 1, last);
+    bitwriter_writebits(&bw, 7, 4);
+    bitwriter_writebits(&bw, 24, vc_size);
+    bitwriter_flush(&bw);
 
-    // vendor string length
-    // note: use me2le_32()
-    vlen_le[0] =  vendor_len        & 0xFF;
-    vlen_le[1] = (vendor_len >>  8) & 0xFF;
-    vlen_le[2] = (vendor_len >> 16) & 0xFF;
-    vlen_le[3] = (vendor_len >> 24) & 0xFF;
-    memcpy(&comment[4], vlen_le, 4);
+    // write entry
+    if(vc_size > 8) {
+        if(flake_metadata_write_vorbiscomment(&vc, &comment[4])) {
+            vc_size = 8;
+            bitwriter_init(&bw, comment, 4);
+            bitwriter_writebits(&bw, 1, last);
+            bitwriter_writebits(&bw, 7, 4);
+            bitwriter_writebits(&bw, 24, vc_size);
+            bitwriter_flush(&bw);
+            memset(&comment[4], 0, 8);
+        }
+    } else {
+        memset(&comment[4], 0, 8);
+    }
 
-    memcpy(&comment[8], "Flake ", 6);
-    memcpy(&comment[14], vendor_string, vendor_len-6);
-
-    memset(&comment[vendor_len+8], 0, 4);
-
-    return vendor_len + 12;
+    // return total metadata block size
+    return 4 + vc_size;
 }
 
 /**
@@ -149,7 +156,7 @@ write_headers(FlacEncodeContext *ctx, uint8_t *header)
 
     // vorbis comment
     if(ctx->params.padding_size == 0) last = 1;
-    header_size += write_vorbis_comment(ctx, &header[header_size], last);
+    header_size += write_vorbis_comment(&header[header_size], last);
 
     // padding
     if(ctx->params.padding_size > 0) {
