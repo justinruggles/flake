@@ -216,6 +216,9 @@ FLAKE_API int flake_metadata_get_streaminfo(const FlakeContext *s,
 FLAKE_API void flake_metadata_write_streaminfo(const FlakeStreaminfo *strminfo,
                                                unsigned char *data);
 
+/**
+ * Vorbis Comment Metadata
+ */
 typedef struct FlakeVorbisComment {
     char *vendor_string;
     unsigned int num_entries;
