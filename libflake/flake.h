@@ -129,9 +129,9 @@ typedef struct FlakeEncodeParams {
     // 1 = variable block size
     int variable_block_size;
 
-    // whether to let the user send frames with varying block size to the encoder
-    // this will allow a user to experiment with their own variable block size
-    // algorithms if they choose to do so.
+    // whether to let the user send frames with varying block size to the
+    // encoder this will allow a user to experiment with their own variable
+    // block size algorithms if they choose to do so.
     int allow_vbs;
 
 } FlakeEncodeParams;
@@ -188,7 +188,8 @@ FLAKE_API int flake_encode_init(FlakeContext *s);
 
 FLAKE_API void *flake_get_buffer(const FlakeContext *s);
 
-FLAKE_API int flake_encode_frame(FlakeContext *s, const short *samples, int block_size);
+FLAKE_API int flake_encode_frame(FlakeContext *s, const short *samples,
+                                 int block_size);
 
 FLAKE_API void flake_encode_close(FlakeContext *s);
 
@@ -209,9 +210,11 @@ typedef struct FlakeStreaminfo {
     unsigned char md5sum[16];
 } FlakeStreaminfo;
 
-FLAKE_API int flake_metadata_get_streaminfo(const FlakeContext *s, FlakeStreaminfo *strminfo);
+FLAKE_API int flake_metadata_get_streaminfo(const FlakeContext *s,
+                                            FlakeStreaminfo *strminfo);
 
-FLAKE_API void flake_metadata_write_streaminfo(const FlakeStreaminfo *strminfo, unsigned char *data);
+FLAKE_API void flake_metadata_write_streaminfo(const FlakeStreaminfo *strminfo,
+                                               unsigned char *data);
 
 typedef struct FlakeVorbisComment {
     char *vendor_string;
@@ -221,10 +224,12 @@ typedef struct FlakeVorbisComment {
 
 FLAKE_API void flake_metadata_init_vorbiscomment(FlakeVorbisComment *vc);
 
-FLAKE_API int flake_metadata_add_vorbiscomment_entry(FlakeVorbisComment *vc, char *entry);
+FLAKE_API int flake_metadata_add_vorbiscomment_entry(FlakeVorbisComment *vc,
+                                                     char *entry);
 
 FLAKE_API int flake_metadata_get_vorbiscomment_size(const FlakeVorbisComment *vc);
 
-FLAKE_API int flake_metadata_write_vorbiscomment(const FlakeVorbisComment *vc, unsigned char *data);
+FLAKE_API int flake_metadata_write_vorbiscomment(const FlakeVorbisComment *vc,
+                                                 unsigned char *data);
 
 #endif /* FLAKE_H */
