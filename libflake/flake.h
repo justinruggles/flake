@@ -218,6 +218,10 @@ FLAKE_API void flake_write_streaminfo(const FlakeStreaminfo *strminfo,
 
 /**
  * Vorbis Comment Metadata
+ * List of metadata name,value pairs
+ * None of the fields should be set directly by the user.
+ * The vendor string is set by libFlake in flake_init_vorbiscomment()
+ * Entries are added by calling flake_add_vorbiscomment_entry()
  */
 typedef struct FlakeVorbisComment {
     char *vendor_string;
@@ -225,13 +229,30 @@ typedef struct FlakeVorbisComment {
     char *entries[1024];
 } FlakeVorbisComment;
 
+/**
+ * Initializes the Vorbis comment context by setting the vendor string based on
+ * the libFlake version and setting num_entries to zero.
+ */
 FLAKE_API void flake_init_vorbiscomment(FlakeVorbisComment *vc);
 
+/**
+ * Adds an entry to the Vorbis comment context.
+ * Entries should be in the form, "NAME=value" as indicated in the Vorbis
+ * comment specification at http://xiph.org/vorbis/doc/v-comment.html
+ */
 FLAKE_API int flake_add_vorbiscomment_entry(FlakeVorbisComment *vc,
                                             char *entry);
 
+/**
+ * Returns the total byte size of the Vorbis comment metadata block.
+ * This should be used to make sure enough space has been allocated to write
+ * the metadata block.
+ */
 FLAKE_API int flake_get_vorbiscomment_size(const FlakeVorbisComment *vc);
 
+/**
+ * Writes the metadata block to a byte array.
+ */
 FLAKE_API int flake_write_vorbiscomment(const FlakeVorbisComment *vc,
                                         unsigned char *data);
 
