@@ -120,6 +120,7 @@ validate_vorbiscomment_entry(const char *entry)
             valid = 0;
             break;
         }
+        // TODO: validate UTF-8 in field value
     }
     return !valid;
 }
