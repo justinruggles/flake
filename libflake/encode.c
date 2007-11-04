@@ -219,7 +219,6 @@ flake_set_defaults(FlakeEncodeParams *params)
         case 5:
             break;
         case 6:
-            params->order_method = FLAKE_ORDER_METHOD_2LEVEL;
             params->max_partition_order = 6;
             break;
         case 7:
