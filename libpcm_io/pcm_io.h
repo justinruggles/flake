@@ -43,6 +43,34 @@
 #define WAVE_FORMAT_IEEEFLOAT   0x0003
 #define WAVE_FORMAT_EXTENSIBLE  0xFFFE
 
+/* speaker locations for channel mask */
+#define PCM_SPEAKER_FRONT_LEFT              0x1
+#define PCM_SPEAKER_FRONT_RIGHT             0x2
+#define PCM_SPEAKER_FRONT_CENTER            0x4
+#define PCM_SPEAKER_LOW_FREQUENCY           0x8
+#define PCM_SPEAKER_BACK_LEFT               0x10
+#define PCM_SPEAKER_BACK_RIGHT              0x20
+#define PCM_SPEAKER_FRONT_LEFT_OF_CENTER    0x40
+#define PCM_SPEAKER_FRONT_RIGHT_OF_CENTER   0x80
+#define PCM_SPEAKER_BACK_CENTER             0x100
+#define PCM_SPEAKER_SIDE_LEFT               0x200
+#define PCM_SPEAKER_SIDE_RIGHT              0x400
+
+/* speaker combinations */
+#define PCM_SPEAKERS_FRONT        (PCM_SPEAKER_FRONT_LEFT | PCM_SPEAKER_FRONT_RIGHT)
+#define PCM_SPEAKERS_BACK         (PCM_SPEAKER_BACK_LEFT  | PCM_SPEAKER_BACK_RIGHT)
+#define PCM_SPEAKERS_SURROUND     (PCM_SPEAKER_SIDE_LEFT  | PCM_SPEAKER_SIDE_RIGHT)
+
+/* some common speaker layouts */
+#define PCM_CHANNEL_LAYOUT_1_0_0  (PCM_SPEAKER_FRONT_CENTER)
+#define PCM_CHANNEL_LAYOUT_2_0_0  (PCM_SPEAKERS_FRONT)
+#define PCM_CHANNEL_LAYOUT_3_0_0  (PCM_SPEAKERS_FRONT       | PCM_SPEAKER_FRONT_CENTER)
+#define PCM_CHANNEL_LAYOUT_2_2_0  (PCM_SPEAKERS_FRONT       | PCM_SPEAKERS_BACK)
+#define PCM_CHANNEL_LAYOUT_3_2_0  (PCM_CHANNEL_LAYOUT_3_0_0 | PCM_SPEAKERS_SURROUND)
+#define PCM_CHANNEL_LAYOUT_3_2_1  (PCM_CHANNEL_LAYOUT_3_2_0 | PCM_SPEAKER_LOW_FREQUENCY)
+#define PCM_CHANNEL_LAYOUT_3_3_1  (PCM_CHANNEL_LAYOUT_3_2_1 | PCM_SPEAKER_BACK_CENTER)
+#define PCM_CHANNEL_LAYOUT_3_4_1  (PCM_CHANNEL_LAYOUT_3_2_1 | PCM_SPEAKERS_BACK)
+
 /* raw audio sample types */
 enum PcmSampleType {
     PCM_SAMPLE_TYPE_INT = 0,
@@ -170,6 +198,10 @@ extern uint64_t pcmfile_position_time_ms(PcmFile *pf);
  */
 extern void pcmfile_print(PcmFile *pf, FILE *st);
 
+/**
+ * Returns a default channel mask value based on the number of channels
+ */
+extern int pcmfile_get_default_ch_mask(int channels);
 
 /**
  * File format functions

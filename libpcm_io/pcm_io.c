@@ -416,3 +416,21 @@ pcmfile_print(PcmFile *pf, FILE *st)
     fprintf(st, "%s %s %d-bit %s %d Hz %s\n", fmt, type, pf->bit_width, order,
             pf->sample_rate, chan);
 }
+
+int
+pcmfile_get_default_ch_mask(int channels)
+{
+    static const int nch_to_mask[8] = {
+        PCM_CHANNEL_LAYOUT_1_0_0,
+        PCM_CHANNEL_LAYOUT_2_0_0,
+        PCM_CHANNEL_LAYOUT_3_0_0,
+        PCM_CHANNEL_LAYOUT_2_2_0,
+        PCM_CHANNEL_LAYOUT_3_2_0,
+        PCM_CHANNEL_LAYOUT_3_2_1,
+        PCM_CHANNEL_LAYOUT_3_3_1,
+        PCM_CHANNEL_LAYOUT_3_4_1
+    };
+    if(channels < 1 || channels > 8)
+        return 0;
+    return nch_to_mask[channels-1];
+}

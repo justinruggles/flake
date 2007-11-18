@@ -39,7 +39,7 @@ pcmfile_init_raw(PcmFile *pf)
     pf->sample_type = PCM_SAMPLE_TYPE_INT;
     pf->channels = 2;
     pf->sample_rate = 44100;
-    pf->ch_mask = 0x03;
+    pf->ch_mask = pcmfile_get_default_ch_mask(pf->channels);
     pf->order = PCM_BYTE_ORDER_LE;
     pcmfile_set_source_format(pf, PCM_SAMPLE_FMT_S16);
 
