@@ -715,9 +715,6 @@ pcmfile_set_source(PcmFile *pf, int fmt, int order)
             pf->bit_width = 64;
             break;
     }
-    if(pf->file_format != PCM_FORMAT_WAVE || pf->wav_format == WAVE_FORMAT_PCM ||
-            pf->wav_format == WAVE_FORMAT_IEEEFLOAT) {
         pf->block_align = MAX(1, ((pf->bit_width + 7) >> 3) * pf->channels);
         pf->samples = (pf->data_size / pf->block_align);
-    }
 }
