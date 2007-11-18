@@ -211,8 +211,8 @@ pcmfile_init_wave(PcmFile *pf)
             }
             break;
     }
-    pf->order = PCM_BYTE_ORDER_LE;
-    pcmfile_set_source_format(pf, pf->source_format);
+    pcmfile_set_source_params(pf, pf->channels, pf->source_format,
+                              PCM_BYTE_ORDER_LE, 44100);
 
     return 0;
 }

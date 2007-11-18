@@ -701,3 +701,20 @@ pcmfile_set_source_format(PcmFile *pf, int fmt)
     pf->block_align = MAX(1, ((pf->bit_width + 7) >> 3) * pf->channels);
     pf->samples = (pf->data_size / pf->block_align);
 }
+
+void
+pcmfile_set_source_params(PcmFile *pf, int ch, int fmt, int order, int sr)
+{
+    pf->channels = MAX(ch, 1);
+    pf->ch_mask = pcmfile_get_default_ch_mask(ch);
+    pf->order = CLIP(order, PCM_BYTE_ORDER_LE, PCM_BYTE_ORDER_BE);
+    pf->sample_rate = MAX(sr, 1);
+    pcmfile_set_source_format(pf, fmt);
+}
+
+void
+pcmfile_set_read_format(PcmFile *pf, int read_format)
+{
+    pf->read_format = CLIP(read_format, PCM_SAMPLE_FMT_U8, PCM_SAMPLE_FMT_DBL);
+    pcmfile_set_source_format(pf, pf->source_format);
+}
