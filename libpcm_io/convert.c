@@ -681,10 +681,9 @@ set_fmt_convert_from_double(PcmFile *pf)
 static const int format_bps[7] = { 8, 16, 20, 24, 32, 32, 64 };
 
 void
-pcmfile_set_source(PcmFile *pf, int fmt, int order)
+pcmfile_set_source_format(PcmFile *pf, int fmt)
 {
     pf->source_format = fmt;
-    pf->order = order;
     switch(fmt) {
         case PCM_SAMPLE_FMT_UNKNOWN:
             break;

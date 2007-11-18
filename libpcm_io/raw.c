@@ -40,7 +40,8 @@ pcmfile_init_raw(PcmFile *pf)
     pf->channels = 2;
     pf->sample_rate = 44100;
     pf->ch_mask = 0x03;
-    pcmfile_set_source(pf, PCM_SAMPLE_FMT_S16, PCM_BYTE_ORDER_LE);
+    pf->order = PCM_BYTE_ORDER_LE;
+    pcmfile_set_source_format(pf, PCM_SAMPLE_FMT_S16);
 
     pf->data_size = 0;
     pf->data_start = 0;
