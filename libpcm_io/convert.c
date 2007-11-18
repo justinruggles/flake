@@ -696,6 +696,10 @@ pcmfile_set_source_format(PcmFile *pf, int fmt)
             pf->fmt_convert = NULL;
             return;
     }
+    if(fmt == PCM_SAMPLE_FMT_FLT || fmt == PCM_SAMPLE_FMT_DBL)
+        pf->sample_type = PCM_SAMPLE_TYPE_FLOAT;
+    else
+        pf->sample_type = PCM_SAMPLE_TYPE_INT;
     pf->source_format = fmt;
     pf->bit_width = format_bps[fmt];
     pf->block_align = MAX(1, ((pf->bit_width + 7) >> 3) * pf->channels);

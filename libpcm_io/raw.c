@@ -36,7 +36,6 @@ pcmfile_probe_raw(uint8_t *data, int size)
 int
 pcmfile_init_raw(PcmFile *pf)
 {
-    pf->sample_type = PCM_SAMPLE_TYPE_INT;
     pcmfile_set_source_params(pf, 2, PCM_SAMPLE_FMT_S16, PCM_BYTE_ORDER_LE,
                               44100);
 
