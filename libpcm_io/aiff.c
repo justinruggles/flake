@@ -21,8 +21,8 @@
  */
 
 /**
- * @file wav.c
- * WAV file format
+ * @file aiff.c
+ * AIFF file format
  */
 
 #include <string.h>
