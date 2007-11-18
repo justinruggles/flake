@@ -715,6 +715,6 @@ pcmfile_set_source(PcmFile *pf, int fmt, int order)
             pf->bit_width = 64;
             break;
     }
-        pf->block_align = MAX(1, ((pf->bit_width + 7) >> 3) * pf->channels);
-        pf->samples = (pf->data_size / pf->block_align);
+    pf->block_align = MAX(1, ((pf->bit_width + 7) >> 3) * pf->channels);
+    pf->samples = (pf->data_size / pf->block_align);
 }
