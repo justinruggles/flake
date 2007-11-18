@@ -220,4 +220,5 @@ PcmFormat wave_format = {
     PCM_FORMAT_WAVE,
     wave_probe,
     wave_init,
+    NULL
 };

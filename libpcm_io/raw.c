@@ -59,4 +59,5 @@ PcmFormat raw_format = {
     PCM_FORMAT_RAW,
     raw_probe,
     raw_init,
+    NULL
 };
