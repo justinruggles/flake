@@ -204,6 +204,9 @@ pcmfile_init_wave(PcmFile *pf)
                 return -1;
             }
             break;
+        default:
+            fprintf(stderr, "unsupported bit depth: %d\n", bits);
+            return -1;
     }
     pf->internal_fmt = tag;
     pcmfile_set_source_params(pf, channels, fmt, PCM_BYTE_ORDER_LE, sample_rate);
