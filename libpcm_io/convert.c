@@ -683,10 +683,7 @@ static const int format_bps[7] = { 8, 16, 20, 24, 32, 32, 64 };
 void
 pcmfile_set_source_format(PcmFile *pf, int fmt)
 {
-    pf->source_format = fmt;
     switch(fmt) {
-        case PCM_SAMPLE_FMT_UNKNOWN:
-            break;
         case PCM_SAMPLE_FMT_U8:
             set_fmt_convert_from_u8(pf);
             break;
@@ -708,7 +705,12 @@ pcmfile_set_source_format(PcmFile *pf, int fmt)
         case PCM_SAMPLE_FMT_DBL:
             set_fmt_convert_from_double(pf);
             break;
+        default:
+            pf->source_format = PCM_SAMPLE_FMT_UNKNOWN;
+            pf->fmt_convert = NULL;
+            return;
     }
+    pf->source_format = fmt;
     pf->bit_width = format_bps[fmt];
     pf->block_align = MAX(1, ((pf->bit_width + 7) >> 3) * pf->channels);
     pf->samples = (pf->data_size / pf->block_align);
