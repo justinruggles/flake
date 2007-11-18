@@ -46,7 +46,8 @@ SET(LIBFLAKE_SRCS libflake/crc.c
 
 SET(FLAKE_SRCS flake/flake.c)
 
-SET(LIBPCM_IO_SRCS libpcm_io/byteio.c
+SET(LIBPCM_IO_SRCS libpcm_io/aiff.c
+                   libpcm_io/byteio.c
                    libpcm_io/convert.c
                    libpcm_io/formats.c
                    libpcm_io/pcm_io.c
