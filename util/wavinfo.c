@@ -278,7 +278,7 @@ wavinfo_print(WavInfo *wi)
     float playtime;
     PcmFile *wf = &wi->wf;
 
-    type = get_format_name(wf->wav_format);
+    type = get_format_name(wf->internal_fmt);
 
     printf("\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n");
     printf("File:\n");
@@ -290,7 +290,7 @@ wavinfo_print(WavInfo *wi)
     }
     printf("Format:\n");
     if(type == NULL) {
-        printf("   Type:          unknown - 0x%04X\n", wf->wav_format);
+        printf("   Type:          unknown - 0x%04X\n", wf->internal_fmt);
     } else {
         printf("   Type:          %s\n", type);
     }
@@ -312,7 +312,7 @@ wavinfo_print(WavInfo *wi)
     } else if(leftover > 0) {
         printf("   Leftover:  %d bytes\n", leftover);
     }
-    if(wf->wav_format == 0x0001 || wf->wav_format == 0x0003) {
+    if(wf->internal_fmt == 0x0001 || wf->internal_fmt == 0x0003) {
         samples = wf->data_size / wf->block_align;
         playtime = (float)samples / (float)wf->sample_rate;
         printf("   Samples:       %d\n", samples);
