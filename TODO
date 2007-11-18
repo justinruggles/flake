@@ -10,7 +10,7 @@ General TODO list
 Flake TODO list
 ---------------
 - Commandline switches for raw audio input
-- AIFF input
+- AIFF-C input
 - Multi-character commandline switches
 
 libFlake TODO list

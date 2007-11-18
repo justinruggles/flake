@@ -8,6 +8,7 @@ version SVN : current
 - Added function to get version string: flake_get_version()
 - Added SVN revision to the version string. Also added the version string to 
   the commandline output
+- Added support for plain AIFF files
 
 version 0.11 : 5 August 2007
 - Significant speed improvements
