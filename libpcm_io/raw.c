@@ -25,16 +25,16 @@
 #include "pcm_io_common.h"
 #include "pcm_io.h"
 
-int
-pcmfile_probe_raw(uint8_t *data, int size)
+static int
+raw_probe(uint8_t *data, int size)
 {
     if(data == NULL || size < 0)
         return 0;
     return 1;
 }
 
-int
-pcmfile_init_raw(PcmFile *pf)
+static int
+raw_init(PcmFile *pf)
 {
     pcmfile_set_source_params(pf, 2, PCM_SAMPLE_FMT_S16, PCM_BYTE_ORDER_LE,
                               44100);
@@ -52,3 +52,11 @@ pcmfile_init_raw(PcmFile *pf)
 
     return 0;
 }
+
+PcmFormat raw_format = {
+    "raw",
+    "Raw PCM",
+    PCM_FORMAT_RAW,
+    raw_probe,
+    raw_init,
+};

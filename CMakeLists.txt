@@ -48,6 +48,7 @@ SET(FLAKE_SRCS flake/flake.c)
 
 SET(LIBPCM_IO_SRCS libpcm_io/byteio.c
                    libpcm_io/convert.c
+                   libpcm_io/formats.c
                    libpcm_io/pcm_io.c
                    libpcm_io/raw.c
                    libpcm_io/wav.c)

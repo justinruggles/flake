@@ -87,8 +87,6 @@ int
 pcmfile_init(PcmFile *pf, FILE *fp, enum PcmSampleFormat read_format,
              int file_format)
 {
-    int i;
-
     if(pf == NULL || fp == NULL) {
         fprintf(stderr, "null input to pcmfile_init()\n");
         return -1;
@@ -96,6 +94,7 @@ pcmfile_init(PcmFile *pf, FILE *fp, enum PcmSampleFormat read_format,
 
     pf->read_to_eof = 0;
     pf->file_format = file_format;
+    pf->pcm_format = NULL;
     pf->read_format = read_format;
 
     // attempt to get file size
@@ -128,40 +127,23 @@ pcmfile_init(PcmFile *pf, FILE *fp, enum PcmSampleFormat read_format,
     }
 
     // detect file format if not specified by the user
+    pcmfile_register_all_formats();
     if(pf->file_format == PCM_FORMAT_UNKNOWN) {
         uint8_t probe_data[12];
-        int probe_scores[2], probe_max;
         byteio_peek(probe_data, 12, &pf->io);
-        probe_max = 0;
-        for(i=0; i<2; i++) {
-            switch(i) {
-                case PCM_FORMAT_RAW:
-                    probe_scores[i] = pcmfile_probe_raw(probe_data, 12);
-                    break;
-                case PCM_FORMAT_WAVE:
-                    probe_scores[i] = pcmfile_probe_wave(probe_data, 12);
-                    break;
-            }
-            if(probe_scores[i] > probe_scores[probe_max])
-                probe_max = i;
-        }
-        pf->file_format = probe_max;
+        pf->pcm_format = pcmfile_probe_format(probe_data, 12);
+        pf->file_format = pf->pcm_format->format;
+    } else {
+        pf->pcm_format = pcmfile_find_format(pf->file_format);
+    }
+    if(pf->pcm_format == NULL) {
+        fprintf(stderr, "unable to detect file format\n");
+        return -1;
     }
 
     // initialize format
-    switch(pf->file_format) {
-        case PCM_FORMAT_RAW:
-            if(pcmfile_init_raw(pf))
-                return -1;
-            break;
-        case PCM_FORMAT_WAVE:
-            if(pcmfile_init_wave(pf))
-                return -1;
-            break;
-        default:
-            fprintf(stderr, "unknown file format\n");
-            return -1;
-    }
+    if(pf->pcm_format->init && pf->pcm_format->init(pf))
+        return -1;
 
     return 0;
 }
@@ -371,7 +353,7 @@ pcmfile_position_time_ms(PcmFile *pf)
 void
 pcmfile_print(PcmFile *pf, FILE *st)
 {
-    char *type, *chan, *fmt, *order;
+    const char *type, *chan, *fmt, *order;
     if(st == NULL || pf == NULL) return;
     type = "?";
     chan = "?-channel";
@@ -405,10 +387,8 @@ pcmfile_print(PcmFile *pf, FILE *st)
             default: chan = "multi-channel"; break;
         }
     }
-    switch(pf->file_format) {
-        case PCM_FORMAT_RAW:  fmt = "RAW"; break;
-        case PCM_FORMAT_WAVE: fmt = "WAVE"; break;
-    }
+    if(pf->pcm_format)
+        fmt = pf->pcm_format->long_name;
     switch(pf->order) {
         case PCM_BYTE_ORDER_LE: order = "little-endian"; break;
         case PCM_BYTE_ORDER_BE: order = "big-endian"; break;

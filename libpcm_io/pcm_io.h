@@ -102,6 +102,8 @@ enum PcmByteOrder {
     PCM_BYTE_ORDER_BE = 1
 };
 
+struct PcmFormat;
+
 /* main decoder context */
 typedef struct PcmFile {
     /** Format conversion function */
@@ -118,6 +120,7 @@ typedef struct PcmFile {
 
     int sample_type;        ///< sample type (integer or floating-point)
     int file_format;        ///< file format (raw, wav, etc...)
+    struct PcmFormat *pcm_format;   ///< pointer to PcmFormat struct
     int order;              ///< sample byte order
     int channels;           ///< number of channels
     uint32_t ch_mask;       ///< channel mask, indicates speaker locations
@@ -217,10 +220,21 @@ extern int pcmfile_get_default_ch_mask(int channels);
  * File format functions
  */
 
-extern int pcmfile_probe_raw(uint8_t *data, int size);
-extern int pcmfile_init_raw(PcmFile *pf);
+typedef struct PcmFormat {
+    const char *name;
+    const char *long_name;
+    int format;
+    int (*probe)(uint8_t *data, int size);
+    int (*init)(PcmFile *pf);
+    struct PcmFormat *next;
+} PcmFormat;
 
-extern int pcmfile_probe_wave(uint8_t *data, int size);
-extern int pcmfile_init_wave(PcmFile *pf);
+extern void pcmfile_register_all_formats(void);
+
+extern void pcmfile_register_format(PcmFormat *format);
+
+extern PcmFormat *pcmfile_find_format(int format);
+
+extern PcmFormat *pcmfile_probe_format(uint8_t *data, int size);
 
 #endif /* PCM_IO_H */

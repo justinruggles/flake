@@ -58,8 +58,8 @@ read2le(PcmFile *pf)
     return le2me_16(x);
 }
 
-int
-pcmfile_probe_wave(uint8_t *data, int size)
+static int
+wave_probe(uint8_t *data, int size)
 {
     int id;
 
@@ -76,8 +76,8 @@ pcmfile_probe_wave(uint8_t *data, int size)
     return 100;
 }
 
-int
-pcmfile_init_wave(PcmFile *pf)
+static int
+wave_init(PcmFile *pf)
 {
     int id, found_data, found_fmt, chunksize;
     int tag=1, channels=2, sample_rate=44100, block_align=4, bits=16, fmt=1;
@@ -213,3 +213,11 @@ pcmfile_init_wave(PcmFile *pf)
 
     return 0;
 }
+
+PcmFormat wave_format = {
+    "wave",
+    "Microsoft WAVE",
+    PCM_FORMAT_WAVE,
+    wave_probe,
+    wave_init,
+};
