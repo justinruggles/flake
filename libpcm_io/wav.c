@@ -108,28 +108,11 @@ pcmfile_init_wave(PcmFile *pf)
                     return -1;
                 }
                 pf->wav_format = read2le(pf);
-                if(pf->wav_format == WAVE_FORMAT_IEEEFLOAT) {
-                    pf->sample_type = PCM_SAMPLE_TYPE_FLOAT;
-                } else {
-                    pf->sample_type = PCM_SAMPLE_TYPE_INT;
-                }
                 pf->channels = read2le(pf);
-                if(pf->channels == 0) {
-                    fprintf(stderr, "invalid number of channels in wav header\n");
-                    return -1;
-                }
                 pf->sample_rate = read4le(pf);
-                if(pf->sample_rate == 0) {
-                    fprintf(stderr, "invalid sample rate in wav header\n");
-                    return -1;
-                }
                 pf->wav_bps = read4le(pf);
                 pf->block_align = read2le(pf);
                 pf->bit_width = read2le(pf);
-                if(pf->bit_width == 0) {
-                    fprintf(stderr, "invalid sample bit width in wav header\n");
-                    return -1;
-                }
                 chunksize -= 16;
 
                 // WAVE_FORMAT_EXTENSIBLE data
@@ -138,19 +121,29 @@ pcmfile_init_wave(PcmFile *pf)
                     read4le(pf);    // skip CbSize and ValidBitsPerSample
                     pf->ch_mask = read4le(pf);
                     pf->wav_format = read2le(pf);
-                    if(pf->wav_format == WAVE_FORMAT_IEEEFLOAT) {
-                        pf->sample_type = PCM_SAMPLE_TYPE_FLOAT;
-                    } else {
-                        pf->sample_type = PCM_SAMPLE_TYPE_INT;
-                    }
                     chunksize -= 10;
                 }
 
-                // override block alignment in header
-                if(pf->wav_format == WAVE_FORMAT_IEEEFLOAT ||
-                        pf->wav_format == WAVE_FORMAT_PCM) {
-                    pf->block_align = MAX(1, ((pf->bit_width + 7) >> 3) * pf->channels);
+                // check header params
+                if(pf->wav_format != WAVE_FORMAT_IEEEFLOAT && pf->wav_format != WAVE_FORMAT_PCM) {
+                    fprintf(stderr, "unsupported wFormatTag: 0x%02X\n", pf->wav_format);
+                    return -1;
                 }
+                if(pf->channels == 0) {
+                    fprintf(stderr, "invalid number of channels in wav header\n");
+                    return -1;
+                }
+                if(pf->sample_rate == 0) {
+                    fprintf(stderr, "invalid sample rate in wav header\n");
+                    return -1;
+                }
+                if(pf->bit_width == 0) {
+                    fprintf(stderr, "invalid sample bit width in wav header\n");
+                    return -1;
+                }
+
+                // override block alignment in header
+                    pf->block_align = MAX(1, ((pf->bit_width + 7) >> 3) * pf->channels);
 
                 // use default channel mask if necessary
                 if(pf->ch_mask == 0) {
@@ -197,13 +190,13 @@ pcmfile_init_wave(PcmFile *pf)
         case 20: pf->source_format = PCM_SAMPLE_FMT_S20; break;
         case 24: pf->source_format = PCM_SAMPLE_FMT_S24; break;
         case 32:
-            if(pf->sample_type == PCM_SAMPLE_TYPE_FLOAT)
+            if(pf->wav_format == WAVE_FORMAT_IEEEFLOAT)
                 pf->source_format = PCM_SAMPLE_FMT_FLT;
-            else if(pf->sample_type == PCM_SAMPLE_TYPE_INT)
+            else
                 pf->source_format = PCM_SAMPLE_FMT_S32;
             break;
         case 64:
-            if(pf->sample_type == PCM_SAMPLE_TYPE_FLOAT) {
+            if(pf->wav_format == WAVE_FORMAT_IEEEFLOAT) {
                 pf->source_format = PCM_SAMPLE_FMT_DBL;
             } else {
                 fprintf(stderr, "64-bit integer samples not supported\n");
