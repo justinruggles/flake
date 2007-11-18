@@ -36,23 +36,25 @@
  * Reads a 4-byte little-endian word from the input stream
  */
 static inline uint32_t
-read4le(ByteIOContext *io)
+read4le(PcmFile *pf)
 {
     uint32_t x;
-    if(byteio_read(&x, 4, io) != 4)
+    if(byteio_read(&x, 4, &pf->io) != 4)
         return 0;
+    pf->filepos += 4;
     return le2me_32(x);
 }
 
 /**
  * Reads a 2-byte little-endian word from the input stream
  */
-static uint16_t
-read2le(ByteIOContext *io)
+static inline uint16_t
+read2le(PcmFile *pf)
 {
     uint16_t x;
-    if(byteio_read(&x, 2, io) != 2)
+    if(byteio_read(&x, 2, &pf->io) != 2)
         return 0;
+    pf->filepos += 2;
     return le2me_16(x);
 }
 
@@ -80,18 +82,15 @@ pcmfile_init_wave(PcmFile *pf)
     int id, found_data, found_fmt, chunksize;
 
     // read RIFF id. ignore size.
-    id = read4le(&pf->io);
-    pf->filepos += 4;
+    id = read4le(pf);
     if(id != RIFF_ID) {
         fprintf(stderr, "invalid RIFF id in wav header\n");
         return -1;
     }
-    read4le(&pf->io);
-    pf->filepos += 4;
+    read4le(pf);
 
     // read WAVE id. ignore size.
-    id = read4le(&pf->io);
-    pf->filepos += 4;
+    id = read4le(pf);
     if(id != WAVE_ID) {
         fprintf(stderr, "invalid WAVE id in wav header\n");
         return -1;
@@ -100,41 +99,33 @@ pcmfile_init_wave(PcmFile *pf)
     // read all header chunks. skip unknown chunks.
     found_data = found_fmt = 0;
     while(!found_data) {
-        id = read4le(&pf->io);
-        pf->filepos += 4;
-        chunksize = read4le(&pf->io);
-        pf->filepos += 4;
+        id = read4le(pf);
+        chunksize = read4le(pf);
         switch(id) {
             case FMT__ID:
                 if(chunksize < 16) {
                     fprintf(stderr, "invalid fmt chunk in wav header\n");
                     return -1;
                 }
-                pf->wav_format = read2le(&pf->io);
-                pf->filepos += 2;
+                pf->wav_format = read2le(pf);
                 if(pf->wav_format == WAVE_FORMAT_IEEEFLOAT) {
                     pf->sample_type = PCM_SAMPLE_TYPE_FLOAT;
                 } else {
                     pf->sample_type = PCM_SAMPLE_TYPE_INT;
                 }
-                pf->channels = read2le(&pf->io);
-                pf->filepos += 2;
+                pf->channels = read2le(pf);
                 if(pf->channels == 0) {
                     fprintf(stderr, "invalid number of channels in wav header\n");
                     return -1;
                 }
-                pf->sample_rate = read4le(&pf->io);
-                pf->filepos += 4;
+                pf->sample_rate = read4le(pf);
                 if(pf->sample_rate == 0) {
                     fprintf(stderr, "invalid sample rate in wav header\n");
                     return -1;
                 }
-                pf->wav_bps = read4le(&pf->io);
-                pf->filepos += 4;
-                pf->block_align = read2le(&pf->io);
-                pf->filepos += 2;
-                pf->bit_width = read2le(&pf->io);
-                pf->filepos += 2;
+                pf->wav_bps = read4le(pf);
+                pf->block_align = read2le(pf);
+                pf->bit_width = read2le(pf);
                 if(pf->bit_width == 0) {
                     fprintf(stderr, "invalid sample bit width in wav header\n");
                     return -1;
@@ -144,17 +135,14 @@ pcmfile_init_wave(PcmFile *pf)
                 // WAVE_FORMAT_EXTENSIBLE data
                 pf->ch_mask = 0;
                 if(pf->wav_format == WAVE_FORMAT_EXTENSIBLE && chunksize >= 10) {
-                    read4le(&pf->io);    // skip CbSize and ValidBitsPerSample
-                    pf->filepos += 4;
-                    pf->ch_mask = read4le(&pf->io);
-                    pf->filepos += 4;
-                    pf->wav_format = read2le(&pf->io);
+                    read4le(pf);    // skip CbSize and ValidBitsPerSample
+                    pf->ch_mask = read4le(pf);
+                    pf->wav_format = read2le(pf);
                     if(pf->wav_format == WAVE_FORMAT_IEEEFLOAT) {
                         pf->sample_type = PCM_SAMPLE_TYPE_FLOAT;
                     } else {
                         pf->sample_type = PCM_SAMPLE_TYPE_INT;
                     }
-                    pf->filepos += 2;
                     chunksize -= 10;
                 }
 
