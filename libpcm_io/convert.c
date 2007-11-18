@@ -678,6 +678,8 @@ set_fmt_convert_from_double(PcmFile *pf)
         pf->fmt_convert = fmt_convert_double_to_double;
 }
 
+static const int format_bps[7] = { 8, 16, 20, 24, 32, 32, 64 };
+
 void
 pcmfile_set_source(PcmFile *pf, int fmt, int order)
 {
@@ -688,33 +690,27 @@ pcmfile_set_source(PcmFile *pf, int fmt, int order)
             break;
         case PCM_SAMPLE_FMT_U8:
             set_fmt_convert_from_u8(pf);
-            pf->bit_width = 8;
             break;
         case PCM_SAMPLE_FMT_S16:
             set_fmt_convert_from_s16(pf);
-            pf->bit_width = 16;
             break;
         case PCM_SAMPLE_FMT_S20:
             set_fmt_convert_from_s20(pf);
-            pf->bit_width = 20;
             break;
         case PCM_SAMPLE_FMT_S24:
             set_fmt_convert_from_s24(pf);
-            pf->bit_width = 24;
             break;
         case PCM_SAMPLE_FMT_S32:
             set_fmt_convert_from_s32(pf);
-            pf->bit_width = 32;
             break;
         case PCM_SAMPLE_FMT_FLT:
             set_fmt_convert_from_float(pf);
-            pf->bit_width = 32;
             break;
         case PCM_SAMPLE_FMT_DBL:
             set_fmt_convert_from_double(pf);
-            pf->bit_width = 64;
             break;
     }
+    pf->bit_width = format_bps[fmt];
     pf->block_align = MAX(1, ((pf->bit_width + 7) >> 3) * pf->channels);
     pf->samples = (pf->data_size / pf->block_align);
 }
