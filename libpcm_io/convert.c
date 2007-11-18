@@ -684,27 +684,13 @@ void
 pcmfile_set_source_format(PcmFile *pf, int fmt)
 {
     switch(fmt) {
-        case PCM_SAMPLE_FMT_U8:
-            set_fmt_convert_from_u8(pf);
-            break;
-        case PCM_SAMPLE_FMT_S16:
-            set_fmt_convert_from_s16(pf);
-            break;
-        case PCM_SAMPLE_FMT_S20:
-            set_fmt_convert_from_s20(pf);
-            break;
-        case PCM_SAMPLE_FMT_S24:
-            set_fmt_convert_from_s24(pf);
-            break;
-        case PCM_SAMPLE_FMT_S32:
-            set_fmt_convert_from_s32(pf);
-            break;
-        case PCM_SAMPLE_FMT_FLT:
-            set_fmt_convert_from_float(pf);
-            break;
-        case PCM_SAMPLE_FMT_DBL:
-            set_fmt_convert_from_double(pf);
-            break;
+        case PCM_SAMPLE_FMT_U8:  set_fmt_convert_from_u8(pf);     break;
+        case PCM_SAMPLE_FMT_S16: set_fmt_convert_from_s16(pf);    break;
+        case PCM_SAMPLE_FMT_S20: set_fmt_convert_from_s20(pf);    break;
+        case PCM_SAMPLE_FMT_S24: set_fmt_convert_from_s24(pf);    break;
+        case PCM_SAMPLE_FMT_S32: set_fmt_convert_from_s32(pf);    break;
+        case PCM_SAMPLE_FMT_FLT: set_fmt_convert_from_float(pf);  break;
+        case PCM_SAMPLE_FMT_DBL: set_fmt_convert_from_double(pf); break;
         default:
             pf->source_format = PCM_SAMPLE_FMT_UNKNOWN;
             pf->fmt_convert = NULL;
