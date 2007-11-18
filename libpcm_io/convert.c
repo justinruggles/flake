@@ -531,151 +531,25 @@ fmt_convert_double_to_double(void *dest_v, void *src_v, int n)
     memcpy(dest_v, src_v, n * sizeof(double));
 }
 
-static void
-set_fmt_convert_from_u8(PcmFile *pf)
-{
-    enum PcmSampleFormat fmt = pf->read_format;
 
-    if(fmt == PCM_SAMPLE_FMT_U8)
-        pf->fmt_convert = fmt_convert_u8_to_u8;
-    else if(fmt == PCM_SAMPLE_FMT_S16)
-        pf->fmt_convert = fmt_convert_u8_to_s16;
-    else if(fmt == PCM_SAMPLE_FMT_S20)
-        pf->fmt_convert = fmt_convert_u8_to_s20;
-    else if(fmt == PCM_SAMPLE_FMT_S24)
-        pf->fmt_convert = fmt_convert_u8_to_s24;
-    else if(fmt == PCM_SAMPLE_FMT_S32)
-        pf->fmt_convert = fmt_convert_u8_to_s32;
-    else if(fmt == PCM_SAMPLE_FMT_FLT)
-        pf->fmt_convert = fmt_convert_u8_to_float;
-    else if(fmt == PCM_SAMPLE_FMT_DBL)
-        pf->fmt_convert = fmt_convert_u8_to_double;
-}
-
-static void
-set_fmt_convert_from_s16(PcmFile *pf)
-{
-    enum PcmSampleFormat fmt = pf->read_format;
-
-    if(fmt == PCM_SAMPLE_FMT_U8)
-        pf->fmt_convert = fmt_convert_s16_to_u8;
-    else if(fmt == PCM_SAMPLE_FMT_S16)
-        pf->fmt_convert = fmt_convert_s16_to_s16;
-    else if(fmt == PCM_SAMPLE_FMT_S20)
-        pf->fmt_convert = fmt_convert_s16_to_s20;
-    else if(fmt == PCM_SAMPLE_FMT_S24)
-        pf->fmt_convert = fmt_convert_s16_to_s24;
-    else if(fmt == PCM_SAMPLE_FMT_S32)
-        pf->fmt_convert = fmt_convert_s16_to_s32;
-    else if(fmt == PCM_SAMPLE_FMT_FLT)
-        pf->fmt_convert = fmt_convert_s16_to_float;
-    else if(fmt == PCM_SAMPLE_FMT_DBL)
-        pf->fmt_convert = fmt_convert_s16_to_double;
-}
-
-static void
-set_fmt_convert_from_s20(PcmFile *pf)
-{
-    enum PcmSampleFormat fmt = pf->read_format;
-
-    if(fmt == PCM_SAMPLE_FMT_U8)
-        pf->fmt_convert = fmt_convert_s20_to_u8;
-    else if(fmt == PCM_SAMPLE_FMT_S16)
-        pf->fmt_convert = fmt_convert_s20_to_s16;
-    else if(fmt == PCM_SAMPLE_FMT_S20)
-        pf->fmt_convert = fmt_convert_s20_to_s20;
-    else if(fmt == PCM_SAMPLE_FMT_S24)
-        pf->fmt_convert = fmt_convert_s20_to_s24;
-    else if(fmt == PCM_SAMPLE_FMT_S32)
-        pf->fmt_convert = fmt_convert_s20_to_s32;
-    else if(fmt == PCM_SAMPLE_FMT_FLT)
-        pf->fmt_convert = fmt_convert_s20_to_float;
-    else if(fmt == PCM_SAMPLE_FMT_DBL)
-        pf->fmt_convert = fmt_convert_s20_to_double;
-}
-
-static void
-set_fmt_convert_from_s24(PcmFile *pf)
-{
-    enum PcmSampleFormat fmt = pf->read_format;
-
-    if(fmt == PCM_SAMPLE_FMT_U8)
-        pf->fmt_convert = fmt_convert_s24_to_u8;
-    else if(fmt == PCM_SAMPLE_FMT_S16)
-        pf->fmt_convert = fmt_convert_s24_to_s16;
-    else if(fmt == PCM_SAMPLE_FMT_S20)
-        pf->fmt_convert = fmt_convert_s24_to_s20;
-    else if(fmt == PCM_SAMPLE_FMT_S24)
-        pf->fmt_convert = fmt_convert_s24_to_s24;
-    else if(fmt == PCM_SAMPLE_FMT_S32)
-        pf->fmt_convert = fmt_convert_s24_to_s32;
-    else if(fmt == PCM_SAMPLE_FMT_FLT)
-        pf->fmt_convert = fmt_convert_s24_to_float;
-    else if(fmt == PCM_SAMPLE_FMT_DBL)
-        pf->fmt_convert = fmt_convert_s24_to_double;
-}
-
-static void
-set_fmt_convert_from_s32(PcmFile *pf)
-{
-    enum PcmSampleFormat fmt = pf->read_format;
-
-    if(fmt == PCM_SAMPLE_FMT_U8)
-        pf->fmt_convert = fmt_convert_s32_to_u8;
-    else if(fmt == PCM_SAMPLE_FMT_S16)
-        pf->fmt_convert = fmt_convert_s32_to_s16;
-    else if(fmt == PCM_SAMPLE_FMT_S20)
-        pf->fmt_convert = fmt_convert_s32_to_s20;
-    else if(fmt == PCM_SAMPLE_FMT_S24)
-        pf->fmt_convert = fmt_convert_s32_to_s24;
-    else if(fmt == PCM_SAMPLE_FMT_S32)
-        pf->fmt_convert = fmt_convert_s32_to_s32;
-    else if(fmt == PCM_SAMPLE_FMT_FLT)
-        pf->fmt_convert = fmt_convert_s32_to_float;
-    else if(fmt == PCM_SAMPLE_FMT_DBL)
-        pf->fmt_convert = fmt_convert_s32_to_double;
-}
-
-static void
-set_fmt_convert_from_float(PcmFile *pf)
-{
-    enum PcmSampleFormat fmt = pf->read_format;
-
-    if(fmt == PCM_SAMPLE_FMT_U8)
-        pf->fmt_convert = fmt_convert_float_to_u8;
-    else if(fmt == PCM_SAMPLE_FMT_S16)
-        pf->fmt_convert = fmt_convert_float_to_s16;
-    else if(fmt == PCM_SAMPLE_FMT_S20)
-        pf->fmt_convert = fmt_convert_float_to_s20;
-    else if(fmt == PCM_SAMPLE_FMT_S24)
-        pf->fmt_convert = fmt_convert_float_to_s24;
-    else if(fmt == PCM_SAMPLE_FMT_S32)
-        pf->fmt_convert = fmt_convert_float_to_s32;
-    else if(fmt == PCM_SAMPLE_FMT_FLT)
-        pf->fmt_convert = fmt_convert_float_to_float;
-    else if(fmt == PCM_SAMPLE_FMT_DBL)
-        pf->fmt_convert = fmt_convert_float_to_double;
-}
-
-static void
-set_fmt_convert_from_double(PcmFile *pf)
-{
-    enum PcmSampleFormat fmt = pf->read_format;
-
-    if(fmt == PCM_SAMPLE_FMT_U8)
-        pf->fmt_convert = fmt_convert_double_to_u8;
-    else if(fmt == PCM_SAMPLE_FMT_S16)
-        pf->fmt_convert = fmt_convert_double_to_s16;
-    else if(fmt == PCM_SAMPLE_FMT_S20)
-        pf->fmt_convert = fmt_convert_double_to_s20;
-    else if(fmt == PCM_SAMPLE_FMT_S24)
-        pf->fmt_convert = fmt_convert_double_to_s24;
-    else if(fmt == PCM_SAMPLE_FMT_S32)
-        pf->fmt_convert = fmt_convert_double_to_s32;
-    else if(fmt == PCM_SAMPLE_FMT_FLT)
-        pf->fmt_convert = fmt_convert_double_to_float;
-    else if(fmt == PCM_SAMPLE_FMT_DBL)
-        pf->fmt_convert = fmt_convert_double_to_double;
+#define SET_FMT_CONVERT_FROM(srcfmt, pf) \
+{ \
+    enum PcmSampleFormat fmt = pf->read_format; \
+ \
+    if(fmt == PCM_SAMPLE_FMT_U8) \
+        pf->fmt_convert = fmt_convert_##srcfmt##_to_u8; \
+    else if(fmt == PCM_SAMPLE_FMT_S16) \
+        pf->fmt_convert = fmt_convert_##srcfmt##_to_s16; \
+    else if(fmt == PCM_SAMPLE_FMT_S20) \
+        pf->fmt_convert = fmt_convert_##srcfmt##_to_s20; \
+    else if(fmt == PCM_SAMPLE_FMT_S24) \
+        pf->fmt_convert = fmt_convert_##srcfmt##_to_s24; \
+    else if(fmt == PCM_SAMPLE_FMT_S32) \
+        pf->fmt_convert = fmt_convert_##srcfmt##_to_s32; \
+    else if(fmt == PCM_SAMPLE_FMT_FLT) \
+        pf->fmt_convert = fmt_convert_##srcfmt##_to_float; \
+    else if(fmt == PCM_SAMPLE_FMT_DBL) \
+        pf->fmt_convert = fmt_convert_##srcfmt##_to_double; \
 }
 
 static const int format_bps[7] = { 8, 16, 20, 24, 32, 32, 64 };
@@ -684,13 +558,13 @@ void
 pcmfile_set_source_format(PcmFile *pf, int fmt)
 {
     switch(fmt) {
-        case PCM_SAMPLE_FMT_U8:  set_fmt_convert_from_u8(pf);     break;
-        case PCM_SAMPLE_FMT_S16: set_fmt_convert_from_s16(pf);    break;
-        case PCM_SAMPLE_FMT_S20: set_fmt_convert_from_s20(pf);    break;
-        case PCM_SAMPLE_FMT_S24: set_fmt_convert_from_s24(pf);    break;
-        case PCM_SAMPLE_FMT_S32: set_fmt_convert_from_s32(pf);    break;
-        case PCM_SAMPLE_FMT_FLT: set_fmt_convert_from_float(pf);  break;
-        case PCM_SAMPLE_FMT_DBL: set_fmt_convert_from_double(pf); break;
+        case PCM_SAMPLE_FMT_U8:  SET_FMT_CONVERT_FROM(u8,     pf); break;
+        case PCM_SAMPLE_FMT_S16: SET_FMT_CONVERT_FROM(s16,    pf); break;
+        case PCM_SAMPLE_FMT_S20: SET_FMT_CONVERT_FROM(s20,    pf); break;
+        case PCM_SAMPLE_FMT_S24: SET_FMT_CONVERT_FROM(s24,    pf); break;
+        case PCM_SAMPLE_FMT_S32: SET_FMT_CONVERT_FROM(s32,    pf); break;
+        case PCM_SAMPLE_FMT_FLT: SET_FMT_CONVERT_FROM(float,  pf); break;
+        case PCM_SAMPLE_FMT_DBL: SET_FMT_CONVERT_FROM(double, pf); break;
         default:
             pf->source_format = PCM_SAMPLE_FMT_UNKNOWN;
             pf->fmt_convert = NULL;
