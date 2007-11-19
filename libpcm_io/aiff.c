@@ -182,6 +182,7 @@ aiff_init(PcmFile *pf)
                 }
 
                 // skip any leftover bytes in fmt chunk
+                chunksize += chunksize & 1;
                 if(pcmfile_seek_set(pf, pf->filepos + chunksize)) {
                     fprintf(stderr, "error seeking in aiff file\n");
                     return -1;
@@ -211,6 +212,7 @@ aiff_init(PcmFile *pf)
                 break;
             default:
                 // skip unknown chunk
+                chunksize += chunksize & 1;
                 if(chunksize > 0 && pcmfile_seek_set(pf, pf->filepos + chunksize)) {
                     fprintf(stderr, "error seeking in aiff file\n");
                     return -1;
