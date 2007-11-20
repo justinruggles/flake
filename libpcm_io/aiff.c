@@ -196,7 +196,6 @@ aiff_init(PcmFile *pf)
                 }
                 offset = read4be(pf);
                 read4be(pf);
-                pf->filepos += 8;
                 if(pcmfile_seek_set(pf, pf->filepos + offset)) {
                     fprintf(stderr, "error seeking in aiff file\n");
                     return -1;
