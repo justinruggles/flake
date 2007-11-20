@@ -185,7 +185,7 @@ pcmfile_read_samples(PcmFile *pf, void *output, int num_samples)
     // allocate temporary buffer for raw input data
     bps = pf->block_align / pf->channels;
     buffer_size = (bps != 3) ? bytes_needed : num_samples * sizeof(int32_t) * pf->channels;
-    buffer = calloc(buffer_size, 1);
+    buffer = calloc(buffer_size+1, 1);
     if(!buffer) {
         fprintf(stderr, "error allocating read buffer\n");
         return -1;
@@ -224,16 +224,14 @@ pcmfile_read_samples(PcmFile *pf, void *output, int num_samples)
             int32_t *input = (int32_t*)buffer;
             int unused_bits = 32 - pf->bit_width;
             int32_t v;
-            // last sample could cause invalid mem access for little endians
-            // but instead of complex logic use simple solution...
-            for(i=0,j=0; i<(nsmp-1)*bps; i+=bps,j++) {
+            for(i=0,j=0; i<nsmp*bps; i+=bps,j++) {
 #ifdef WORDS_BIGENDIAN
                 if(pf->order == PCM_BYTE_ORDER_LE)
 #else
                 if(pf->order == PCM_BYTE_ORDER_BE)
 #endif
                 {
-                    v = read_buffer[i] | (read_buffer[i+1] << 8) | (read_buffer[i+2] << 16);
+                    v = be2me_32(*(int32_t*)(read_buffer + i));
                 } else {
                     v = *(int32_t*)(read_buffer + i);
                 }
@@ -241,10 +239,6 @@ pcmfile_read_samples(PcmFile *pf, void *output, int num_samples)
                 v >>= unused_bits; // sign extend
                 input[j] = v;
             }
-            v = read_buffer[i] | (read_buffer[i+1] << 8) | (read_buffer[i+2] << 16);
-            v <<= unused_bits; // clear unused high bits
-            v >>= unused_bits; // sign extend
-            input[j] = v;
         }
         break;
     case 4:
