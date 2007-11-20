@@ -231,7 +231,7 @@ pcmfile_read_samples(PcmFile *pf, void *output, int num_samples)
                 if(pf->order == PCM_BYTE_ORDER_BE)
 #endif
                 {
-                    v = be2me_32(*(int32_t*)(read_buffer + i));
+                    v = be2me_32((*(int32_t*)(read_buffer + i)) << 8);
                 } else {
                     v = *(int32_t*)(read_buffer + i);
                 }
