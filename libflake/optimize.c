@@ -36,36 +36,29 @@ encode_residual_fixed(int32_t res[], int32_t smp[], int n, int order)
 {
     int i;
 
+    if(order) {
+        memcpy(res, smp, order*sizeof(int32_t));
+    } else {
+        memcpy(res, smp, n*sizeof(int32_t));
+        return;
+    }
     switch(order) {
-        case 0:
-            memcpy(res, smp, n*sizeof(int32_t));
-            return;
         case 1:
-            res[0] = smp[0];
             for(i=1; i<n; i++) {
                 res[i] = smp[i] - (smp[i-1]);
             }
             return;
         case 2:
-            res[0] = smp[0];
-            res[1] = smp[1];
             for(i=2; i<n; i++) {
                 res[i] = smp[i] - (smp[i-1] << 1) + smp[i-2];
             }
             return;
         case 3:
-            res[0] = smp[0];
-            res[1] = smp[1];
-            res[2] = smp[2];
             for(i=3; i<n; i++) {
                 res[i] = smp[i] - 3*smp[i-1] + 3*smp[i-2] - smp[i-3];
             }
             return;
         case 4:
-            res[0] = smp[0];
-            res[1] = smp[1];
-            res[2] = smp[2];
-            res[3] = smp[3];
             for(i=4; i<n; i++) {
                 res[i] = smp[i] - (smp[i-1] << 2) + 6*smp[i-2] - (smp[i-3] << 2) + smp[i-4];
             }
