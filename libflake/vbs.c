@@ -102,7 +102,9 @@ encode_frame_vbs(FlacEncodeContext *ctx, const int16_t *samples, int block_size)
         fpos = 0;
         spos = 0;
         for(i=0; i<frames; i++) {
-            fs = encode_frame(ctx, &ctx->frame_buffer[fpos], ctx->frame_buffer_size-fpos, &samples[spos*ctx->channels], sizes[i]);
+            fs = encode_frame(ctx, &ctx->frame_buffer[fpos],
+                              ctx->frame_buffer_size-fpos,
+                              &samples[spos*ctx->channels], sizes[i]);
             if(fs < 0) {
                 ctx->frame_count = fc0;
                 return -1;
