@@ -26,13 +26,13 @@
 #include "rice.h"
 
 static void
-encode_residual_verbatim(int32_t res[], int32_t smp[], int n)
+encode_residual_verbatim(int32_t *res, int32_t *smp, int n)
 {
     memcpy(res, smp, n*sizeof(int32_t));
 }
 
 static void
-encode_residual_fixed(int32_t res[], int32_t smp[], int n, int order)
+encode_residual_fixed(int32_t *res, int32_t *smp, int n, int order)
 {
     int i;
 
@@ -68,8 +68,8 @@ encode_residual_fixed(int32_t res[], int32_t smp[], int n, int order)
 }
 
 static void
-encode_residual_lpc(int32_t res[], int32_t smp[], int n, int order,
-                    int32_t coefs[], int shift)
+encode_residual_lpc(int32_t *res, int32_t *smp, int n, int order,
+                    int32_t *coefs, int shift)
 {
     int i;
     int32_t pred;
