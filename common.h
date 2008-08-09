@@ -2,6 +2,9 @@
  * Flake: FLAC audio encoder
  * Copyright (c) 2006-2007 Justin Ruggles
  *
+ * STOP/START_TIMER is from FFmpeg libavutil/common.h
+ * Copyright (c) 2006 Michael Niedermayer <michaelni@gmx.at>
+ *
  * Flake is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -74,6 +77,38 @@ strnlen(const char *s, size_t maxlen)
 }
 #elif !defined(__USE_GNU)
 extern size_t strnlen(const char *s, size_t maxlen);
+#endif
+
+
+#if 0 /* TIMER USED FOR TESTING */
+static inline long long read_time(void)
+{
+    long long l;
+    __asm__ __volatile__("rdtsc\n\t"
+                 : "=A" (l));
+    return l;
+}
+
+#define START_TIMER \
+uint64_t tend;\
+uint64_t tstart = read_time();\
+
+#define STOP_TIMER(id) \
+tend= read_time();\
+{\
+    static uint64_t tsum=0;\
+    static int tcount=0;\
+    static int tskip_count=0;\
+    if(tcount<2 || tend - tstart < MAX(8*tsum/tcount, 2000)){\
+        tsum+= tend - tstart;\
+        tcount++;\
+    }else\
+        tskip_count++;\
+    if(((tcount+tskip_count)&(tcount+tskip_count-1))==0){\
+        fprintf(stderr, "%"PRIu64" dezicycles in %s, %d runs, %d skips\n",\
+               tsum*10/tcount, id, tcount, tskip_count);\
+    }\
+}
 #endif
 
 #endif /* COMMON_H */
