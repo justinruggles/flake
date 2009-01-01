@@ -6,14 +6,18 @@ General TODO list
 - Embedded album art
 - Add a test suite or integrate libFLAC's test suite
 - More documentation
+- FLAC-to-FLAC re-encoding with metadata preservation
 
 Flake TODO list
 ---------------
 - Commandline switches for raw audio input
 - AIFF-C input
+- CAFF input
 - Multi-character commandline switches
 
 libFlake TODO list
 ------------------
 - Redesign the metadata API
 - Better warning and error messages
+- Multi-threaded encoding
+- SIMD framework and porting of SIMD functions from FFmpeg
