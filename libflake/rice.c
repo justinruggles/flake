@@ -59,6 +59,8 @@ calc_optimal_rice_params(RiceContext *rc, int porder, uint64_t *sums,
         if(i == 1) cnt = (n >> porder);
         k = find_optimal_rice_param(sums[i], cnt);
         rc->params[i] = k;
+        if (k > MAX_RICE_PARAM_4BIT)
+            rc->method = ENCODING_METHOD_RICE2;
         all_bits += rice_encode_count(sums[i], cnt, k);
     }
     all_bits += (4 * part);
@@ -112,6 +114,8 @@ calc_rice_params(RiceContext *rc, int pmin, int pmax, int32_t *data, int n,
     assert(pmax >= 0 && pmax <= MAX_PARTITION_ORDER);
     assert(pmin <= pmax);
 
+    rc->method = ENCODING_METHOD_RICE;
+
     udata = malloc(n * sizeof(uint32_t));
     for(i=0; i<n; i++) {
         udata[i] = (2*data[i]) ^ (data[i]>>31);
@@ -147,9 +151,10 @@ calc_rice_params_fixed(RiceContext *rc, int pmin, int pmax, int32_t *data,
                        int n, int pred_order, int bps)
 {
     uint32_t bits;
+    int param_bits = rc->method + 4;
     pmin = get_max_p_order(pmin, n, pred_order);
     pmax = get_max_p_order(pmax, n, pred_order);
-    bits = pred_order*bps + 6;
+    bits = pred_order*bps + 2 + param_bits;
     bits += calc_rice_params(rc, pmin, pmax, data, n, pred_order);
     return bits;
 }
@@ -159,9 +164,10 @@ calc_rice_params_lpc(RiceContext *rc, int pmin, int pmax, int32_t *data, int n,
                      int pred_order, int bps, int precision)
 {
     uint32_t bits;
+    int param_bits = rc->method + 4;
     pmin = get_max_p_order(pmin, n, pred_order);
     pmax = get_max_p_order(pmax, n, pred_order);
-    bits = pred_order*bps + 4 + 5 + pred_order*precision + 6;
+    bits = pred_order*bps + 4 + 5 + pred_order*precision + 2 + param_bits;
     bits += calc_rice_params(rc, pmin, pmax, data, n, pred_order);
     return bits;
 }

@@ -725,7 +725,7 @@ static void
 output_residual(FlacEncodeContext *ctx, int ch)
 {
     int i, j, p;
-    int k, porder, psize, res_cnt;
+    int k, porder, psize, res_cnt, param_bits;
     FlacFrame *frame;
     FlacSubframe *sub;
 
@@ -743,10 +743,11 @@ output_residual(FlacEncodeContext *ctx, int ch)
     res_cnt = psize - sub->order;
 
     // residual
+    param_bits = 4 + sub->rc.method;
     j = sub->order;
     for(p=0; p<(1 << porder); p++) {
         k = sub->rc.params[p];
-        bitwriter_writebits(ctx->bw, 4, k);
+        bitwriter_writebits(ctx->bw, param_bits, k);
         for(i=0; i<res_cnt && j<frame->blocksize; i++, j++) {
             bitwriter_write_rice_signed(ctx->bw, k, sub->residual[j]);
         }

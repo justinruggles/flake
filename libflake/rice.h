@@ -27,11 +27,19 @@
 
 #include "common.h"
 
-#define MAX_RICE_PARAM          14
+#define MAX_RICE_PARAM_4BIT     14
+#define MAX_RICE_PARAM_5BIT     30
+#define MAX_RICE_PARAM          MAX_RICE_PARAM_5BIT
 #define MAX_PARTITION_ORDER     8
 #define MAX_PARTITIONS          (1 << MAX_PARTITION_ORDER)
 
+enum {
+    ENCODING_METHOD_RICE  = 0,
+    ENCODING_METHOD_RICE2 = 1
+};
+
 typedef struct RiceContext {
+    int method;
     int porder;                     /* partition order */
     int params[MAX_PARTITIONS];     /* Rice parameters */
     int esc_bps[MAX_PARTITIONS];    /* bps if using escape code */

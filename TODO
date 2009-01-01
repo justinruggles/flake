@@ -17,4 +17,3 @@ libFlake TODO list
 ------------------
 - Redesign the metadata API
 - Better warning and error messages
-- RICE2 encoding for 24-bit
