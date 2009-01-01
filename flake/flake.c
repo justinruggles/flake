@@ -420,7 +420,9 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
         fprintf(stderr, "Error initializing encoder.\n");
         return 1;
     }
-    fwrite(s.header, 1, header_size, files->ofp);
+    if (fwrite(s.header, 1, header_size, files->ofp) != 1) {
+        fprintf(stderr, "\nError writing header to output\n");
+    }
 
     // print encoding parameters
     if(first_file && !opts->quiet) {
@@ -451,7 +453,7 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
             ts = ts % 60;
             th = tm / 60;
             tm = tm % 60;
-            fprintf(stderr, "samples: %llu (", wf.samples);
+            fprintf(stderr, "samples: %"PRIu64" (", wf.samples);
             if(th) fprintf(stderr, "%dh", th);
             fprintf(stderr, "%dm", tm);
             fprintf(stderr, "%d.%03ds)\n", ts, (int)tms);
@@ -473,7 +475,9 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
         if(fs < 0) {
             fprintf(stderr, "\nError encoding frame\n");
         } else if(fs > 0) {
-            fwrite(frame, 1, fs, files->ofp);
+            if(fwrite(frame, 1, fs, files->ofp) != 1) {
+                fprintf(stderr, "\nError writing frame to output\n");
+            }
             samplecount = MAX(samplecount, samplecount+nr);
             if(!opts->quiet) {
                 bytecount += fs;
@@ -504,7 +508,9 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
         if(!flake_get_streaminfo(&s, &strminfo)) {
             uint8_t strminfo_data[34];
             flake_write_streaminfo(&strminfo, strminfo_data);
-            fwrite(strminfo_data, 1, 34, files->ofp);
+            if (fwrite(strminfo_data, 1, 34, files->ofp) != 1) {
+                fprintf(stderr, "\nError writing header to output\n");
+            }
         }
     }
 
