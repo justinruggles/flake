@@ -9,6 +9,8 @@ version SVN : current
 - Added SVN revision to the version string. Also added the version string to 
   the commandline output
 - Added support for plain AIFF files
+- API changed so that flake_encode_frame() takes 32-bit ints instead of 16-bit
+- Added support for lossless encoding of all valid FLAC bit depths (4 to 32)
 
 version 0.11 : 5 August 2007
 - Significant speed improvements
