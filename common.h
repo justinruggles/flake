@@ -83,10 +83,14 @@ extern size_t strnlen(const char *s, size_t maxlen);
 #if 0 /* TIMER USED FOR TESTING */
 static inline long long read_time(void)
 {
-    long long l;
-    __asm__ __volatile__("rdtsc\n\t"
-                 : "=A" (l));
-    return l;
+    union {
+        long x1[2];
+        long long x;
+    } l;
+    __asm__ __volatile__("rdtsc"
+                 : "=a" (l.x1[0]),
+                   "=d" (l.x1[1]));
+    return l.x;
 }
 
 #define START_TIMER \
