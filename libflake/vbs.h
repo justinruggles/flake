@@ -27,7 +27,7 @@
 
 #define VBS_MIN_BLOCK_SIZE (VBS_MAX_FRAMES * FLAC_MIN_BLOCKSIZE)
 
-extern int encode_frame_vbs(FlacEncodeContext *ctx, const int16_t *samples,
+extern int encode_frame_vbs(FlacEncodeContext *ctx, const int32_t *samples,
                             int block_size);
 
 #endif /* VBS_H */

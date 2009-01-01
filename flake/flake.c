@@ -360,13 +360,13 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
     PcmFile wf;
     int header_size, subset;
     uint8_t *frame;
-    int16_t *wav;
+    int32_t *wav;
     int percent;
     int fs;
     uint32_t nr, samplecount, bytecount;
     float kb, sec, kbps, wav_bytes;
 
-    if(pcmfile_init(&wf, files->ifp, PCM_SAMPLE_FMT_S16, PCM_FORMAT_UNKNOWN)) {
+    if(pcmfile_init(&wf, files->ifp, PCM_SAMPLE_FMT_S32, PCM_FORMAT_UNKNOWN)) {
         fprintf(stderr, "invalid input file: %s\n", files->infile);
         return 1;
     }
@@ -465,7 +465,7 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
     }
 
     frame = flake_get_buffer(&s);
-    wav = malloc(s.params.block_size * wf.channels * sizeof(int16_t));
+    wav = malloc(s.params.block_size * wf.channels * sizeof(int32_t));
 
     samplecount = percent = 0;
     wav_bytes = 0;

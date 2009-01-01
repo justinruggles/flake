@@ -169,6 +169,20 @@ md5_init(MD5Context *ctx)
 
     ctx->lo = 0;
     ctx->hi = 0;
+
+    ctx->data_buffer = NULL;
+    ctx->data_buffer_size = 0;
+}
+
+void
+md5_close(MD5Context *ctx)
+{
+    uint8_t result[16];
+    md5_final(result, ctx);
+    if (ctx->data_buffer)
+        free(ctx->data_buffer);
+    ctx->data_buffer = NULL;
+    ctx->data_buffer_size = 0;
 }
 
 void
@@ -255,29 +269,49 @@ md5_final(uint8_t *result, MD5Context *ctx)
     result[14] = ctx->d >> 16;
     result[15] = ctx->d >> 24;
 
-    memset(ctx, 0, sizeof(*ctx));
+    ctx->lo = ctx->hi = 0;
+    ctx->a = ctx->b = ctx->c = ctx->d = 0;
+    memset(ctx->buffer, 0, 64);
+    memset(ctx->block,  0, 64);
 }
 
 /**
  * Run md5_update on the audio signal byte stream
  */
 void
-md5_accumulate(MD5Context *ctx, const void *signal, int ch, int nsamples)
+md5_accumulate(MD5Context *ctx, const int32_t *signal, int ch, int bps,
+               int nsamples)
 {
-    int data_bytes = ch * nsamples * 2;
+    int i, j, k;
+    int bytes_per_sample, data_bytes;
 
-#ifdef WORDS_BIGENDIAN
-    int i;
-    uint16_t *sig16 = malloc(data_bytes);
-    memcpy(sig16, signal, data_bytes);
-    for(i=0; i<nsamples*ch; i++) {
-        sig16[i] = bswap_16(sig16[i]);
+    assert(ch > 0 && ch <= 8);
+    assert(bps > 0 && bps <= 32);
+    assert(nsamples >= 0);
+
+    if (!nsamples)
+        return;
+
+    bytes_per_sample = (bps + 7) >> 3;
+    data_bytes = ch * nsamples * bytes_per_sample;
+
+    if (ctx->data_buffer_size < data_bytes) {
+        ctx->data_buffer_size = 0;
+        ctx->data_buffer = realloc(ctx->data_buffer, data_bytes);
+        if (!ctx->data_buffer)
+            return;
+        ctx->data_buffer_size = data_bytes;
     }
-    md5_update(ctx, sig16, data_bytes);
-    free(sig16);
-#else
-    md5_update(ctx, signal, data_bytes);
-#endif
+
+    k = 0;
+    for (i = 0; i < nsamples * ch; i++) {
+        int32_t x = le2me_32(signal[i]);
+        uint8_t *xb = (uint8_t *)&x;
+        for (j = 0; j < bytes_per_sample; j++)
+            ctx->data_buffer[k++] = xb[j];
+    }
+
+    md5_update(ctx, ctx->data_buffer, data_bytes);
 }
 
 void

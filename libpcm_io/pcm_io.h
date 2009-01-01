@@ -40,7 +40,6 @@
 
 /* supported TWOCC WAVE formats */
 #define WAVE_FORMAT_PCM         0x0001
-#define WAVE_FORMAT_IEEEFLOAT   0x0003
 #define WAVE_FORMAT_EXTENSIBLE  0xFFFE
 
 /* speaker locations for channel mask */
@@ -71,12 +70,6 @@
 #define PCM_CHANNEL_LAYOUT_3_3_1  (PCM_CHANNEL_LAYOUT_3_2_1 | PCM_SPEAKER_BACK_CENTER)
 #define PCM_CHANNEL_LAYOUT_3_4_1  (PCM_CHANNEL_LAYOUT_3_2_1 | PCM_SPEAKERS_BACK)
 
-/* raw audio sample types */
-enum PcmSampleType {
-    PCM_SAMPLE_TYPE_INT = 0,
-    PCM_SAMPLE_TYPE_FLOAT
-};
-
 /* supported raw audio sample formats */
 enum PcmSampleFormat {
     PCM_SAMPLE_FMT_UNKNOWN = -1,
@@ -85,8 +78,12 @@ enum PcmSampleFormat {
     PCM_SAMPLE_FMT_S20,
     PCM_SAMPLE_FMT_S24,
     PCM_SAMPLE_FMT_S32,
-    PCM_SAMPLE_FMT_FLT,
-    PCM_SAMPLE_FMT_DBL
+};
+
+enum PcmDataFormat {
+    PCM_DATA_FORMAT_U8,
+    PCM_DATA_FORMAT_S16,
+    PCM_DATA_FORMAT_S32
 };
 
 /* supported file formats */
@@ -119,7 +116,6 @@ typedef struct PcmFile {
     uint64_t data_size;     ///< data size, in bytes
     uint64_t samples;       ///< total number of audio samples
 
-    int sample_type;        ///< sample type (integer or floating-point)
     int file_format;        ///< file format (raw, wav, etc...)
     struct PcmFormat *pcm_format;   ///< pointer to PcmFormat struct
     int order;              ///< sample byte order
@@ -129,8 +125,8 @@ typedef struct PcmFile {
     int block_align;        ///< bytes in each sample, for all channels
     int bit_width;          ///< bits-per-sample
 
-    int source_format;      ///< sample type in the input file
-    int read_format;        ///< sample type to convert to when reading
+    enum PcmSampleFormat source_format;      ///< sample type in the input file
+    enum PcmDataFormat   read_format;        ///< data type to convert to when reading
 
     int internal_fmt;       ///< internal format (e.g. WAVE wFormatTag)
     int wav_bps;            ///< WAVE bytes-per-second
@@ -142,7 +138,7 @@ typedef struct PcmFile {
  * pointer aligned at start of data when it exits.
  * Returns non-zero value if an error occurs.
  */
-extern int pcmfile_init(PcmFile *pf, FILE *fp, int read_format, int file_format);
+extern int pcmfile_init(PcmFile *pf, FILE *fp, enum PcmDataFormat read_format, int file_format);
 
 /**
  * Frees memory from internal buffer.
@@ -152,17 +148,17 @@ extern void pcmfile_close(PcmFile *pf);
 /**
  * Sets the source sample format
  */
-extern void pcmfile_set_source_format(PcmFile *pf, int fmt);
+extern void pcmfile_set_source_format(PcmFile *pf, enum PcmSampleFormat fmt);
 
 /**
  * Sets the source audio information
  */
-extern void pcmfile_set_source_params(PcmFile *pf, int ch, int fmt, int order, int sr);
+extern void pcmfile_set_source_params(PcmFile *pf, int ch, enum PcmSampleFormat fmt, int order, int sr);
 
 /**
  * Sets the requested read format
  */
-extern void pcmfile_set_read_format(PcmFile *pf, int read_format);
+extern void pcmfile_set_read_format(PcmFile *pf, enum PcmDataFormat read_format);
 
 /**
  * Reads audio samples to the output buffer.

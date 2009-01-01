@@ -78,28 +78,6 @@ fmt_convert_s32_to_u8(void *dest_v, void *src_v, int n)
 }
 
 static void
-fmt_convert_float_to_u8(void *dest_v, void *src_v, int n)
-{
-    uint8_t *dest = dest_v;
-    float *src = src_v;
-    int i;
-
-    for(i=0; i<n; i++)
-        dest[i] = (uint8_t)CLIP(((src[i] * 128) + 128), 0, 255);
-}
-
-static void
-fmt_convert_double_to_u8(void *dest_v, void *src_v, int n)
-{
-    uint8_t *dest = dest_v;
-    double *src = src_v;
-    int i;
-
-    for(i=0; i<n; i++)
-        dest[i] = (uint8_t)CLIP(((src[i] * 128) + 128), 0, 255);
-}
-
-static void
 fmt_convert_u8_to_s16(void *dest_v, void *src_v, int n)
 {
     int16_t *dest = dest_v;
@@ -107,7 +85,7 @@ fmt_convert_u8_to_s16(void *dest_v, void *src_v, int n)
     int i;
 
     for(i=0; i<n; i++)
-        dest[i] = (src[i] - 128) << 8;
+        dest[i] = (int)src[i] - 128;
 }
 
 static void
@@ -150,172 +128,6 @@ fmt_convert_s32_to_s16(void *dest_v, void *src_v, int n)
 }
 
 static void
-fmt_convert_float_to_s16(void *dest_v, void *src_v, int n)
-{
-    int16_t *dest = dest_v;
-    float *src = src_v;
-    int i;
-
-    for(i=0; i<n; i++)
-        dest[i] = (int16_t)CLIP((src[i] * 32768), -32768, 32767);
-}
-
-static void
-fmt_convert_double_to_s16(void *dest_v, void *src_v, int n)
-{
-    int16_t *dest = dest_v;
-    double *src = src_v;
-    int i;
-
-    for(i=0; i<n; i++)
-        dest[i] = (int16_t)CLIP((src[i] * 32768), -32768, 32767);
-}
-
-static void
-fmt_convert_u8_to_s20(void *dest_v, void *src_v, int n)
-{
-    int32_t *dest = dest_v;
-    uint8_t *src = src_v;
-    int i;
-
-    for(i=0; i<n; i++)
-        dest[i] = (src[i] - 128) << 12;
-}
-
-static void
-fmt_convert_s16_to_s20(void *dest_v, void *src_v, int n)
-{
-    int32_t *dest = dest_v;
-    int16_t *src = src_v;
-    int i;
-
-    for(i=0; i<n; i++)
-        dest[i] = (src[i] << 4);
-}
-
-static void
-fmt_convert_s20_to_s20(void *dest_v, void *src_v, int n)
-{
-    memcpy(dest_v, src_v, n * sizeof(int32_t));
-}
-
-static void
-fmt_convert_s24_to_s20(void *dest_v, void *src_v, int n)
-{
-    int32_t *dest = dest_v;
-    int32_t *src = src_v;
-    int i;
-
-    for(i=0; i<n; i++)
-        dest[i] = (src[i] >> 4);
-}
-
-static void
-fmt_convert_s32_to_s20(void *dest_v, void *src_v, int n)
-{
-    int32_t *dest = dest_v;
-    int32_t *src = src_v;
-    int i;
-
-    for(i=0; i<n; i++)
-        dest[i] = (src[i] >> 12);
-}
-
-static void
-fmt_convert_float_to_s20(void *dest_v, void *src_v, int n)
-{
-    int32_t *dest = dest_v;
-    float *src = src_v;
-    int i;
-
-    for(i=0; i<n; i++)
-        dest[i] = (int32_t)CLIP((src[i] * 524288), -524288, 524287);
-}
-
-static void
-fmt_convert_double_to_s20(void *dest_v, void *src_v, int n)
-{
-    int32_t *dest = dest_v;
-    double *src = src_v;
-    int i;
-
-    for(i=0; i<n; i++)
-        dest[i] = (int32_t)CLIP((src[i] * 524288), -524288, 524287);
-}
-
-static void
-fmt_convert_u8_to_s24(void *dest_v, void *src_v, int n)
-{
-    int32_t *dest = dest_v;
-    uint8_t *src = src_v;
-    int i;
-
-    for(i=0; i<n; i++)
-        dest[i] = (src[i] - 128) << 16;
-}
-
-static void
-fmt_convert_s16_to_s24(void *dest_v, void *src_v, int n)
-{
-    int32_t *dest = dest_v;
-    int16_t *src = src_v;
-    int i;
-
-    for(i=0; i<n; i++)
-        dest[i] = (src[i] << 8);
-}
-
-static void
-fmt_convert_s20_to_s24(void *dest_v, void *src_v, int n)
-{
-    int32_t *dest = dest_v;
-    int32_t *src = src_v;
-    int i;
-
-    for(i=0; i<n; i++)
-        dest[i] = (src[i] << 4);
-}
-
-static void
-fmt_convert_s24_to_s24(void *dest_v, void *src_v, int n)
-{
-    memcpy(dest_v, src_v, n * sizeof(int32_t));
-}
-
-static void
-fmt_convert_s32_to_s24(void *dest_v, void *src_v, int n)
-{
-    int32_t *dest = dest_v;
-    int32_t *src = src_v;
-    int i;
-
-    for(i=0; i<n; i++)
-        dest[i] = (src[i] >> 8);
-}
-
-static void
-fmt_convert_float_to_s24(void *dest_v, void *src_v, int n)
-{
-    int32_t *dest = dest_v;
-    float *src = src_v;
-    int i;
-
-    for(i=0; i<n; i++)
-        dest[i] = (int32_t)CLIP((src[i] * 8388608), -8388608, 8388607);
-}
-
-static void
-fmt_convert_double_to_s24(void *dest_v, void *src_v, int n)
-{
-    int32_t *dest = dest_v;
-    double *src = src_v;
-    int i;
-
-    for(i=0; i<n; i++)
-        dest[i] = (int32_t)CLIP((src[i] * 8388608), -8388608, 8388607);
-}
-
-static void
 fmt_convert_u8_to_s32(void *dest_v, void *src_v, int n)
 {
     int32_t *dest = dest_v;
@@ -323,7 +135,7 @@ fmt_convert_u8_to_s32(void *dest_v, void *src_v, int n)
     int i;
 
     for(i=0; i<n; i++)
-        dest[i] = (src[i] - 128) << 24;
+        dest[i] = (int)src[i] - 128;
 }
 
 static void
@@ -334,201 +146,25 @@ fmt_convert_s16_to_s32(void *dest_v, void *src_v, int n)
     int i;
 
     for(i=0; i<n; i++)
-        dest[i] = (src[i] << 16);
+        dest[i] = src[i];
 }
 
 static void
 fmt_convert_s20_to_s32(void *dest_v, void *src_v, int n)
 {
-    int32_t *dest = dest_v;
-    int32_t *src = src_v;
-    int i;
-
-    for(i=0; i<n; i++)
-        dest[i] = (src[i] << 12);
+    memcpy(dest_v, src_v, n * sizeof(int32_t));
 }
 
 static void
 fmt_convert_s24_to_s32(void *dest_v, void *src_v, int n)
 {
-    int32_t *dest = dest_v;
-    int32_t *src = src_v;
-    int i;
-
-    for(i=0; i<n; i++)
-        dest[i] = (src[i] << 8);
+    memcpy(dest_v, src_v, n * sizeof(int32_t));
 }
 
 static void
 fmt_convert_s32_to_s32(void *dest_v, void *src_v, int n)
 {
     memcpy(dest_v, src_v, n * sizeof(int32_t));
-}
-
-static void
-fmt_convert_float_to_s32(void *dest_v, void *src_v, int n)
-{
-    int32_t *dest = dest_v;
-    float *src = src_v;
-    int i;
-
-    for(i=0; i<n; i++)
-        dest[i] = (int32_t)(src[i] * 2147483648LL);
-}
-
-static void
-fmt_convert_double_to_s32(void *dest_v, void *src_v, int n)
-{
-    int32_t *dest = dest_v;
-    double *src = src_v;
-    int i;
-
-    for(i=0; i<n; i++)
-        dest[i] = (int32_t)(src[i] * 2147483648LL);
-}
-
-static void
-fmt_convert_u8_to_float(void *dest_v, void *src_v, int n)
-{
-    float *dest = dest_v;
-    uint8_t *src = src_v;
-    int i;
-
-    for(i=0; i<n; i++)
-        dest[i] = (src[i] - 128.0f) / 128.0f;
-}
-
-static void
-fmt_convert_s16_to_float(void *dest_v, void *src_v, int n)
-{
-    float *dest = dest_v;
-    int16_t *src = src_v;
-    int i;
-
-    for(i=0; i<n; i++)
-        dest[i] = src[i] / 32768.0f;
-}
-
-static void
-fmt_convert_s20_to_float(void *dest_v, void *src_v, int n)
-{
-    float *dest = dest_v;
-    int32_t *src = src_v;
-    int i;
-
-    for(i=0; i<n; i++)
-        dest[i] = src[i] / 524288.0f;
-}
-
-static void
-fmt_convert_s24_to_float(void *dest_v, void *src_v, int n)
-{
-    float *dest = dest_v;
-    int32_t *src = src_v;
-    int i;
-
-    for(i=0; i<n; i++)
-        dest[i] = src[i] / 8388608.0f;
-}
-
-static void
-fmt_convert_s32_to_float(void *dest_v, void *src_v, int n)
-{
-    float *dest = dest_v;
-    int32_t *src = src_v;
-    int i;
-
-    for(i=0; i<n; i++)
-        dest[i] = src[i] / 2147483648.0f;
-}
-
-static void
-fmt_convert_float_to_float(void *dest_v, void *src_v, int n)
-{
-    memcpy(dest_v, src_v, n * sizeof(float));
-}
-
-static void
-fmt_convert_double_to_float(void *dest_v, void *src_v, int n)
-{
-    float *dest = dest_v;
-    double *src = src_v;
-    int i;
-
-    for(i=0; i<n; i++)
-        dest[i] = (float)src[i];
-}
-
-static void
-fmt_convert_u8_to_double(void *dest_v, void *src_v, int n)
-{
-    double *dest = dest_v;
-    uint8_t *src = src_v;
-    int i;
-
-    for(i=0; i<n; i++)
-        dest[i] = (src[i] - 128.0) / 128.0;
-}
-
-static void
-fmt_convert_s16_to_double(void *dest_v, void *src_v, int n)
-{
-    double *dest = dest_v;
-    int16_t *src = src_v;
-    int i;
-
-    for(i=0; i<n; i++)
-        dest[i] = src[i] / 32768.0;
-}
-
-static void
-fmt_convert_s20_to_double(void *dest_v, void *src_v, int n)
-{
-    double *dest = dest_v;
-    int32_t *src = src_v;
-    int i;
-
-    for(i=0; i<n; i++)
-        dest[i] = src[i] / 524288.0;
-}
-
-static void
-fmt_convert_s24_to_double(void *dest_v, void *src_v, int n)
-{
-    double *dest = dest_v;
-    int32_t *src = src_v;
-    int i;
-
-    for(i=0; i<n; i++)
-        dest[i] = src[i] / 8388608.0;
-}
-
-static void
-fmt_convert_s32_to_double(void *dest_v, void *src_v, int n)
-{
-    double *dest = dest_v;
-    int32_t *src = src_v;
-    int i;
-
-    for(i=0; i<n; i++)
-        dest[i] = src[i] / 2147483648.0;
-}
-
-static void
-fmt_convert_float_to_double(void *dest_v, void *src_v, int n)
-{
-    double *dest = dest_v;
-    float *src = src_v;
-    int i;
-
-    for(i=0; i<n; i++)
-        dest[i] = src[i];
-}
-
-static void
-fmt_convert_double_to_double(void *dest_v, void *src_v, int n)
-{
-    memcpy(dest_v, src_v, n * sizeof(double));
 }
 
 
@@ -540,22 +176,14 @@ fmt_convert_double_to_double(void *dest_v, void *src_v, int n)
         pf->fmt_convert = fmt_convert_##srcfmt##_to_u8; \
     else if(fmt == PCM_SAMPLE_FMT_S16) \
         pf->fmt_convert = fmt_convert_##srcfmt##_to_s16; \
-    else if(fmt == PCM_SAMPLE_FMT_S20) \
-        pf->fmt_convert = fmt_convert_##srcfmt##_to_s20; \
-    else if(fmt == PCM_SAMPLE_FMT_S24) \
-        pf->fmt_convert = fmt_convert_##srcfmt##_to_s24; \
     else if(fmt == PCM_SAMPLE_FMT_S32) \
         pf->fmt_convert = fmt_convert_##srcfmt##_to_s32; \
-    else if(fmt == PCM_SAMPLE_FMT_FLT) \
-        pf->fmt_convert = fmt_convert_##srcfmt##_to_float; \
-    else if(fmt == PCM_SAMPLE_FMT_DBL) \
-        pf->fmt_convert = fmt_convert_##srcfmt##_to_double; \
 }
 
 static const int format_bps[7] = { 8, 16, 20, 24, 32, 32, 64 };
 
 void
-pcmfile_set_source_format(PcmFile *pf, int fmt)
+pcmfile_set_source_format(PcmFile *pf, enum PcmSampleFormat fmt)
 {
     switch(fmt) {
         case PCM_SAMPLE_FMT_U8:  SET_FMT_CONVERT_FROM(u8,     pf); break;
@@ -563,17 +191,11 @@ pcmfile_set_source_format(PcmFile *pf, int fmt)
         case PCM_SAMPLE_FMT_S20: SET_FMT_CONVERT_FROM(s20,    pf); break;
         case PCM_SAMPLE_FMT_S24: SET_FMT_CONVERT_FROM(s24,    pf); break;
         case PCM_SAMPLE_FMT_S32: SET_FMT_CONVERT_FROM(s32,    pf); break;
-        case PCM_SAMPLE_FMT_FLT: SET_FMT_CONVERT_FROM(float,  pf); break;
-        case PCM_SAMPLE_FMT_DBL: SET_FMT_CONVERT_FROM(double, pf); break;
         default:
             pf->source_format = PCM_SAMPLE_FMT_UNKNOWN;
             pf->fmt_convert = NULL;
             return;
     }
-    if(fmt == PCM_SAMPLE_FMT_FLT || fmt == PCM_SAMPLE_FMT_DBL)
-        pf->sample_type = PCM_SAMPLE_TYPE_FLOAT;
-    else
-        pf->sample_type = PCM_SAMPLE_TYPE_INT;
     pf->source_format = fmt;
     pf->bit_width = format_bps[fmt];
     pf->block_align = MAX(1, ((pf->bit_width + 7) >> 3) * pf->channels);
@@ -581,7 +203,7 @@ pcmfile_set_source_format(PcmFile *pf, int fmt)
 }
 
 void
-pcmfile_set_source_params(PcmFile *pf, int ch, int fmt, int order, int sr)
+pcmfile_set_source_params(PcmFile *pf, int ch, enum PcmSampleFormat fmt, int order, int sr)
 {
     pf->channels = MAX(ch, 1);
     pf->ch_mask = pcmfile_get_default_ch_mask(ch);
@@ -591,8 +213,8 @@ pcmfile_set_source_params(PcmFile *pf, int ch, int fmt, int order, int sr)
 }
 
 void
-pcmfile_set_read_format(PcmFile *pf, int read_format)
+pcmfile_set_read_format(PcmFile *pf, enum PcmDataFormat read_format)
 {
-    pf->read_format = CLIP(read_format, PCM_SAMPLE_FMT_U8, PCM_SAMPLE_FMT_DBL);
+    pf->read_format = CLIP(read_format, PCM_DATA_FORMAT_U8, PCM_DATA_FORMAT_S32);
     pcmfile_set_source_format(pf, pf->source_format);
 }

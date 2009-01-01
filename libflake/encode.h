@@ -93,6 +93,6 @@ typedef struct FlacEncodeContext {
 } FlacEncodeContext;
 
 extern int encode_frame(FlacEncodeContext *s, uint8_t *frame_buffer,
-                        int buf_size, const int16_t *samples, int block_size);
+                        int buf_size, const int32_t *samples, int block_size);
 
 #endif /* FLAC_H */

@@ -85,7 +85,7 @@ pcmfile_seek_set(PcmFile *pf, uint64_t dest)
 }
 
 int
-pcmfile_init(PcmFile *pf, FILE *fp, enum PcmSampleFormat read_format,
+pcmfile_init(PcmFile *pf, FILE *fp, enum PcmDataFormat read_format,
              int file_format)
 {
     if(pf == NULL || fp == NULL) {
@@ -345,20 +345,11 @@ pcmfile_position_time_ms(PcmFile *pf)
 void
 pcmfile_print(PcmFile *pf, FILE *st)
 {
-    const char *type, *chan, *fmt, *order;
+    const char *chan, *fmt, *order;
     if(st == NULL || pf == NULL) return;
-    type = "?";
     chan = "?-channel";
     fmt = "unknown";
     order = "?-endian";
-    if(pf->sample_type == PCM_SAMPLE_TYPE_INT) {
-        if(pf->bit_width > 8) type = "Signed";
-        else type = "Unsigned";
-    } else if(pf->sample_type == PCM_SAMPLE_TYPE_FLOAT) {
-        type = "Floating-point";
-    } else {
-        type = "[unsupported type]";
-    }
     if(pf->ch_mask & 0x08) {
         switch(pf->channels-1) {
             case 1: chan = "1.1-channel"; break;
@@ -385,7 +376,7 @@ pcmfile_print(PcmFile *pf, FILE *st)
         case PCM_BYTE_ORDER_LE: order = "little-endian"; break;
         case PCM_BYTE_ORDER_BE: order = "big-endian"; break;
     }
-    fprintf(st, "%s %s %d-bit %s %d Hz %s\n", fmt, type, pf->bit_width, order,
+    fprintf(st, "%s %d-bit %s %d Hz %s\n", fmt, pf->bit_width, order,
             pf->sample_rate, chan);
 }
 

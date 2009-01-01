@@ -533,7 +533,7 @@ init_frame(FlacEncodeContext *ctx, int block_size)
  * Copy channel-interleaved input samples into separate subframes
  */
 static void
-copy_samples(FlacEncodeContext *ctx, const int16_t *samples)
+copy_samples(FlacEncodeContext *ctx, const int32_t *samples)
 {
     int i, j, ch;
     FlacFrame *frame;
@@ -867,7 +867,7 @@ output_frame_footer(FlacEncodeContext *ctx)
 
 int
 encode_frame(FlacEncodeContext *ctx, uint8_t *frame_buffer, int buf_size,
-             const int16_t *samples, int block_size)
+             const int32_t *samples, int block_size)
 {
     int i, ch;
 
@@ -924,7 +924,7 @@ encode_frame(FlacEncodeContext *ctx, uint8_t *frame_buffer, int buf_size,
 }
 
 int
-flake_encode_frame(FlakeContext *s, const int16_t *samples, int block_size)
+flake_encode_frame(FlakeContext *s, const int *samples, int block_size)
 {
     int fs;
     FlacEncodeContext *ctx;
@@ -950,7 +950,7 @@ flake_encode_frame(FlakeContext *s, const int16_t *samples, int block_size)
                           block_size);
     }
     if(fs > 0)
-        md5_accumulate(&ctx->md5ctx, samples, ctx->channels, block_size);
+        md5_accumulate(&ctx->md5ctx, samples, ctx->channels, ctx->bps, block_size);
     return fs;
 }
 
@@ -965,6 +965,7 @@ flake_encode_close(FlakeContext *s)
     if(ctx) {
         if(ctx->bw) free(ctx->bw);
         if(ctx->frame_buffer) free(ctx->frame_buffer);
+        md5_close(&ctx->md5ctx);
         free(ctx);
     }
     if(s->header) free(s->header);

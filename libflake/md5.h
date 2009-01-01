@@ -19,16 +19,20 @@ typedef struct {
     uint32_t a, b, c, d;
     uint8_t buffer[64];
     uint32_t block[16];
+    uint8_t *data_buffer;
+    int data_buffer_size;
 } MD5Context;
 
 extern void md5_init(MD5Context *ctx);
+
+extern void md5_close(MD5Context *ctx);
 
 extern void md5_update(MD5Context *ctx, const void *data, uint32_t size);
 
 extern void md5_final(uint8_t *result, MD5Context *ctx);
 
-extern void md5_accumulate(MD5Context *ctx, const void *signal, int ch,
-                           int nsamples);
+extern void md5_accumulate(MD5Context *ctx, const int32_t *signal, int ch,
+                           int bps, int nsamples);
 
 extern void md5_print(uint8_t digest[16]);
 

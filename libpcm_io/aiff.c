@@ -130,7 +130,8 @@ aiff_init(PcmFile *pf)
 {
     int id, found_ssnd, found_comm, chunksize, offset;
     ExtFloat srate_ext;
-    int channels=2, sample_rate=44100, block_align=4, bits=16, fmt=2;
+    int channels=2, sample_rate=44100, block_align=4, bits=16;
+    enum PcmSampleFormat fmt = PCM_SAMPLE_FMT_S16;
 
     // read FORM id. ignore size.
     id = read4be(pf);

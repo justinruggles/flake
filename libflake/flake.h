@@ -226,7 +226,7 @@ FLAKE_API int flake_encode_init(FlakeContext *s);
 
 FLAKE_API void *flake_get_buffer(const FlakeContext *s);
 
-FLAKE_API int flake_encode_frame(FlakeContext *s, const short *samples,
+FLAKE_API int flake_encode_frame(FlakeContext *s, const int *samples,
                                  int block_size);
 
 FLAKE_API void flake_encode_close(FlakeContext *s);

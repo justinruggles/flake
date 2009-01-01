@@ -34,14 +34,14 @@
  * threshold.
  */
 static void
-split_frame_v1(const int16_t *samples, int channels, int block_size,
+split_frame_v1(const int32_t *samples, int channels, int block_size,
                int *frames, int sizes[VBS_MAX_FRAMES])
 {
     int i, ch, j;
     int n = block_size / VBS_MAX_FRAMES;
     int64_t res[VBS_MAX_FRAMES];
     int layout[VBS_MAX_FRAMES];
-    const int16_t *sptr, *sptr0, *sptr1, *sptr2;
+    const int32_t *sptr, *sptr0, *sptr1, *sptr2;
 
     // calculate absolute sum of 2nd order residual
     for(i=0; i<VBS_MAX_FRAMES; i++) {
@@ -83,7 +83,7 @@ split_frame_v1(const int16_t *samples, int channels, int block_size,
 }
 
 int
-encode_frame_vbs(FlacEncodeContext *ctx, const int16_t *samples, int block_size)
+encode_frame_vbs(FlacEncodeContext *ctx, const int32_t *samples, int block_size)
 {
     int fs = -1;
     int frames;

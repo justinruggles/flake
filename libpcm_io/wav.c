@@ -80,7 +80,8 @@ static int
 wave_init(PcmFile *pf)
 {
     int id, found_data, found_fmt, chunksize;
-    int tag=1, channels=2, sample_rate=44100, block_align=4, bits=16, fmt=1;
+    int tag=1, channels=2, sample_rate=44100, block_align=4, bits=16;
+    enum PcmSampleFormat fmt = PCM_SAMPLE_FMT_S16;
 
     // read RIFF id. ignore size.
     id = read4le(pf);
@@ -126,7 +127,7 @@ wave_init(PcmFile *pf)
                 }
 
                 // check header params
-                if(tag != WAVE_FORMAT_IEEEFLOAT && tag != WAVE_FORMAT_PCM) {
+                if(tag != WAVE_FORMAT_PCM) {
                     fprintf(stderr, "unsupported wFormatTag: 0x%02X\n", tag);
                     return -1;
                 }
@@ -193,18 +194,7 @@ wave_init(PcmFile *pf)
         case 20: fmt = PCM_SAMPLE_FMT_S20; break;
         case 24: fmt = PCM_SAMPLE_FMT_S24; break;
         case 32:
-            if(tag == WAVE_FORMAT_IEEEFLOAT)
-                fmt = PCM_SAMPLE_FMT_FLT;
-            else
                 fmt = PCM_SAMPLE_FMT_S32;
-            break;
-        case 64:
-            if(tag == WAVE_FORMAT_IEEEFLOAT) {
-                fmt = PCM_SAMPLE_FMT_DBL;
-            } else {
-                fprintf(stderr, "64-bit integer samples not supported\n");
-                return -1;
-            }
             break;
         default:
             fprintf(stderr, "unsupported bit depth: %d\n", bits);
