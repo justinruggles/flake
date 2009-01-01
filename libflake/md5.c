@@ -295,6 +295,7 @@ md5_accumulate(MD5Context *ctx, const int32_t *signal, int ch, int bps,
     bytes_per_sample = (bps + 7) >> 3;
     data_bytes = ch * nsamples * bytes_per_sample;
 
+    /* allocate data buffer, if needed */
     if (ctx->data_buffer_size < data_bytes) {
         ctx->data_buffer_size = 0;
         ctx->data_buffer = realloc(ctx->data_buffer, data_bytes);
@@ -303,6 +304,7 @@ md5_accumulate(MD5Context *ctx, const int32_t *signal, int ch, int bps,
         ctx->data_buffer_size = data_bytes;
     }
 
+    /* convert sample values to little-endian raw audio data */
     k = 0;
     for (i = 0; i < nsamples * ch; i++) {
         int32_t x = le2me_32(signal[i]);
