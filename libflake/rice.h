@@ -39,7 +39,7 @@ typedef struct RiceContext {
 
 #define rice_encode_count(sum, n, k) (((n)*((k)+1))+(((sum)-(n>>1))>>(k)))
 
-extern int find_optimal_rice_param(uint32_t sum, int n);
+extern int find_optimal_rice_param(uint64_t sum, int n);
 
 extern uint32_t calc_rice_params_fixed(RiceContext *rc, int pmin, int pmax,
                                        int32_t *data, int n, int pred_order,

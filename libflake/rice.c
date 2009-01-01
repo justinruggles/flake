@@ -27,7 +27,7 @@
 #include "rice.h"
 
 int
-find_optimal_rice_param(uint32_t sum, int n)
+find_optimal_rice_param(uint64_t sum, int n)
 {
     int k, k_opt;
     uint32_t nbits[MAX_RICE_PARAM+1];
@@ -44,7 +44,7 @@ find_optimal_rice_param(uint32_t sum, int n)
 }
 
 static uint32_t
-calc_optimal_rice_params(RiceContext *rc, int porder, uint32_t *sums,
+calc_optimal_rice_params(RiceContext *rc, int porder, uint64_t *sums,
                          int n, int pred_order)
 {
     int i;
@@ -70,7 +70,7 @@ calc_optimal_rice_params(RiceContext *rc, int porder, uint32_t *sums,
 
 static void
 calc_sums(int pmin, int pmax, uint32_t *data, int n, int pred_order,
-          uint32_t sums[][MAX_PARTITIONS])
+          uint64_t sums[][MAX_PARTITIONS])
 {
     int i, j;
     int parts, cnt;
@@ -106,7 +106,7 @@ calc_rice_params(RiceContext *rc, int pmin, int pmax, int32_t *data, int n,
     int opt_porder;
     RiceContext tmp_rc;
     uint32_t *udata;
-    uint32_t sums[MAX_PARTITION_ORDER+1][MAX_PARTITIONS];
+    uint64_t sums[MAX_PARTITION_ORDER+1][MAX_PARTITIONS];
 
     assert(pmin >= 0 && pmin <= MAX_PARTITION_ORDER);
     assert(pmax >= 0 && pmax <= MAX_PARTITION_ORDER);
