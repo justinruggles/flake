@@ -424,9 +424,11 @@ flake_encode_init(FlakeContext *s)
             break;
         }
     }
-    if(i == 8) return -1;
-    // FIXME: For now, only 16-bit encoding is supported
-    if(ctx->bps != 16) return -1;
+    if(i == 8) {
+        ctx->bps = s->bits_per_sample;
+        ctx->bps_code = 0;
+    }
+
 
     ctx->sample_count = s->samples;
 

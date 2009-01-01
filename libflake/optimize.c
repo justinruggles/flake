@@ -45,22 +45,22 @@ encode_residual_fixed(int32_t *res, int32_t *smp, int n, int order)
     switch(order) {
         case 1:
             for(i=1; i<n; i++) {
-                res[i] = smp[i] - (smp[i-1]);
+                res[i] = (int32_t)(smp[i] - smp[i-1]);
             }
             return;
         case 2:
             for(i=2; i<n; i++) {
-                res[i] = smp[i] - (smp[i-1] << 1) + smp[i-2];
+                res[i] = (int32_t)(smp[i] - 2LL*smp[i-1] + smp[i-2]);
             }
             return;
         case 3:
             for(i=3; i<n; i++) {
-                res[i] = smp[i] - 3*smp[i-1] + 3*smp[i-2] - smp[i-3];
+                res[i] = (int32_t)(smp[i] - 3LL*smp[i-1] + 3LL*smp[i-2] - smp[i-3]);
             }
             return;
         case 4:
             for(i=4; i<n; i++) {
-                res[i] = smp[i] - (smp[i-1] << 2) + 6*smp[i-2] - (smp[i-3] << 2) + smp[i-4];
+                res[i] = (int32_t)(smp[i] - 4LL*smp[i-1] + 6LL*smp[i-2] - 4LL*smp[i-3] + smp[i-4]);
             }
             return;
         default: return;
@@ -72,7 +72,7 @@ encode_residual_lpc(int32_t *res, int32_t *smp, int n, int order,
                     int32_t *coefs, int shift)
 {
     int i;
-    int32_t pred;
+    int64_t pred;
 
     for(i=0; i<order; i++) {
         res[i] = smp[i];
@@ -82,42 +82,42 @@ encode_residual_lpc(int32_t *res, int32_t *smp, int n, int order,
         // note that all cases fall through.
         // the result is in an unrolled loop for each order
         switch(order) {
-            case 32: pred += coefs[31] * smp[i-32];
-            case 31: pred += coefs[30] * smp[i-31];
-            case 30: pred += coefs[29] * smp[i-30];
-            case 29: pred += coefs[28] * smp[i-29];
-            case 28: pred += coefs[27] * smp[i-28];
-            case 27: pred += coefs[26] * smp[i-27];
-            case 26: pred += coefs[25] * smp[i-26];
-            case 25: pred += coefs[24] * smp[i-25];
-            case 24: pred += coefs[23] * smp[i-24];
-            case 23: pred += coefs[22] * smp[i-23];
-            case 22: pred += coefs[21] * smp[i-22];
-            case 21: pred += coefs[20] * smp[i-21];
-            case 20: pred += coefs[19] * smp[i-20];
-            case 19: pred += coefs[18] * smp[i-19];
-            case 18: pred += coefs[17] * smp[i-18];
-            case 17: pred += coefs[16] * smp[i-17];
-            case 16: pred += coefs[15] * smp[i-16];
-            case 15: pred += coefs[14] * smp[i-15];
-            case 14: pred += coefs[13] * smp[i-14];
-            case 13: pred += coefs[12] * smp[i-13];
-            case 12: pred += coefs[11] * smp[i-12];
-            case 11: pred += coefs[10] * smp[i-11];
-            case 10: pred += coefs[ 9] * smp[i-10];
-            case  9: pred += coefs[ 8] * smp[i- 9];
-            case  8: pred += coefs[ 7] * smp[i- 8];
-            case  7: pred += coefs[ 6] * smp[i- 7];
-            case  6: pred += coefs[ 5] * smp[i- 6];
-            case  5: pred += coefs[ 4] * smp[i- 5];
-            case  4: pred += coefs[ 3] * smp[i- 4];
-            case  3: pred += coefs[ 2] * smp[i- 3];
-            case  2: pred += coefs[ 1] * smp[i- 2];
-            case  1: pred += coefs[ 0] * smp[i- 1];
+            case 32: pred += (int64_t)coefs[31] * (int64_t)smp[i-32];
+            case 31: pred += (int64_t)coefs[30] * (int64_t)smp[i-31];
+            case 30: pred += (int64_t)coefs[29] * (int64_t)smp[i-30];
+            case 29: pred += (int64_t)coefs[28] * (int64_t)smp[i-29];
+            case 28: pred += (int64_t)coefs[27] * (int64_t)smp[i-28];
+            case 27: pred += (int64_t)coefs[26] * (int64_t)smp[i-27];
+            case 26: pred += (int64_t)coefs[25] * (int64_t)smp[i-26];
+            case 25: pred += (int64_t)coefs[24] * (int64_t)smp[i-25];
+            case 24: pred += (int64_t)coefs[23] * (int64_t)smp[i-24];
+            case 23: pred += (int64_t)coefs[22] * (int64_t)smp[i-23];
+            case 22: pred += (int64_t)coefs[21] * (int64_t)smp[i-22];
+            case 21: pred += (int64_t)coefs[20] * (int64_t)smp[i-21];
+            case 20: pred += (int64_t)coefs[19] * (int64_t)smp[i-20];
+            case 19: pred += (int64_t)coefs[18] * (int64_t)smp[i-19];
+            case 18: pred += (int64_t)coefs[17] * (int64_t)smp[i-18];
+            case 17: pred += (int64_t)coefs[16] * (int64_t)smp[i-17];
+            case 16: pred += (int64_t)coefs[15] * (int64_t)smp[i-16];
+            case 15: pred += (int64_t)coefs[14] * (int64_t)smp[i-15];
+            case 14: pred += (int64_t)coefs[13] * (int64_t)smp[i-14];
+            case 13: pred += (int64_t)coefs[12] * (int64_t)smp[i-13];
+            case 12: pred += (int64_t)coefs[11] * (int64_t)smp[i-12];
+            case 11: pred += (int64_t)coefs[10] * (int64_t)smp[i-11];
+            case 10: pred += (int64_t)coefs[ 9] * (int64_t)smp[i-10];
+            case  9: pred += (int64_t)coefs[ 8] * (int64_t)smp[i- 9];
+            case  8: pred += (int64_t)coefs[ 7] * (int64_t)smp[i- 8];
+            case  7: pred += (int64_t)coefs[ 6] * (int64_t)smp[i- 7];
+            case  6: pred += (int64_t)coefs[ 5] * (int64_t)smp[i- 6];
+            case  5: pred += (int64_t)coefs[ 4] * (int64_t)smp[i- 5];
+            case  4: pred += (int64_t)coefs[ 3] * (int64_t)smp[i- 4];
+            case  3: pred += (int64_t)coefs[ 2] * (int64_t)smp[i- 3];
+            case  2: pred += (int64_t)coefs[ 1] * (int64_t)smp[i- 2];
+            case  1: pred += (int64_t)coefs[ 0] * (int64_t)smp[i- 1];
             case  0:
             default: break;
         }
-        res[i] = smp[i] - (pred >> shift);
+        res[i] = (int32_t)((int64_t)smp[i] - (pred >> shift));
     }
 }
 

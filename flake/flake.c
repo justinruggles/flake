@@ -374,7 +374,7 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
     // set parameters from input audio
     s.channels = wf.channels;
     s.sample_rate = wf.sample_rate;
-    s.bits_per_sample = 16;
+    s.bits_per_sample = wf.bit_width;
     // TODO: FLAC supports values up to 36-bits for number of samples, but libflake only uses a 32-bit value
     s.samples = MIN(wf.samples, UINT32_MAX);
 
@@ -441,9 +441,6 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
         fprintf(stderr, "input file:  \"%s\"\n", files->infile);
         fprintf(stderr, "output file: \"%s\"\n", files->outfile);
         pcmfile_print(&wf, stderr);
-        if(wf.bit_width != 16) {
-            fprintf(stderr, "WARNING! converting to 16-bit (not lossless)\n");
-        }
         if(wf.samples > 0) {
             int64_t tms;
             int th, tm, ts;
