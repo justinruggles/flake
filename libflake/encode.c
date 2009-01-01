@@ -733,7 +733,7 @@ output_residual(FlacEncodeContext *ctx, int ch)
     sub = &frame->subframes[ch];
 
     // rice-encoded block
-    bitwriter_writebits(ctx->bw, 2, 0);
+    bitwriter_writebits(ctx->bw, 2, sub->rc.method);
 
     // partition order
     porder = sub->rc.porder;
