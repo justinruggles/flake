@@ -282,7 +282,7 @@ void
 md5_accumulate(MD5Context *ctx, const int32_t *signal, int ch, int bps,
                int nsamples)
 {
-    int i, j, k;
+    int i, k;
     int bytes_per_sample, data_bytes;
 
     assert(ch > 0 && ch <= 8);
@@ -306,9 +306,12 @@ md5_accumulate(MD5Context *ctx, const int32_t *signal, int ch, int bps,
     k = 0;
     for (i = 0; i < nsamples * ch; i++) {
         int32_t x = le2me_32(signal[i]);
-        uint8_t *xb = (uint8_t *)&x;
-        for (j = 0; j < bytes_per_sample; j++)
-            ctx->data_buffer[k++] = xb[j];
+        switch (bytes_per_sample) {
+            case 4: ctx->data_buffer[k++] = x & 0xFF; x >>= 8;
+            case 3: ctx->data_buffer[k++] = x & 0xFF; x >>= 8;
+            case 2: ctx->data_buffer[k++] = x & 0xFF; x >>= 8;
+            case 1: ctx->data_buffer[k++] = x & 0xFF;
+        }
     }
 
     md5_update(ctx, ctx->data_buffer, data_bytes);
