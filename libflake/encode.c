@@ -681,10 +681,8 @@ output_frame_header(FlacEncodeContext *ctx)
 
     bitwriter_writebits(ctx->bw, 15, 0x7FFC);
 
-    // new bitstream syntax in FLAC 1.2.0 - don't activate until the
-    // reference encoder actually uses it (supports variable blocksize)
-    bitwriter_writebits(ctx->bw, 1, 0);
-    //bitwriter_writebits(ctx->bw, 1, ctx->params.variable_block_size > 0);
+    // new bitstream syntax for variable blocksize in FLAC 1.2.0
+    bitwriter_writebits(ctx->bw, 1, ctx->params.variable_block_size > 0);
 
     bitwriter_writebits(ctx->bw, 4, frame->bs_code[0]);
     bitwriter_writebits(ctx->bw, 4, ctx->sr_code[0]);
