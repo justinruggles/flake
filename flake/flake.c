@@ -420,7 +420,7 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
         fprintf(stderr, "Error initializing encoder.\n");
         return 1;
     }
-    if (fwrite(s.header, 1, header_size, files->ofp) != 1) {
+    if (fwrite(s.header, header_size, 1, files->ofp) != 1) {
         fprintf(stderr, "\nError writing header to output\n");
     }
 
@@ -475,7 +475,7 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
         if(fs < 0) {
             fprintf(stderr, "\nError encoding frame\n");
         } else if(fs > 0) {
-            if(fwrite(frame, 1, fs, files->ofp) != 1) {
+            if(fwrite(frame, fs, 1, files->ofp) != 1) {
                 fprintf(stderr, "\nError writing frame to output\n");
             }
             samplecount = MAX(samplecount, samplecount+nr);
@@ -508,7 +508,7 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
         if(!flake_get_streaminfo(&s, &strminfo)) {
             uint8_t strminfo_data[34];
             flake_write_streaminfo(&strminfo, strminfo_data);
-            if (fwrite(strminfo_data, 1, 34, files->ofp) != 1) {
+            if (fwrite(strminfo_data, 34, 1, files->ofp) != 1) {
                 fprintf(stderr, "\nError writing header to output\n");
             }
         }
