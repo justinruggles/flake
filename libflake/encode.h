@@ -52,6 +52,7 @@ struct BitWriter;
 typedef struct FlacSubframe {
     int type;
     int type_code;
+    int wasted_bits;
     int order;
     int obits;
     int32_t coefs[MAX_LPC_ORDER];

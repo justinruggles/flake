@@ -526,6 +526,7 @@ init_frame(FlacEncodeContext *ctx, int block_size)
     // initialize output bps for each channel
     for(ch=0; ch<ctx->channels; ch++) {
         frame->subframes[ch].obits = ctx->bps;
+        frame->subframes[ch].wasted_bits = 0;
     }
 
     return 0;
@@ -545,6 +546,46 @@ copy_samples(FlacEncodeContext *ctx, const int32_t *samples)
         for(ch=0; ch<ctx->channels; ch++,j++) {
             frame->subframes[ch].samples[i] = samples[j];
         }
+    }
+}
+
+/**
+ * Shift out any zero bits and set the wasted_bits parameter.
+ */
+static void
+remove_wasted_bits(FlacEncodeContext *ctx)
+{
+    int i, ch, b;
+    int wasted;
+    FlacFrame *frame;
+    int32_t *samples;
+
+    frame = &ctx->frame;
+    for (ch = 0; ch < ctx->channels; ch++) {
+        wasted = ctx->bps-1;
+        samples = frame->subframes[ch].samples;
+        for (i = 0; i < frame->blocksize; i++) {
+            int32_t s = samples[i];
+            uint32_t mask = 0x1;
+            for (b = 0; b <= wasted; b++) {
+                if (s & mask)
+                    break;
+                mask <<= 1;
+            }
+            if (b < wasted)
+                wasted = b;
+            if (!wasted)
+                break;
+        }
+        if (wasted == ctx->bps-1) {
+            wasted = 0;
+        } else if (wasted) {
+            for (i = 0; i < frame->blocksize; i++) {
+                samples[i] >>= wasted;
+            }
+            frame->subframes[ch].obits -= wasted;
+        }
+        frame->subframes[ch].wasted_bits = wasted;
     }
 }
 
@@ -838,7 +879,13 @@ output_subframes(FlacEncodeContext *ctx)
         // subframe header
         bitwriter_writebits(ctx->bw, 1, 0);
         bitwriter_writebits(ctx->bw, 6, frame->subframes[ch].type_code);
-        bitwriter_writebits(ctx->bw, 1, 0);
+        if (frame->subframes[ch].wasted_bits) {
+            bitwriter_writebits(ctx->bw, 1, 1);
+            bitwriter_writebits(ctx->bw, frame->subframes[ch].wasted_bits-1, 0);
+            bitwriter_writebits(ctx->bw, 1, 1);
+        } else {
+            bitwriter_writebits(ctx->bw, 1, 0);
+        }
 
         // subframe
         switch(frame->subframes[ch].type) {
@@ -882,6 +929,8 @@ encode_frame(FlacEncodeContext *ctx, uint8_t *frame_buffer, int buf_size,
     copy_samples(ctx, samples);
 
     channel_decorrelation(ctx);
+
+    remove_wasted_bits(ctx);
 
     for(ch=0; ch<ctx->channels; ch++) {
         if(encode_residual(ctx, ch) < 0) {
