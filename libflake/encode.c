@@ -496,7 +496,6 @@ init_frame(FlacEncodeContext *ctx, int block_size)
     }
 
     // get block size codes
-    i = 15;
     for(i=0; i<15; i++) {
         if(block_size == flac_blocksizes[i]) {
             frame->blocksize = flac_blocksizes[i];
