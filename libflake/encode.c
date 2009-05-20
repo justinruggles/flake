@@ -564,17 +564,17 @@ remove_wasted_bits(FlacEncodeContext *ctx)
         wasted = ctx->bps-1;
         samples = frame->subframes[ch].samples;
         for (i = 0; i < frame->blocksize; i++) {
-            int32_t s = samples[i];
-            uint32_t mask = 0x1;
-            for (b = 0; b <= wasted; b++) {
-                if (s & mask)
+            uint32_t s = samples[i];
+            if (s) {
+                s = (s ^ (s - 1)) >> 1;
+                for (b = 0; s; b++) {
+                    s >>= 1;
+                }
+                if (b < wasted)
+                    wasted = b;
+                if (!wasted)
                     break;
-                mask <<= 1;
             }
-            if (b < wasted)
-                wasted = b;
-            if (!wasted)
-                break;
         }
         if (wasted == ctx->bps-1) {
             wasted = 0;
