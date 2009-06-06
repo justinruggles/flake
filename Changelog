@@ -12,6 +12,8 @@ version SVN : current
 - API changed so that flake_encode_frame() takes 32-bit ints instead of 16-bit
 - Added support for lossless encoding of all valid FLAC bit depths (4 to 32)
 - Added support for RICE2 entropy coding
+- Added a compile-time option (USE_LIBSNDFILE) for using libsndfile instead of
+  libpcm_io for reading the input files
 
 version 0.11 : 5 August 2007
 - Significant speed improvements

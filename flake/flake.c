@@ -17,6 +17,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/* required for fileno() */
+#define _XOPEN_SOURCE
+
 #include "common.h"
 
 #include <limits.h>
@@ -27,8 +30,14 @@
 #include <io.h>
 #endif
 
-#include "bswap.h"
+/* libsndfile */
+#if HAVE_LIBSNDFILE
+#include <sndfile.h>
+#else
 #include "pcm_io.h"
+#endif
+
+#include "bswap.h"
 #include "flake.h"
 
 #ifndef PATH_MAX
@@ -38,14 +47,14 @@
 static void
 print_usage(FILE *out)
 {
-    fprintf(out, "usage: flake [options] <input.wav> [-o output.flac]\n"
+    fprintf(out, "usage: flake [options] <input> [-o output.flac]\n"
                  "type 'flake -h' for more details.\n\n");
 }
 
 static void
 print_help(FILE *out)
 {
-    fprintf(out, "usage: flake [options] <input.wav> [-o output.flac]\n"
+    fprintf(out, "usage: flake [options] <input> [-o output.flac]\n"
                  "options:\n"
                  "       [-h]         Print out list of commandline options\n"
                  "       [-q]         Quiet mode: no console output\n"
@@ -353,11 +362,134 @@ print_params(FlakeContext *s)
     fprintf(stderr, "header padding: %d\n", s->params.padding_size);
 }
 
+#if HAVE_LIBSNDFILE
+typedef SNDFILE PcmContext;
+typedef SF_INFO PcmInfo;
+
+static int
+pcm_init_sndfile(PcmContext **ctx, PcmInfo *info, FILE *ifp, FlakeContext *s)
+{
+    *ctx = sf_open_fd(fileno(ifp), SFM_READ, info, 0);
+    if (!*ctx)
+        return -1;
+
+    // set parameters from input audio
+    s->channels = info->channels;
+    s->sample_rate = info->samplerate;
+    switch (info->format & SF_FORMAT_SUBMASK) {
+        case SF_FORMAT_PCM_S8:
+        case SF_FORMAT_PCM_U8: s->bits_per_sample = 8;  break;
+        case SF_FORMAT_PCM_16: s->bits_per_sample = 16; break;
+        case SF_FORMAT_PCM_24: s->bits_per_sample = 24; break;
+        case SF_FORMAT_PCM_32: s->bits_per_sample = 32; break;
+        default:
+            fprintf(stderr, "sample format not supported.\n");
+            sf_close(*ctx);
+            return -1;
+    }
+    s->samples = MIN(info->frames, UINT32_MAX);
+    return 0;
+}
+
+#else
+typedef PcmFile PcmContext;
+typedef void PcmInfo;
+
+static int
+pcm_init_pcmio(PcmContext *ctx, FILE *ifp, FlakeContext *s)
+{
+    if(pcmfile_init(ctx, ifp, PCM_SAMPLE_FMT_S32, PCM_FORMAT_UNKNOWN))
+        return 1;
+
+    // set parameters from input audio
+    s->channels = ctx->channels;
+    s->sample_rate = ctx->sample_rate;
+    s->bits_per_sample = ctx->bit_width;
+    s->samples = MIN(ctx->samples, UINT32_MAX);
+    return 0;
+}
+
+#endif /* !HAVE_LIBSNDFILE */
+
+static int
+pcm_init(PcmContext **ctx, PcmInfo *info, FILE *ifp, FlakeContext *s)
+{
+#if HAVE_LIBSNDFILE
+    return pcm_init_sndfile(ctx, info, ifp, s);
+#else
+    return pcm_init_pcmio(*ctx, ifp, s);
+#endif
+}
+
+#if HAVE_LIBSNDFILE
+static int
+sndfile_read_samples(SNDFILE *sfctx, int32_t *wav, int bps, int channels,
+                     int samples)
+{
+    int i, nr=0;
+    if (bps > 16) {
+        nr = sf_readf_int(sfctx, wav, samples);
+        if (nr && bps == 24) {
+            for (i = 0; i < nr * channels; i++) {
+                wav[i] >>= 8;
+            }
+        }
+    } else {
+        int16_t *wav16 = (int16_t *)wav;
+        nr = sf_readf_short(sfctx, wav16, samples);
+        for (i = (nr * channels) - 1; i >= 0; i--) {
+            wav[i] = wav16[i];
+        }
+    }
+    return nr;
+}
+
+static void
+sndfile_print(SF_INFO *info, FILE *st)
+{
+    SF_FORMAT_INFO format_info;
+    const char *chan, *fmt, *order;
+    int bps=0;
+
+    if(st == NULL || info == NULL) return;
+
+    chan = "?-channel";
+    fmt = "unknown";
+    order = "?-endian";
+
+    switch (info->channels) {
+        case 1:  chan = "mono";          break;
+        case 2:  chan = "stereo";        break;
+        case 3:  chan = "3-channel";     break;
+        case 4:  chan = "4-channel";     break;
+        case 5:  chan = "5-channel";     break;
+        case 6:  chan = "6-channel";     break;
+        case 7:  chan = "7-channel";     break;
+        case 8:  chan = "8-channel";     break;
+        default: chan = "multi-channel"; break;
+    }
+
+    format_info.format = info->format & SF_FORMAT_TYPEMASK;
+    sf_command(NULL, SFC_GET_FORMAT_INFO, &format_info, sizeof(format_info));
+    fmt = format_info.name;
+
+    switch (info->format & SF_FORMAT_SUBMASK) {
+        case SF_FORMAT_PCM_S8:
+        case SF_FORMAT_PCM_U8: bps = 8;  break;
+        case SF_FORMAT_PCM_16: bps = 16; break;
+        case SF_FORMAT_PCM_24: bps = 24; break;
+        case SF_FORMAT_PCM_32: bps = 32; break;
+    }
+
+    fprintf(st, "%s %d-bit %d Hz %s\n", fmt, bps, info->samplerate, chan);
+}
+
+#endif
+
 static int
 encode_file(CommandOptions *opts, FilePair *files, int first_file)
 {
     FlakeContext s;
-    PcmFile wf;
     int header_size, subset;
     uint8_t *frame;
     int32_t *wav;
@@ -365,18 +497,22 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
     int fs;
     uint32_t nr, samplecount, bytecount;
     float kb, sec, kbps, wav_bytes;
+    int block_align;
+    PcmContext *ctx=NULL;
+#if HAVE_LIBSNDFILE
+    SF_INFO info1;
+    SF_INFO *info = &info1;
+#else
+    PcmFile ctx1;
+    void *info = NULL;
+    ctx = &ctx1;
+#endif
 
-    if(pcmfile_init(&wf, files->ifp, PCM_SAMPLE_FMT_S32, PCM_FORMAT_UNKNOWN)) {
-        fprintf(stderr, "invalid input file: %s\n", files->infile);
+    if (pcm_init(&ctx, info, files->ifp, &s)) {
+        fprintf(stderr, "\ninvalid input file: %s\n", files->infile);
         return 1;
     }
-
-    // set parameters from input audio
-    s.channels = wf.channels;
-    s.sample_rate = wf.sample_rate;
-    s.bits_per_sample = wf.bit_width;
-    // TODO: FLAC supports values up to 36-bits for number of samples, but libflake only uses a 32-bit value
-    s.samples = MIN(wf.samples, UINT32_MAX);
+    block_align = s.bits_per_sample * s.channels / 8;
 
     // set parameters from commandline
     s.params.compression = opts->compr;
@@ -442,18 +578,22 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
         fprintf(stderr, "\n");
         fprintf(stderr, "input file:  \"%s\"\n", files->infile);
         fprintf(stderr, "output file: \"%s\"\n", files->outfile);
-        pcmfile_print(&wf, stderr);
-        if(wf.samples > 0) {
+#if HAVE_LIBSNDFILE
+        sndfile_print(info, stderr);
+#else
+        pcmfile_print(ctx, stderr);
+#endif
+        if(s.samples > 0) {
             int64_t tms;
             int th, tm, ts;
-            tms = (int64_t)(wf.samples * 1000.0 / wf.sample_rate);
+            tms = (int64_t)(s.samples * 1000.0 / s.sample_rate);
             ts = tms / 1000;
             tms = tms % 1000;
             tm = ts / 60;
             ts = ts % 60;
             th = tm / 60;
             tm = tm % 60;
-            fprintf(stderr, "samples: %"PRIu64" (", wf.samples);
+            fprintf(stderr, "samples: %"PRIu32" (", s.samples);
             if(th) fprintf(stderr, "%dh", th);
             fprintf(stderr, "%dm", tm);
             fprintf(stderr, "%d.%03ds)\n", ts, (int)tms);
@@ -464,13 +604,25 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
     }
 
     frame = flake_get_buffer(&s);
-    wav = malloc(s.params.block_size * wf.channels * sizeof(int32_t));
+    wav = malloc(s.params.block_size * s.channels * sizeof(int32_t));
 
     samplecount = percent = 0;
     wav_bytes = 0;
     bytecount = header_size;
-    nr = pcmfile_read_samples(&wf, wav, s.params.block_size);
+#if HAVE_LIBSNDFILE
+    nr = sndfile_read_samples(ctx, wav, s.bits_per_sample, s.channels,
+                              s.params.block_size);
+#else
+    nr = pcmfile_read_samples(ctx, wav, s.params.block_size);
+#endif
     while(nr > 0) {
+        /*unsigned int z,ch;
+        for (z = 0; z < nr; z++) {
+            fprintf(stderr, "\n");
+            for (ch = 0; ch < s.channels; ch++) {
+                fprintf(stderr, "%-5d", wav[z*s.channels+ch]);
+            }
+        }*/
         fs = flake_encode_frame(&s, wav, nr);
         if(fs < 0) {
             fprintf(stderr, "\nError encoding frame\n");
@@ -488,7 +640,7 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
                 if(s.samples > 0) {
                     percent = ((samplecount * 100.5) / s.samples);
                 }
-                wav_bytes = samplecount*wf.block_align;
+                wav_bytes = samplecount * block_align;
                 if(!opts->quiet) {
                     fprintf(stderr, "\rprogress: %3d%% | ratio: %1.3f | "
                                     "bitrate: %4.1f kbps ",
@@ -496,7 +648,12 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
                 }
             }
         }
-        nr = pcmfile_read_samples(&wf, wav, s.params.block_size);
+#if HAVE_LIBSNDFILE
+        nr = sndfile_read_samples(ctx, wav, s.bits_per_sample, s.channels,
+                                  s.params.block_size);
+#else
+        nr = pcmfile_read_samples(ctx, wav, s.params.block_size);
+#endif
     }
     if(!opts->quiet) {
         fprintf(stderr, "| bytes: %d \n\n", bytecount);
@@ -514,7 +671,11 @@ encode_file(CommandOptions *opts, FilePair *files, int first_file)
         }
     }
 
-    pcmfile_close(&wf);
+#if HAVE_LIBSNDFILE
+    sf_close(ctx);
+#else
+    pcmfile_close(ctx);
+#endif
     flake_encode_close(&s);
     free(wav);
 
