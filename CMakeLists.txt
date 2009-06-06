@@ -139,6 +139,10 @@ CHECK_FUNCTION_DEFINE("#include <string.h>" "strnlen" "(\"help\", 6)" HAVE_STRNL
 # check for libsndfile
 IF(USE_LIBSNDFILE)
 CHECK_LIBSNDFILE_DEFINE(HAVE_LIBSNDFILE)
+IF(NOT HAVE_LIBSNDFILE)
+MESSAGE(STATUS "libsndfile not found. using libpcm_io instead.")
+SET(USE_LIBSNDFILE FALSE)
+ENDIF(NOT HAVE_LIBSNDFILE)
 ENDIF(USE_LIBSNDFILE)
 
 # output SVN version to config.h
