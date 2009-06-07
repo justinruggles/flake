@@ -1,0 +1,162 @@
+
+FLAC Constraints
+
+
+================================================================================
+(c) 2009 Justin Ruggles
+This work is licensed under a Creative Commons Attribution-Share Alike 3.0
+Unported License. http://creativecommons.org/licenses/by-sa/3.0/
+================================================================================
+
+
+This document details the constraints on the source audio format parameters and
+encoding options in the FLAC format.  There are 3 limiting factors, the FLAC
+bitstream format, the compression level, and Subset compatibility.  Encoder and
+decoder limitations add additional constraints in practical use, but those are
+only noted in this document for informational purposes.
+
+
+Compression Level Compatibility Constraints
+===========================================
+
+Compression levels are not defined in the official FLAC format description, but
+the libFLAC compression levels are often used to describe compatibility in
+hardware implementations.
+
+ Level    Blocksize    Mid/Side    LPC Type    Max LPC Order    Max Rice Order
+--------------------------------------------------------------------------------
+   0        1152          No        Fixed            4                3
+  1/2       1152         Yes        Fixed            4                3
+   3        4096          No       Adaptive          6                4
+   4        4096         Yes       Adaptive          8                4
+   5        4096         Yes       Adaptive          8                5
+  6/7       4096         Yes       Adaptive          8                6
+   8        4096         Yes       Adaptive         12                6
+ *9/10      4096(v)      Yes       Adaptive         12                8
+*11/12      8192(v)      Yes       Adaptive         32                8
+
+* = Flake only
+v = maximum blocksize in variable blocksize mode
+
+
+Subset Compatibility Constraints
+================================
+
+Quote from the FLAC Format Description:
+    FLAC specifies a subset of itself as the Subset format. The purpose of this
+    is to ensure that any streams encoded according to the Subset are truly
+    "streamable", meaning that a decoder that cannot seek within the stream can
+    still pick up in the middle of the stream and start decoding. It also makes
+    hardware decoder implementations more practical by limiting the encoding
+    parameters such that decoder buffer sizes and other resource requirements
+    can be easily determined. flac generates Subset streams by default unless
+    the "--lax" command-line option is used. The Subset makes the following
+    limitations on what may be used in the stream:
+        * The blocksize bits in the frame header must be 0001-1110. The
+          blocksize must be <=16384; if the sample rate is <= 48000Hz, the
+          blocksize must be <=4608.
+        * The sample rate bits in the frame header must be 0001-1110.
+        * The bits-per-sample bits in the frame header must be 001-111.
+        * If the sample rate is <= 48000Hz, the filter order in LPC subframes
+          must be less than or equal to 12, i.e. the subframe type bits in the
+          subframe header may not be 101100-111111.
+        * The Rice partition order in a Rice-coded residual section must be less
+          than or equal to 8.
+
+In practical terms, this means that compression levels 0 to 10 are Subset
+compatible for sample rates <= 48kHz, and compression levels 0 to 12 are Subset
+compatible for higher sample rates.  There is also the additional constraint
+that the "get from STREAMINFO" values cannot be used for sample rate and sample
+size in the frame headers.  This limits the possible sample sizes, but not the
+possible sample rates.
+
+The use of 32-bit sample sizes is not currently allowed in Subset compatible
+streams since the only way to specify it is in the STREAMINFO.  The logical use
+of the reserved value of 7 for sample size would be for 32-bit, and 7 is
+included in the allowed values for Subset, but for now the value is still
+reserved.
+
+
+Detailed Summary of Constraints
+===============================
+
+Sample Size:
+    * The FLAC format supports from 4-bit to 32-bit sample sizes.
+    * libFLAC does not support encoding or decoding anything above 24-bit.
+    * Flake supports encoding up to 32-bit.
+    * FFmpeg supports decoding up to 32-bit, but 32-bit is only supported if
+      mid/side is disabled due to bitstream reader limitations.
+    * Only sample sizes of 8, 12, 16, 20, and 24 are Subset compatible.
+
+Channels:
+    * The number of channels can be from 1 to 8.
+    * Channel assignment is defined for 1 to 6 channels, but is undefined for
+      7 or 8 channels.  However, the flac reference encoder also has an option
+      for keeping the WAV header, which contains a channel mask to define
+      channel assignment.
+    * Channel order is defined for 1 to 6 channels as SMPTE/WAV order, but is
+      undefined for 7 or 8 channels.
+    * Mid/side coding can be used for stereo audio.  It is not used for
+      compression levels 0 and 3.
+    * There is no limitation with regard to Subset compatibility on the number
+      of channels or the use of mid/side coding.
+
+Sample Rate:
+    * The sample rate can be from 1Hz to 655350Hz.
+    * The only Subset limitation is that the sample rate must be specified in
+      each frame, not just in the STREAMINFO.
+    * The sample rate determines Subset compatibility constraints for blocksize
+      and LPC order.
+
+Blocksize:
+    * The minimum blocksize is 16 samples, except for the last block which can
+      be as small as 1 sample.
+    * The maximum blocksize is 65535 samples.
+    * Subset compatible streams are limited to a blocksize of 4608 when the
+      sample rate is <= 48kHz or 16384 when the sample rate is > 48kHz.
+    * The FLAC format description specifies how to indicate variable blocksize,
+      and there are no constraints listed on its use.
+    * The libFLAC reference encoder does not use variable blocksize encoding,
+      but it is supported in the libFLAC decoder.
+    * Flake takes a cautious approach and only uses variable blocksize encoding
+      for compression levels which are specific to Flake.
+
+Subframe Type:
+    * There are 4 subframe types: Constant, Verbatim, Fixed LPC, and Adaptive
+      LPC.
+    * All subframe types are Subset compatible.
+    * No prediction or Rice coding is used in Constant and Verbatim subframes.
+    * All compression levels can use the Constant, Verbatim, and Fixed LPC
+      subframe types.
+    * Only compression levels > 2 use the Adaptive LPC subframe type.
+
+LPC Order:
+    * The prediction order in Fixed LPC mode can be 0 to 4.
+    * Order 0 in Fixed LPC mode does no prediction, but does allow for Rice
+      coding.
+    * Order 0 is not allowed in Adaptive LPC mode.
+    * The maximum order in Adaptive LPC mode is 32.
+    * If the sample rate is <= 48kHz, the LPC order must be <= 12 in order for
+      the stream to be Subset compatible.
+    * The maximum LPC order constraint varies between compression levels.
+
+Quantized LPC Coefficient Precision:
+    * The LPC coefficient precision can be from 1 to 15 bits.
+    * There is no additional constraint on LPC coefficient precision with
+      regard to Subset compatibility or compression level.
+    * By default, the libFLAC encoder adaptively chooses the precision based on
+      sample size and blocksize.
+
+Residual Encoding Method:
+    * There is no constraint on the selection of the residual encoding method.
+    * Both Flake and the libFLAC encoder adaptively choose RICE or RICE2 based
+      on which one compresses better for each subframe.
+
+Rice Partition Order:
+    * The minimum Rice order is 0, which corresponds to a single Rice parameter
+      being used for the entire subframe.
+    * The maximum Rice order is 15, which uses 32768 Rice parameters for the
+      subframe.
+    * The Rice order must be <= 8 in order for the stream to be Subset
+      compatible.
+    * The maximum Rice order constraint varies between compression levels.
