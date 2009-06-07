@@ -67,7 +67,6 @@ typedef struct FlacFrame {
     int verbatim_size;
     int bs_code[2];
     int ch_mode;
-    int ch_order[2];
     uint8_t crc8;
     FlacSubframe subframes[FLAC_MAX_CH];
 } FlacFrame;
