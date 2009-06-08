@@ -80,9 +80,8 @@ compute_lpc_coefs(const double *autoc, int max_order, double *ref,
 {
     int i, j, i2;
     double r, err, tmp;
-    double lpc_tmp[MAX_LPC_ORDER];
+    double lpc_tmp[MAX_LPC_ORDER] = {0,};
 
-    for(i=0; i<max_order; i++) lpc_tmp[i] = 0;
     err = 1.0;
     if(autoc) {
         err = autoc[0];
