@@ -87,7 +87,7 @@ bitwriter_writebits(BitWriter *bw, int bits, uint32_t val)
     assert(bits == 32 || val < (1U << bits));
 
     if(bits == 0 || bw->eof) return;
-    if((bw->buf_ptr+3) >= bw->buf_end) {
+    if(bw->buf_ptr >= bw->buf_end-3) {
         bw->eof = 1;
         return;
     }
