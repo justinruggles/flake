@@ -234,12 +234,14 @@ flake_set_defaults(FlakeEncodeParams *params)
             params->order_method = FLAKE_ORDER_METHOD_LOG;
             params->max_prediction_order = 12;
             params->max_partition_order = 8;
+            params->allow_vbs = 1;
             params->variable_block_size = 1;
             break;
         case 10:
             params->order_method = FLAKE_ORDER_METHOD_SEARCH;
             params->max_prediction_order = 12;
             params->max_partition_order = 8;
+            params->allow_vbs = 1;
             params->variable_block_size = 1;
             break;
         case 11:
@@ -247,6 +249,7 @@ flake_set_defaults(FlakeEncodeParams *params)
             params->order_method = FLAKE_ORDER_METHOD_LOG;
             params->max_prediction_order = 32;
             params->max_partition_order = 8;
+            params->allow_vbs = 1;
             params->variable_block_size = 1;
             break;
         case 12:
@@ -254,6 +257,7 @@ flake_set_defaults(FlakeEncodeParams *params)
             params->order_method = FLAKE_ORDER_METHOD_SEARCH;
             params->max_prediction_order = 32;
             params->max_partition_order = 8;
+            params->allow_vbs = 1;
             params->variable_block_size = 1;
             break;
     }
@@ -356,12 +360,12 @@ flake_validate_params(const FlakeContext *s)
     if(params->variable_block_size < 0 || params->variable_block_size > 1) {
         return -1;
     }
+    if(params->variable_block_size > 0 && !params->allow_vbs) {
+        return -1;
+    }
 
-    // don't allow block size of 16 in variable block size mode. this is a bug
-    // in the spec which has been fixed in FLAC 1.2.0, but is not backwards
-    // compatible.  this constraint will be removed when Flake is updated to
-    // the new spec version.
-    if(bs == 16 && (params->variable_block_size > 0 || params->allow_vbs)) {
+    // don't allow block size of less than 128 in variable block size mode
+    if(bs < VBS_MIN_BLOCK_SIZE && params->allow_vbs) {
         return -1;
     }
 
@@ -722,7 +726,7 @@ output_frame_header(FlacEncodeContext *ctx)
     bitwriter_writebits(ctx->bw, 15, 0x7FFC);
 
     // new bitstream syntax for variable blocksize in FLAC 1.2.0
-    bitwriter_writebits(ctx->bw, 1, ctx->params.variable_block_size > 0);
+    bitwriter_writebits(ctx->bw, 1, ctx->params.allow_vbs);
 
     bitwriter_writebits(ctx->bw, 4, frame->bs_code[0]);
     bitwriter_writebits(ctx->bw, 4, ctx->sr_code[0]);
@@ -963,7 +967,7 @@ encode_frame(FlacEncodeContext *ctx, uint8_t *frame_buffer, int buf_size,
     ctx->max_frame_size = MAX(ctx->max_frame_size, bitwriter_count(ctx->bw));
 
     if(frame_buffer != NULL) {
-        if(ctx->params.variable_block_size || ctx->params.allow_vbs) {
+        if(ctx->params.allow_vbs) {
             ctx->frame_count += ctx->frame.blocksize;
         } else {
             ctx->frame_count++;
