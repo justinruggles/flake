@@ -137,8 +137,15 @@ calc_rice_params(RiceContext *rc, int pmin, int pmax, int32_t *data, int n,
     return bits[opt_porder];
 }
 
+/**
+ * Constrain maximum partition order.
+ * The actual allowable maximum partition order for a particular subframe
+ * depends on the blocksize and the LPC order.  Firstly, the blocksize must be
+ * an exact multiple of the number of partitions.  Secondly, the partition size
+ * cannot be smaller than the LPC order.
+ */
 static int
-get_max_p_order(int max_porder, int n, int order)
+limit_max_partition_order(int max_porder, int n, int order)
 {
     int porder = MIN(max_porder, log2i(n^(n-1)));
     if(order > 0)
@@ -152,8 +159,8 @@ calc_rice_params_fixed(RiceContext *rc, int pmin, int pmax, int32_t *data,
 {
     uint32_t bits;
     int param_bits = rc->method + 4;
-    pmin = get_max_p_order(pmin, n, pred_order);
-    pmax = get_max_p_order(pmax, n, pred_order);
+    pmin = limit_max_partition_order(pmin, n, pred_order);
+    pmax = limit_max_partition_order(pmax, n, pred_order);
     bits = pred_order*bps + 2 + param_bits;
     bits += calc_rice_params(rc, pmin, pmax, data, n, pred_order);
     return bits;
@@ -165,8 +172,8 @@ calc_rice_params_lpc(RiceContext *rc, int pmin, int pmax, int32_t *data, int n,
 {
     uint32_t bits;
     int param_bits = rc->method + 4;
-    pmin = get_max_p_order(pmin, n, pred_order);
-    pmax = get_max_p_order(pmax, n, pred_order);
+    pmin = limit_max_partition_order(pmin, n, pred_order);
+    pmax = limit_max_partition_order(pmax, n, pred_order);
     bits = pred_order*bps + 4 + 5 + pred_order*precision + 2 + param_bits;
     bits += calc_rice_params(rc, pmin, pmax, data, n, pred_order);
     return bits;
