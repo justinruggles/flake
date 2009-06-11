@@ -442,9 +442,8 @@ sndfile_read_samples(SNDFILE *sfctx, int32_t *wav, int bps, int channels,
                 for (i = (nr * channels) - 1; i >= 0; i--)
                     wav[i] = wav16[i] >> 8;
             } else {
-        for (i = (nr * channels) - 1; i >= 0; i--) {
-            wav[i] = wav16[i];
-        }
+                for (i = (nr * channels) - 1; i >= 0; i--)
+                    wav[i] = wav16[i];
             }
         }
     }
