@@ -231,7 +231,7 @@ lpc_calc_coefs(const int32_t *samples, int blocksize, int max_order,
     int i;
     int opt_order;
 
-    compute_autocorr(samples, blocksize, max_order+1, autoc);
+    compute_autocorr(samples, blocksize, max_order, autoc);
 
     opt_order = max_order;
     if(omethod == FLAKE_ORDER_METHOD_EST) {
