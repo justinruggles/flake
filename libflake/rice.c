@@ -158,11 +158,11 @@ calc_rice_params_fixed(RiceContext *rc, int pmin, int pmax, int32_t *data,
                        int n, int pred_order, int bps)
 {
     uint32_t bits;
-    int param_bits = rc->method + 4;
     pmin = limit_max_partition_order(pmin, n, pred_order);
     pmax = limit_max_partition_order(pmax, n, pred_order);
-    bits = pred_order*bps + 2 + param_bits;
+    bits = pred_order*bps + 2;
     bits += calc_rice_params(rc, pmin, pmax, data, n, pred_order);
+    bits += rc->method + 4;
     return bits;
 }
 
@@ -171,10 +171,10 @@ calc_rice_params_lpc(RiceContext *rc, int pmin, int pmax, int32_t *data, int n,
                      int pred_order, int bps, int precision)
 {
     uint32_t bits;
-    int param_bits = rc->method + 4;
     pmin = limit_max_partition_order(pmin, n, pred_order);
     pmax = limit_max_partition_order(pmax, n, pred_order);
-    bits = pred_order*bps + 4 + 5 + pred_order*precision + 2 + param_bits;
+    bits = pred_order*bps + 4 + 5 + pred_order*precision + 2;
     bits += calc_rice_params(rc, pmin, pmax, data, n, pred_order);
+    bits += rc->method + 4;
     return bits;
 }
