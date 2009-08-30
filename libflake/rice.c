@@ -51,6 +51,8 @@ calc_optimal_rice_params(RiceContext *rc, int porder, uint64_t *sums,
     int k, cnt, part;
     uint32_t all_bits;
 
+    rc->method = ENCODING_METHOD_RICE;
+
     part = (1 << porder);
     all_bits = 0;
 
@@ -113,8 +115,6 @@ calc_rice_params(RiceContext *rc, int pmin, int pmax, int32_t *data, int n,
     assert(pmin >= 0 && pmin <= MAX_PARTITION_ORDER);
     assert(pmax >= 0 && pmax <= MAX_PARTITION_ORDER);
     assert(pmin <= pmax);
-
-    rc->method = ENCODING_METHOD_RICE;
 
     udata = malloc(n * sizeof(uint32_t));
     for(i=0; i<n; i++) {
