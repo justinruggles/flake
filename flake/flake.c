@@ -742,7 +742,7 @@ main(int argc, char **argv)
     if(!opts.quiet) {
         fprintf(stderr, "\nFlake: FLAC audio encoder\n"
                         "Version %s\n"
-                        "(c) 2006-2007 Justin Ruggles\n\n",
+                        "(c) 2006-2009 Justin Ruggles\n\n",
                         flake_get_version());
     }
     if(err == 2) {
