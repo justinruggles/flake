@@ -24,6 +24,7 @@
 
 #include "common.h"
 
+#include "encode.h"
 #include "rice.h"
 
 int
@@ -153,28 +154,34 @@ limit_max_partition_order(int max_porder, int n, int order)
     return porder;
 }
 
-uint32_t
-calc_rice_params_fixed(RiceContext *rc, int pmin, int pmax, int32_t *data,
-                       int n, int pred_order, int bps)
+static uint32_t calc_rice_params_common(RiceContext *rc, int pmin, int pmax,
+                                        int32_t *data, int n, int pred_order,
+                                        int bps, int precision,
+                                        FlakePrediction pred_type)
 {
     uint32_t bits;
     pmin = limit_max_partition_order(pmin, n, pred_order);
     pmax = limit_max_partition_order(pmax, n, pred_order);
     bits = pred_order*bps + 2;
+    if (pred_type == FLAKE_PREDICTION_LEVINSON)
+        bits += 4 + 5 + pred_order*precision;
     bits += calc_rice_params(rc, pmin, pmax, data, n, pred_order);
     bits += rc->method + 4;
     return bits;
 }
 
 uint32_t
+calc_rice_params_fixed(RiceContext *rc, int pmin, int pmax, int32_t *data,
+                       int n, int pred_order, int bps)
+{
+    return calc_rice_params_common(rc, pmin, pmax, data, n, pred_order, bps, 0,
+                                   FLAKE_PREDICTION_FIXED);
+}
+
+uint32_t
 calc_rice_params_lpc(RiceContext *rc, int pmin, int pmax, int32_t *data, int n,
                      int pred_order, int bps, int precision)
 {
-    uint32_t bits;
-    pmin = limit_max_partition_order(pmin, n, pred_order);
-    pmax = limit_max_partition_order(pmax, n, pred_order);
-    bits = pred_order*bps + 4 + 5 + pred_order*precision + 2;
-    bits += calc_rice_params(rc, pmin, pmax, data, n, pred_order);
-    bits += rc->method + 4;
-    return bits;
+    return calc_rice_params_common(rc, pmin, pmax, data, n, pred_order, bps,
+                                   precision, FLAKE_PREDICTION_LEVINSON);
 }
