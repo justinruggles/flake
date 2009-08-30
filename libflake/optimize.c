@@ -209,7 +209,7 @@ encode_residual(FlacEncodeContext *ctx, int ch)
         opt_order = max_order-1;
         bits[opt_index] = UINT32_MAX;
         for(i=opt_index; i>=0; i--) {
-            order = min_order + (((max_order-min_order+1) * (i+1)) / levels)-1;
+            order = min_order + (((max_order-min_order+1) * (i+1)) / levels)-2;
             if(order < 0) order = 0;
             encode_residual_lpc(res, smp, n, order+1, coefs[order], shift[order]);
             bits[i] = calc_rice_params_lpc(&sub->rc, min_porder, max_porder,
